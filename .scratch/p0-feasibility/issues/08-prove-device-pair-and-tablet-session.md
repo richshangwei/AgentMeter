@@ -4,7 +4,11 @@
 
 **Blocked by:** 07: Prove the selected-device USB loopback channel.
 
-**Status:** ready-for-agent
+**Status:** needs-info
+
+## Comments
+
+- 2026-09-06: Added fixture-driven `agentmeter-pairing-p0` experiment and tests. The model demonstrates single-use/expiring pair attempts, durable Device Pair versus revocable Tablet Session, authorization on every route, replay/guess/rate-limit/origin/CSRF failures, forget/reset revocation, and secret-safe diagnostics. Real tablet reconnect, protected Windows secret persistence, and end-to-end USB/browser evidence are still required.
 
 - [ ] An unpaired tablet can exchange a short-lived, single-use pair code for a Device Pair only within the approved attempt and expiry limits.
 - [ ] A paired device obtains a Tablet Session that is distinct from the durable pair record and contains enough server-side state for expiry and revocation.

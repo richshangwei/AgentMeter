@@ -1,0 +1,6 @@
+{
+  "allowed_origin": "http://127.0.0.1",
+  "code_ttl_seconds": 120,
+  "max_attempts": 3,
+  "actions": ["pair_valid", "pair_replay", "session_valid", "missing_auth", "invalid_auth", "origin_bad", "csrf_bad", "pair_guess", "pair_guess", "pair_guess", "pair_guess_limit", "forget_account", "session_replay", "pair_after_reset", "reset_agentmeter", "pair_after_reset"]
+}

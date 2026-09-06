@@ -1,0 +1,6 @@
+{
+  "allowed_origin": "https://evil.example",
+  "code_ttl_seconds": 120,
+  "max_attempts": 3,
+  "actions": ["pair_valid", "session_valid", "origin_bad", "csrf_bad"]
+}

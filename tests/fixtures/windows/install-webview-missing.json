@@ -1,0 +1,1 @@
+{"environment":{"os":"Windows 11 24H2","clean_vm":true,"package_identity":"AgentMeter-0.1.0-x64"},"webview2":{"state":"missing","bootstrapper":"approved-download-bootstrapper","download":"failed"},"operations":[{"name":"install","result":"pass"},{"name":"launch","result":"blocked"}],"measurements":null}
