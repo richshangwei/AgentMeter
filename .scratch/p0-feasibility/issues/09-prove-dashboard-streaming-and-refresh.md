@@ -4,7 +4,11 @@
 
 **Blocked by:** 08: Prove the Device Pair and Tablet Session security boundary.
 
-**Status:** ready-for-agent
+**Status:** needs-info
+
+## Comments
+
+- 2026-09-06: Added fixture-driven `agentmeter-dashboard-p0` experiment and tests. It proves the complete four-provider snapshot contract, source-scoped usage and account deduplication, revisioned SSE ordering with heartbeat/stale handling, reconnect-to-latest recovery, prompt accepted/coalesced/throttled refresh requests, independent collector outcomes, and the monitor-only tablet boundary. Real paired-tablet rendering, USB reconnect/sleep/host-restart behavior, latency/resource measurements, and authenticated end-to-end evidence remain required.
 
 - [ ] An authenticated tablet loads one complete Dashboard Snapshot containing all four provider states, global revision metadata, and the canonical setup, paused, availability, collection, freshness, quality, and maturity signals.
 - [ ] The snapshot preserves source-scoped usage and quota-window facts while applying the approved Provider Account deduplication rules.

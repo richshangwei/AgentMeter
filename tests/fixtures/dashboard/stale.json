@@ -1,0 +1,9 @@
+{
+  "authenticated": true,
+  "providers": [{"id":"codex","state":"ready"},{"id":"claude","state":"ready"},{"id":"copilot","state":"ready"},{"id":"antigravity","state":"ready"}],
+  "snapshot":{"revision":5,"schema":"dashboard-snapshot/v1","canonical_setup":"canonical","provider_fields":["setup","paused","availability","collection","freshness","quality","maturity"]},
+  "events":[{"kind":"snapshot","revision":5},{"kind":"snapshot","revision":4}],
+  "reconnect":{"disconnected":true,"latest_revision":4,"fetched_complete":false},
+  "refresh":{"requests":[{"provider":"claude","result":"accepted"}],"outcomes":["failed"]},
+  "monitor_only":true
+}
