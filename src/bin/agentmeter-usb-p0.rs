@@ -88,14 +88,14 @@ fn evaluate(f: Fixture) -> Report {
         .find(|e| serial.as_ref() == Some(&e.serial))
         .map_or(0, |e| e.device_port);
     let mut diagnostics = Vec::new();
-    let bind_ok = f.host_bind.address == "127.0.0.1"
-        || f.host_bind.address == "localhost"
-        || f.host_bind.address == "::1";
+    let bind_ok = f.host_bind.address == "127.0.0.1" || f.host_bind.address == "::1";
     if !bind_ok {
         diagnostics.push(format!("host bind {} is not loopback", f.host_bind.address));
     }
     let selection_ok = match selected {
-        Some(d) if d.authorized && d.state == "device" && !d.emulator => true,
+        Some(d) if d.authorized && d.state == "device" && !d.emulator && d.transport == "usb" => {
+            true
+        }
         Some(d) => {
             diagnostics.push(format!(
                 "selected device {} is {} (authorized={}, emulator={})",
