@@ -207,10 +207,7 @@ fn partial_evidence_is_preserved_when_rate_limits_require_authentication() {
         report["capabilities"]["account/rateLimits/read"],
         "authentication_required"
     );
-    assert_eq!(
-        report["capabilities"]["account/usage/read"],
-        "not_attempted"
-    );
+    assert_eq!(report["capabilities"]["account/usage/read"], "unsupported");
 }
 
 #[test]
@@ -285,4 +282,24 @@ fn process_exit_reconnects_once_and_repeats_the_protocol_handshake() {
     );
     let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
     assert_eq!(report["outcome"], "success");
+}
+
+#[test]
+fn remaining_only_window_is_normalized_without_fabricating_a_success_state() {
+    let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
+        .args([
+            "codex",
+            "collect",
+            "--fixture",
+            "tests/fixtures/codex/remaining-only.jsonl",
+        ])
+        .output()
+        .expect("run AgentMeter P0 CLI");
+
+    assert!(output.status.success());
+    let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
+    let window = &report["observation"]["quota_windows"][0];
+    assert_eq!(window["remaining_percent"], 64);
+    assert_eq!(window["used_percent"], 36);
+    assert_eq!(window["over_limit"], false);
 }

@@ -142,9 +142,6 @@ fn collect_live_once(
             3,
             receive(&receiver, 3, "account/rateLimits/read", timeout)?,
         );
-        if responses[&3].get("error").is_some() {
-            return Ok(responses);
-        }
 
         send(
             &mut stdin,
@@ -440,10 +437,23 @@ fn append_window(
     let Some(window) = snapshot.get(window_name).filter(|value| !value.is_null()) else {
         return Ok(());
     };
-    let used_percent = window
-        .get("usedPercent")
-        .and_then(Value::as_i64)
-        .ok_or_else(|| format!("schema_changed: {window_name}.usedPercent is missing"))?;
+    let used_percent = window.get("usedPercent").and_then(Value::as_i64);
+    let remaining_percent = window.get("remainingPercent").and_then(Value::as_i64);
+    let used_percent = match (used_percent, remaining_percent) {
+        (Some(used), Some(remaining)) if used >= 0 && remaining == (100 - used).max(0) => used,
+        (Some(used), None) if used >= 0 => used,
+        (None, Some(remaining)) if (0..=100).contains(&remaining) => 100 - remaining,
+        (Some(_), Some(_)) => {
+            return Err(format!(
+                "schema_changed: {window_name}.usedPercent and remainingPercent disagree"
+            ));
+        }
+        (Some(_), None) | (None, Some(_)) | (None, None) => {
+            return Err(format!(
+                "schema_changed: {window_name} percentage is invalid or missing"
+            ));
+        }
+    };
     if used_percent < 0 {
         return Err(format!(
             "schema_changed: {window_name}.usedPercent cannot be negative"
