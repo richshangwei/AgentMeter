@@ -1,0 +1,4 @@
+{"id":1,"result":{"userAgent":"codex_cli_rs/0.151.0-alpha.7.1"}}
+{"id":2,"result":{"account":{"type":"chatgpt","email":"developer@example.invalid","planType":"plus"},"requiresOpenaiAuth":true}}
+{"id":3,"result":{"rateLimits":{"limitId":"codex","limitName":"Codex","planType":"plus","primary":{"usedPercent":17,"windowDurationMins":300,"resetsAt":1788739200},"secondary":{"usedPercent":42,"windowDurationMins":10080,"resetsAt":1789344000},"credits":{"hasCredits":true,"unlimited":false,"balance":"12.50"}},"rateLimitsByLimitId":null}}
+{"id":4,"error":{"code":-32601,"message":"Method not found: account/usage/read"}}
