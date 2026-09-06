@@ -1,0 +1,1 @@
+{"schema_version":"antigravity.statusline.v1","version":"1.8.2","statusLine":{"account":{"kind":"google"},"quota":[{"window":"daily","scope":"account","unit":"requests"}]}}

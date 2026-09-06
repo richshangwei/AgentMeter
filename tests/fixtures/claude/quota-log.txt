@@ -1,0 +1,1 @@
+Quota: 42% remaining, resets 2026-09-06T05:00:00Z

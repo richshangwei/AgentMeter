@@ -4,7 +4,7 @@
 
 **Blocked by:** None.
 
-**Status:** ready-for-agent
+**Status:** needs-info
 
 - [ ] Structured statusLine data is captured from a real authenticated installation and mapped to a normalized Observation with provenance.
 - [ ] The experiment establishes whether reported quota windows, limits, usage or remaining values, resets, units, and account scope can be identified unambiguously.
@@ -14,3 +14,7 @@
 - [ ] Sanitized structured and text fixtures reproduce normalization and failure handling without requiring a live account.
 - [ ] Evidence records tested versions, source precedence, representative fields or output, test time, limitations, and reproducible steps.
 - [ ] The outcome states whether Antigravity is supported, constrained, or blocked for v1 and whether the fallback is permitted in a release build.
+
+## Comments
+
+- 2026-09-06: Implemented an isolated structured `statusLine` and version-bounded headless text experiment with sanitized fixtures, source precedence, unknown-field preservation, and schema/text diagnostics. Status remains `needs-info` pending a real authenticated Antigravity installation/version run and release decision for the experimental fallback.
