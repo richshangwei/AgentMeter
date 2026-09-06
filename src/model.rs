@@ -1,6 +1,58 @@
 use std::collections::BTreeMap;
 
 use serde::Serialize;
+use serde_json::Value;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
+pub enum DataQuality {
+    Official,
+    LocalObserved,
+    Estimated,
+    Manual,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
+pub enum CollectorMaturity {
+    Stable,
+    Experimental,
+    Unsupported,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
+pub enum Availability {
+    Available,
+    NotInstalled,
+    SetupRequired,
+    NeedsLogin,
+    Unsupported,
+    PermissionDenied,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
+pub enum CollectionState {
+    Idle,
+    Collecting,
+    Ready,
+    BackingOff,
+    Error,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+#[allow(dead_code)]
+pub enum Freshness {
+    Unknown,
+    Fresh,
+    Stale,
+}
 
 #[derive(Debug, Serialize)]
 pub struct CollectionReport {
@@ -18,11 +70,13 @@ pub struct Observation {
     pub provider_account: ProviderAccount,
     pub source: Source,
     pub quota_windows: Vec<QuotaWindow>,
-    pub data_quality: &'static str,
-    pub collector_maturity: &'static str,
-    pub availability: &'static str,
-    pub collection_state: &'static str,
-    pub freshness: &'static str,
+    pub credits: Vec<CreditsSnapshot>,
+    pub source_usage: Option<Value>,
+    pub data_quality: DataQuality,
+    pub collector_maturity: CollectorMaturity,
+    pub availability: Availability,
+    pub collection_state: CollectionState,
+    pub freshness: Freshness,
     pub source_timestamp: Option<i64>,
     pub collected_at_unix_ms: u128,
 }
@@ -38,6 +92,8 @@ pub struct ProviderAccount {
 pub struct Source {
     pub kind: &'static str,
     pub version: Option<String>,
+    pub mode: &'static str,
+    pub replay: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -45,10 +101,21 @@ pub struct QuotaWindow {
     pub limit_id: Option<String>,
     pub limit_name: Option<String>,
     pub window: &'static str,
+    pub scope: &'static str,
     pub used_percent: i64,
     pub remaining_percent: i64,
+    pub over_limit: bool,
     pub window_duration_mins: Option<i64>,
     pub resets_at: Option<i64>,
+    pub unit: &'static str,
+}
+
+#[derive(Debug, Serialize)]
+pub struct CreditsSnapshot {
+    pub limit_id: Option<String>,
+    pub has_credits: bool,
+    pub unlimited: bool,
+    pub balance: Option<String>,
     pub unit: &'static str,
 }
 
@@ -81,7 +148,9 @@ impl FailureReport {
             ("method_unsupported", "unsupported")
         } else if error.starts_with("timeout:") {
             ("timeout", "available")
-        } else if error.starts_with("schema_changed:") || error.starts_with("malformed_response") {
+        } else if error.starts_with("malformed_response") {
+            ("malformed_response", "available")
+        } else if error.starts_with("schema_changed:") {
             ("schema_changed", "available")
         } else if error.starts_with("process_exited:") {
             ("process_exited", "available")

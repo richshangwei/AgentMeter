@@ -10,8 +10,23 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use serde_json::Value;
 
 use crate::model::{
-    CollectionReport, Diagnostic, FailureReport, Observation, ProviderAccount, QuotaWindow, Source,
+    Availability, CollectionReport, CollectionState, CollectorMaturity, CreditsSnapshot,
+    DataQuality, Diagnostic, FailureReport, Freshness, Observation, ProviderAccount, QuotaWindow,
+    Source,
 };
+
+#[derive(Clone, Copy)]
+enum CollectionMode {
+    Fixture,
+    Live,
+}
+
+#[derive(Clone, Copy)]
+enum ErrorKind {
+    Authentication,
+    MethodUnsupported,
+    Other,
+}
 
 pub fn collect_fixture(path: &Path) -> Result<CollectionReport, Box<FailureReport>> {
     let file = File::open(path).map_err(|error| format!("fixture_unavailable: {error}"))?;
@@ -30,10 +45,23 @@ pub fn collect_fixture(path: &Path) -> Result<CollectionReport, Box<FailureRepor
         responses.insert(id, value);
     }
 
-    finish(responses)
+    normalize_with_failure_evidence(responses, CollectionMode::Fixture)
 }
 
 pub fn collect_live(
+    codex_bin: &Path,
+    timeout: Duration,
+) -> Result<CollectionReport, Box<FailureReport>> {
+    match collect_live_once(codex_bin, timeout) {
+        Ok(report) => Ok(report),
+        Err(first) if first.failure_code == "process_exited" => {
+            collect_live_once(codex_bin, timeout)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+fn collect_live_once(
     codex_bin: &Path,
     timeout: Duration,
 ) -> Result<CollectionReport, Box<FailureReport>> {
@@ -133,7 +161,7 @@ pub fn collect_live(
     drop(stdin);
     let _ = child.kill();
     let _ = child.wait();
-    finish(result.map_err(FailureReport::from)?)
+    normalize_with_failure_evidence(result.map_err(FailureReport::from)?, CollectionMode::Live)
 }
 
 fn send(stdin: &mut impl Write, message: Value) -> Result<(), String> {
@@ -173,11 +201,17 @@ fn receive(
     }
 }
 
-fn finish(responses: BTreeMap<i64, Value>) -> Result<CollectionReport, Box<FailureReport>> {
-    normalize(&responses).map_err(|error| Box::new(failure_with_evidence(error, &responses)))
+fn normalize_with_failure_evidence(
+    responses: BTreeMap<i64, Value>,
+    mode: CollectionMode,
+) -> Result<CollectionReport, Box<FailureReport>> {
+    normalize(&responses, mode).map_err(|error| Box::new(failure_with_evidence(error, &responses)))
 }
 
-fn normalize(responses: &BTreeMap<i64, Value>) -> Result<CollectionReport, String> {
+fn normalize(
+    responses: &BTreeMap<i64, Value>,
+    mode: CollectionMode,
+) -> Result<CollectionReport, String> {
     let initialize = result(responses, 1, "initialize")?;
     let account = result(responses, 2, "account/read")?;
     let rate_limits = result(responses, 3, "account/rateLimits/read")?;
@@ -223,6 +257,7 @@ fn normalize(responses: &BTreeMap<i64, Value>) -> Result<CollectionReport, Strin
         .map(mask_email);
 
     let mut quota_windows = Vec::new();
+    let mut credits = Vec::new();
     match rate_limits
         .get("rateLimitsByLimitId")
         .and_then(Value::as_object)
@@ -232,6 +267,7 @@ fn normalize(responses: &BTreeMap<i64, Value>) -> Result<CollectionReport, Strin
             for snapshot in snapshots.values() {
                 append_window(&mut quota_windows, snapshot, "primary")?;
                 append_window(&mut quota_windows, snapshot, "secondary")?;
+                append_credits(&mut credits, snapshot)?;
             }
         }
         None => {
@@ -240,8 +276,18 @@ fn normalize(responses: &BTreeMap<i64, Value>) -> Result<CollectionReport, Strin
                 .ok_or_else(|| "schema_changed: rateLimits is missing".to_owned())?;
             append_window(&mut quota_windows, snapshot, "primary")?;
             append_window(&mut quota_windows, snapshot, "secondary")?;
+            append_credits(&mut credits, snapshot)?;
         }
     }
+    let source_usage = responses
+        .get(&4)
+        .and_then(|response| response.get("result"))
+        .cloned();
+    let source_timestamp = source_usage
+        .as_ref()
+        .and_then(|usage| usage.get("sourceTimestamp"))
+        .and_then(Value::as_i64)
+        .or_else(|| rate_limits.get("sourceTimestamp").and_then(Value::as_i64));
 
     Ok(CollectionReport {
         schema_version: "agentmeter.p0.collection-report.v1",
@@ -258,14 +304,27 @@ fn normalize(responses: &BTreeMap<i64, Value>) -> Result<CollectionReport, Strin
             source: Source {
                 kind: "app_server",
                 version: app_server_version,
+                mode: match mode {
+                    CollectionMode::Fixture => "fixture_replay",
+                    CollectionMode::Live => "live",
+                },
+                replay: matches!(mode, CollectionMode::Fixture),
             },
             quota_windows,
-            data_quality: "official",
-            collector_maturity: "experimental",
-            availability: "available",
-            collection_state: "ready",
-            freshness: "fresh",
-            source_timestamp: None,
+            credits,
+            source_usage,
+            data_quality: match mode {
+                CollectionMode::Fixture => DataQuality::LocalObserved,
+                CollectionMode::Live => DataQuality::Official,
+            },
+            collector_maturity: CollectorMaturity::Experimental,
+            availability: Availability::Available,
+            collection_state: CollectionState::Ready,
+            freshness: match mode {
+                CollectionMode::Fixture => Freshness::Unknown,
+                CollectionMode::Live => Freshness::Fresh,
+            },
+            source_timestamp,
             collected_at_unix_ms: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_err(|error| format!("clock_error: {error}"))?
@@ -321,8 +380,16 @@ fn capability_status(response: Option<&Value>) -> String {
     let Some(error) = response.get("error") else {
         return "schema_changed".to_owned();
     };
+    match classify_error(error) {
+        ErrorKind::MethodUnsupported => "unsupported".to_owned(),
+        ErrorKind::Authentication => "authentication_required".to_owned(),
+        ErrorKind::Other => "error".to_owned(),
+    }
+}
+
+fn classify_error(error: &Value) -> ErrorKind {
     if error.get("code").and_then(Value::as_i64) == Some(-32601) {
-        return "unsupported".to_owned();
+        return ErrorKind::MethodUnsupported;
     }
     let message = error
         .get("message")
@@ -330,9 +397,9 @@ fn capability_status(response: Option<&Value>) -> String {
         .unwrap_or_default()
         .to_ascii_lowercase();
     if message.contains("auth") || message.contains("login") {
-        "authentication_required".to_owned()
+        ErrorKind::Authentication
     } else {
-        "error".to_owned()
+        ErrorKind::Other
     }
 }
 
@@ -345,18 +412,18 @@ fn result<'a>(
         .get(&id)
         .ok_or_else(|| format!("timeout: no response for {method}"))?;
     if let Some(error) = response.get("error") {
-        let code = error.get("code").and_then(Value::as_i64);
         let message = error
             .get("message")
             .and_then(Value::as_str)
             .unwrap_or("unknown app-server error");
-        if message.to_ascii_lowercase().contains("auth")
-            || message.to_ascii_lowercase().contains("login")
-        {
-            return Err(format!("authentication_failed: {method}: {message}"));
-        }
-        if code == Some(-32601) {
-            return Err(format!("method_unsupported: {method}: {message}"));
+        match classify_error(error) {
+            ErrorKind::Authentication => {
+                return Err(format!("authentication_failed: {method}: {message}"));
+            }
+            ErrorKind::MethodUnsupported => {
+                return Err(format!("method_unsupported: {method}: {message}"));
+            }
+            ErrorKind::Other => {}
         }
         return Err(format!("request_failed for {method}: {error}"));
     }
@@ -377,9 +444,9 @@ fn append_window(
         .get("usedPercent")
         .and_then(Value::as_i64)
         .ok_or_else(|| format!("schema_changed: {window_name}.usedPercent is missing"))?;
-    if !(0..=100).contains(&used_percent) {
+    if used_percent < 0 {
         return Err(format!(
-            "schema_changed: {window_name}.usedPercent is outside 0..=100"
+            "schema_changed: {window_name}.usedPercent cannot be negative"
         ));
     }
 
@@ -387,11 +454,40 @@ fn append_window(
         limit_id: optional_string(snapshot, "limitId"),
         limit_name: optional_string(snapshot, "limitName"),
         window: window_name,
+        scope: "provider_account",
         used_percent,
-        remaining_percent: 100 - used_percent,
+        remaining_percent: (100 - used_percent).max(0),
+        over_limit: used_percent > 100,
         window_duration_mins: optional_i64(window, "windowDurationMins"),
         resets_at: optional_i64(window, "resetsAt"),
         unit: "percent",
+    });
+    Ok(())
+}
+
+fn append_credits(credits: &mut Vec<CreditsSnapshot>, snapshot: &Value) -> Result<(), String> {
+    let Some(value) = snapshot.get("credits").filter(|value| !value.is_null()) else {
+        return Ok(());
+    };
+    let has_credits = value
+        .get("hasCredits")
+        .and_then(Value::as_bool)
+        .ok_or_else(|| "schema_changed: credits.hasCredits is missing".to_owned())?;
+    let unlimited = value
+        .get("unlimited")
+        .and_then(Value::as_bool)
+        .ok_or_else(|| "schema_changed: credits.unlimited is missing".to_owned())?;
+    let balance = value
+        .get("balance")
+        .filter(|value| !value.is_null())
+        .and_then(Value::as_str)
+        .map(ToOwned::to_owned);
+    credits.push(CreditsSnapshot {
+        limit_id: optional_string(snapshot, "limitId"),
+        has_credits,
+        unlimited,
+        balance,
+        unit: "credits",
     });
     Ok(())
 }

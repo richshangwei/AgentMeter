@@ -28,11 +28,13 @@ fn fixture_collection_reports_trusted_codex_observation() {
     assert_eq!(report["outcome"], "success");
     assert_eq!(report["observation"]["provider"], "codex");
     assert_eq!(report["observation"]["provider_account"]["kind"], "chatgpt");
-    assert_eq!(report["observation"]["data_quality"], "official");
+    assert_eq!(report["observation"]["source"]["mode"], "fixture_replay");
+    assert_eq!(report["observation"]["source"]["replay"], true);
+    assert_eq!(report["observation"]["data_quality"], "local_observed");
     assert_eq!(report["observation"]["collector_maturity"], "experimental");
     assert_eq!(report["observation"]["availability"], "available");
     assert_eq!(report["observation"]["collection_state"], "ready");
-    assert_eq!(report["observation"]["freshness"], "fresh");
+    assert_eq!(report["observation"]["freshness"], "unknown");
     assert_eq!(
         report["observation"]["quota_windows"][0]["used_percent"],
         17
@@ -109,7 +111,7 @@ fn subprocess_collection_performs_handshake_and_matches_responses_by_id() {
 fn subprocess_failures_remain_distinct_and_never_emit_an_observation() {
     for (mode, expected_code) in [
         ("exit", "process_exited"),
-        ("malformed", "schema_changed"),
+        ("malformed", "malformed_response"),
         ("timeout", "timeout"),
     ] {
         let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
@@ -209,4 +211,78 @@ fn partial_evidence_is_preserved_when_rate_limits_require_authentication() {
         report["capabilities"]["account/usage/read"],
         "not_attempted"
     );
+}
+
+#[test]
+fn over_limit_usage_preserves_raw_percent_and_floors_remaining_at_zero() {
+    let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
+        .args([
+            "codex",
+            "collect",
+            "--fixture",
+            "tests/fixtures/codex/over-limit.jsonl",
+        ])
+        .output()
+        .expect("run AgentMeter P0 CLI");
+
+    assert!(output.status.success());
+    let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
+    let window = &report["observation"]["quota_windows"][0];
+    assert_eq!(window["used_percent"], 135);
+    assert_eq!(window["remaining_percent"], 0);
+    assert_eq!(window["over_limit"], true);
+}
+
+#[test]
+fn successful_usage_and_credits_are_preserved_with_account_scope_and_source_time() {
+    let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
+        .args([
+            "codex",
+            "collect",
+            "--fixture",
+            "tests/fixtures/codex/usage-success.jsonl",
+        ])
+        .output()
+        .expect("run AgentMeter P0 CLI");
+
+    assert!(output.status.success());
+    let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
+    let observation = &report["observation"];
+    assert_eq!(observation["quota_windows"][0]["scope"], "provider_account");
+    assert_eq!(observation["credits"][0]["balance"], "12.50");
+    assert_eq!(observation["credits"][0]["unit"], "credits");
+    assert_eq!(observation["source_timestamp"], 1788739100_i64);
+    assert_eq!(observation["source_usage"]["usage"]["inputTokens"], 1234);
+    assert_eq!(report["capabilities"]["account/usage/read"], "supported");
+}
+
+#[test]
+fn process_exit_reconnects_once_and_repeats_the_protocol_handshake() {
+    let marker = std::env::temp_dir().join(format!(
+        "agentmeter-reconnect-{}.marker",
+        std::process::id()
+    ));
+    let _ = std::fs::remove_file(&marker);
+    let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
+        .env("AGENTMETER_FAKE_MODE", "exit_once")
+        .env("AGENTMETER_FAKE_MARKER", &marker)
+        .args([
+            "codex",
+            "collect",
+            "--codex-bin",
+            env!("CARGO_BIN_EXE_fake-codex-app-server"),
+            "--timeout-ms",
+            "1000",
+        ])
+        .output()
+        .expect("run AgentMeter P0 CLI");
+    let _ = std::fs::remove_file(marker);
+
+    assert!(
+        output.status.success(),
+        "stdout: {}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
+    assert_eq!(report["outcome"], "success");
 }

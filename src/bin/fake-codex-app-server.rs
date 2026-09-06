@@ -14,6 +14,13 @@ fn main() {
             std::thread::sleep(std::time::Duration::from_secs(1));
             return;
         }
+        "exit_once" => {
+            let marker = std::env::var("AGENTMETER_FAKE_MARKER").expect("fake marker path");
+            if !std::path::Path::new(&marker).exists() {
+                std::fs::write(marker, b"first attempt exited").expect("write fake marker");
+                return;
+            }
+        }
         _ => {}
     }
 
