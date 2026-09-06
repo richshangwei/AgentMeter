@@ -1,0 +1,3 @@
+# Rely on Windows protection for local data
+
+AgentMeter v1 does not add full SQLite encryption: local usage data relies on the Windows user boundary and device disk protection, stable Provider identifiers are stored as keyed hashes, and Device Pair verifiers or other secrets are protected with DPAPI. The application sends no default telemetry, automatic crash reports, or background update checks. Diagnostic data leaves the machine only through an explicit, previewed, redacted export; that export excludes the raw database, credentials, pair material, conversation content, and full personal paths.

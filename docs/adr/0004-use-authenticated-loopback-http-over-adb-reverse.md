@@ -1,0 +1,3 @@
+# Use authenticated loopback HTTP over ADB reverse
+
+AgentMeter serves the tablet over loopback HTTP carried through an ADB reverse mapping, with high-entropy authentication required for every private endpoint. Loopback binding prevents LAN exposure but is not described as end-to-end encryption; Host and Origin checks are defense in depth rather than identity, and a future requirement for transport confidentiality must introduce HTTPS or a native tablet client. The server runs only while the tablet feature is enabled; disabling it, clearing the pair, or exiting revokes sessions and closes SSE before the owned mapping and listener are removed.

@@ -1,0 +1,3 @@
+# Separate durable Device Pairs from Tablet Sessions
+
+AgentMeter uses a durable Device Pair for user-approved tablet identity and derives short-lived, rotating Tablet Sessions for API access. Pairing begins only after the desktop selects an ADB serial: the desktop displays an eight-digit single-use code valid for two minutes, opens a landing page whose URL contains no secret, and allows five attempts before a new code is required. Success stores an HttpOnly Device Pair cookie and invalidates the code. This preserves automatic recovery after normal restarts and USB reconnections while allowing active sessions to be revoked on mapping changes, device switches, account switches, explicit revocation, or pairing-data removal.

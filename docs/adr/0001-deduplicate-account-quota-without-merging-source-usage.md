@@ -1,0 +1,3 @@
+# Deduplicate account quota without merging source usage
+
+AgentMeter distinguishes a Provider Account from each local Source that observes it. Quota Window Observations from multiple Sources are deduplicated by Provider Account and provider bucket identity, while locally observed usage retains its Source scope; this prevents double-counting shared account quota without implying that one local Source observed activity from another environment. Cross-Source deduplication requires a stable Provider identity or a reversible user-confirmed Account Link—paths, display names, and the current number of accounts are never sufficient.
