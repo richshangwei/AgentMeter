@@ -1,0 +1,15 @@
+{
+  "events": [
+    "startup-enable",
+    "startup-disable",
+    "startup-launch-hidden",
+    "launch",
+    "close-window",
+    "tray-show",
+    "recreate-tray",
+    "launch",
+    "abnormal-termination",
+    "restart",
+    "tray-exit"
+  ]
+}

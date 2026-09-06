@@ -4,7 +4,7 @@
 
 **Blocked by:** None.
 
-**Status:** ready-for-agent
+**Status:** needs-info
 
 - [ ] The host service binds only to loopback and exposes a minimal authenticated health response without listening on LAN interfaces.
 - [ ] Setup selects an explicit device serial and installs reverse forwarding with no-rebind protection so another mapping is not silently replaced.
@@ -14,3 +14,7 @@
 - [ ] Unplug, replug, ADB restart, host restart, tablet sleep, and stale mapping scenarios are exercised with a documented recovery path.
 - [ ] Teardown removes only the intended mapping and does not affect unrelated devices or reverse-forward entries.
 - [ ] The outcome states whether selected-device USB transport is supported, constrained, or blocked for v1 and identifies any required operator step.
+
+## Comments
+
+2026-09-06: Added the isolated `agentmeter-usb-p0` fixture-driven experiment, tests, and evidence. The modeled protocol is supported when an explicitly selected authorized physical serial has a loopback host bind, owned no-rebind reverse mapping, and authenticated health response. Real-device validation is `needs-info` because this environment has no authorized Android device; an operator must rerun with a selected serial and capture ADB/device evidence before v1 publication.
