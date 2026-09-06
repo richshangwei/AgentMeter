@@ -1,0 +1,4 @@
+{"id":1,"result":{"userAgent":"codex_cli_rs/future-fixture"}}
+{"id":2,"result":{"account":{"type":"chatgpt","email":"developer@example.invalid","planType":"plus"},"requiresOpenaiAuth":true}}
+{"id":3,"result":{"rateLimits":{"limitId":"codex","primary":{},"secondary":null,"credits":null},"rateLimitsByLimitId":null}}
+{"id":4,"error":{"code":-32601,"message":"Method not found: account/usage/read"}}

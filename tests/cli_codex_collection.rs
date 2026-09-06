@@ -3,7 +3,7 @@ use std::process::Command;
 use serde_json::Value;
 
 #[test]
-fn fixture_collection_reports_trusted_codex_observation() {
+fn fixture_collection_normalizes_observation_without_live_provider_claims() {
     let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
         .args([
             "codex",
@@ -228,6 +228,7 @@ fn over_limit_usage_preserves_raw_percent_and_floors_remaining_at_zero() {
     assert_eq!(window["used_percent"], 135);
     assert_eq!(window["remaining_percent"], 0);
     assert_eq!(window["over_limit"], true);
+    assert_eq!(window["raw_remaining_percent"], -35);
 }
 
 #[test]
@@ -245,7 +246,7 @@ fn successful_usage_and_credits_are_preserved_with_account_scope_and_source_time
     assert!(output.status.success());
     let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
     let observation = &report["observation"];
-    assert_eq!(observation["quota_windows"][0]["scope"], "provider_account");
+    assert_eq!(observation["quota_windows"][0]["scope"], "workspace");
     assert_eq!(observation["credits"][0]["balance"], "12.50");
     assert_eq!(observation["credits"][0]["unit"], "credits");
     assert_eq!(observation["source_timestamp"], 1788739100_i64);
@@ -302,4 +303,44 @@ fn remaining_only_window_is_normalized_without_fabricating_a_success_state() {
     assert_eq!(window["remaining_percent"], 64);
     assert_eq!(window["used_percent"], 36);
     assert_eq!(window["over_limit"], false);
+}
+
+#[test]
+fn missing_both_percentages_remain_unknown_inside_a_partial_observation() {
+    let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
+        .args([
+            "codex",
+            "collect",
+            "--fixture",
+            "tests/fixtures/codex/empty-window.jsonl",
+        ])
+        .output()
+        .expect("run AgentMeter P0 CLI");
+    assert!(output.status.success());
+    let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
+    assert_eq!(
+        report["observation"]["quota_windows"][0]["used_percent"],
+        Value::Null
+    );
+    assert_eq!(
+        report["observation"]["quota_windows"][0]["remaining_percent"],
+        Value::Null
+    );
+}
+
+#[test]
+fn unknown_account_type_is_a_schema_failure() {
+    let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
+        .args([
+            "codex",
+            "collect",
+            "--fixture",
+            "tests/fixtures/codex/unknown-account.jsonl",
+        ])
+        .output()
+        .expect("run AgentMeter P0 CLI");
+    assert!(!output.status.success());
+    let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
+    assert_eq!(report["failure_code"], "schema_changed");
+    assert_eq!(report["observation"], Value::Null);
 }

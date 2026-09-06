@@ -1,4 +1,4 @@
 {"id":1,"result":{"userAgent":"codex_cli_rs/future-fixture"}}
 {"id":2,"result":{"account":{"type":"chatgpt","email":"developer@example.invalid","planType":"plus"},"requiresOpenaiAuth":true}}
-{"id":3,"result":{"rateLimits":{"limitId":"codex","limitName":"Codex","planType":"plus","primary":{"usedPercent":17,"windowDurationMins":300,"resetsAt":1788739200},"secondary":null,"credits":{"hasCredits":true,"unlimited":false,"balance":"12.50"}},"rateLimitsByLimitId":null}}
+{"id":3,"result":{"rateLimits":{"limitId":"codex","limitName":"Codex","planType":"plus","scope":"workspace","primary":{"usedPercent":17,"windowDurationMins":300,"resetsAt":1788739200},"secondary":null,"credits":{"hasCredits":true,"unlimited":false,"balance":"12.50"}},"rateLimitsByLimitId":null}}
 {"id":4,"result":{"usage":{"inputTokens":1234,"outputTokens":456,"unit":"tokens","scope":"provider_account"},"sourceTimestamp":1788739100}}

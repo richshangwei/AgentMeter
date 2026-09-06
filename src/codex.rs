@@ -93,6 +93,7 @@ fn collect_live_once(
                 break;
             }
         }
+        let _ = sender.send(Err("process_exited: app-server stdout closed".to_owned()));
     });
 
     let result: Result<BTreeMap<i64, Value>, String> = (|| {
@@ -242,7 +243,7 @@ fn normalize(
     let account_kind = account_value
         .get("type")
         .and_then(Value::as_str)
-        .unwrap_or("unknown")
+        .ok_or_else(|| "schema_changed: account.type is missing or invalid".to_owned())?
         .to_owned();
     let plan_type = account_value
         .get("planType")
@@ -439,35 +440,38 @@ fn append_window(
     };
     let used_percent = window.get("usedPercent").and_then(Value::as_i64);
     let remaining_percent = window.get("remainingPercent").and_then(Value::as_i64);
-    let used_percent = match (used_percent, remaining_percent) {
-        (Some(used), Some(remaining)) if used >= 0 && remaining == (100 - used).max(0) => used,
-        (Some(used), None) if used >= 0 => used,
-        (None, Some(remaining)) if (0..=100).contains(&remaining) => 100 - remaining,
-        (Some(_), Some(_)) => {
-            return Err(format!(
-                "schema_changed: {window_name}.usedPercent and remainingPercent disagree"
-            ));
-        }
-        (Some(_), None) | (None, Some(_)) | (None, None) => {
-            return Err(format!(
-                "schema_changed: {window_name} percentage is invalid or missing"
-            ));
-        }
-    };
-    if used_percent < 0 {
-        return Err(format!(
-            "schema_changed: {window_name}.usedPercent cannot be negative"
-        ));
-    }
-
+    let (used_percent, display_remaining_percent, raw_remaining_percent) =
+        match (used_percent, remaining_percent) {
+            (Some(used), Some(remaining)) if used >= 0 && remaining == 100 - used => {
+                (Some(used), Some(remaining.max(0)), Some(remaining))
+            }
+            (Some(used), None) if used >= 0 => (Some(used), Some((100 - used).max(0)), None),
+            (None, Some(remaining)) if (0..=100).contains(&remaining) => {
+                (Some(100 - remaining), Some(remaining), Some(remaining))
+            }
+            (None, None) => (None, None, None),
+            (Some(_), Some(_)) => {
+                return Err(format!(
+                    "schema_changed: {window_name}.usedPercent and remainingPercent disagree"
+                ));
+            }
+            (Some(_), None) | (None, Some(_)) => {
+                return Err(format!(
+                    "schema_changed: {window_name} percentage is invalid or missing"
+                ));
+            }
+        };
     windows.push(QuotaWindow {
         limit_id: optional_string(snapshot, "limitId"),
         limit_name: optional_string(snapshot, "limitName"),
         window: window_name,
-        scope: "provider_account",
+        scope: optional_string(window, "scope")
+            .or_else(|| optional_string(snapshot, "scope"))
+            .unwrap_or_else(|| "provider_account".to_owned()),
         used_percent,
-        remaining_percent: (100 - used_percent).max(0),
-        over_limit: used_percent > 100,
+        remaining_percent: display_remaining_percent,
+        raw_remaining_percent,
+        over_limit: used_percent.is_some_and(|used| used > 100),
         window_duration_mins: optional_i64(window, "windowDurationMins"),
         resets_at: optional_i64(window, "resetsAt"),
         unit: "percent",

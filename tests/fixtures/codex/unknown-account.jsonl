@@ -1,0 +1,3 @@
+{"id":1,"result":{"userAgent":"codex_cli_rs/future-fixture"}}
+{"id":2,"result":{"account":{"email":"developer@example.invalid","planType":"plus"},"requiresOpenaiAuth":true}}
+{"id":3,"result":{"rateLimits":{"limitId":"codex","primary":{"usedPercent":10},"secondary":null,"credits":null},"rateLimitsByLimitId":null}}
