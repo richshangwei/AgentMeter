@@ -1,0 +1,12 @@
+{
+  "host_bind": {"address": "127.0.0.1", "port": 43111},
+  "selected_serial": "USB-LOCKED",
+  "devices": [
+    {"serial": "USB-LOCKED", "state": "unauthorized", "transport": "usb", "emulator": false, "authorized": false}
+  ],
+  "reverse_entries": [],
+  "reverse_no_rebind": true,
+  "probe": {"browser_launched": false, "authenticated_health": false},
+  "events": [],
+  "teardown": {"serial": "USB-LOCKED", "device_port": 0, "host_port": 43111, "unrelated_entries_preserved": true}
+}

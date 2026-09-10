@@ -28,6 +28,7 @@ fn complete_snapshot_stream_and_refresh_are_supported() {
     ] {
         assert_eq!(r[key]["status"], "supported", "{key}");
     }
+    assert_eq!(r["measurements"]["status"], "not_observed");
 }
 
 #[test]

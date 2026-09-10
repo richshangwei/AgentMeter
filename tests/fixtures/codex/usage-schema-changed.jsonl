@@ -1,0 +1,4 @@
+{"id":1,"result":{"userAgent":"codex_cli_rs/usage-failure-fixture"}}
+{"id":2,"result":{"account":{"type":"chatgpt","planType":"plus"},"requiresOpenaiAuth":true}}
+{"id":3,"result":{"rateLimits":{"limitId":"codex","primary":{"usedPercent":17,"windowDurationMins":300,"resetsAt":1788739200},"secondary":null,"credits":{"hasCredits":false,"unlimited":false,"balance":null}},"rateLimitsByLimitId":null}}
+{"id":4,"result":"unexpected usage payload"}

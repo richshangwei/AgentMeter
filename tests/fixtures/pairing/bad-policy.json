@@ -1,0 +1,12 @@
+{
+  "allowed_origin": "http://127.0.0.1",
+  "code_digits": 6,
+  "code_ttl_seconds": 120,
+  "max_attempts": 5,
+  "elapsed_seconds_before_expired_attempt": 120,
+  "protected_routes": ["health", "snapshot", "refresh", "event-stream", "pairing-management", "future-monitor"],
+  "missing_auth_rejected_routes": ["health", "snapshot", "refresh", "event-stream", "pairing-management", "future-monitor"],
+  "invalid_auth_rejected_routes": ["snapshot", "refresh", "event-stream", "pairing-management", "future-monitor"],
+  "persisted_secret_protection": "not-observed",
+  "actions": ["expired_code", "pair_valid", "pair_replay", "session_valid", "missing_auth", "invalid_auth", "origin_bad", "csrf_bad", "pair_guess", "pair_guess", "pair_guess", "pair_guess", "pair_guess", "pair_guess_limit", "forget_account", "session_replay", "clear_pairing", "pair_after_reset", "reset_agentmeter"]
+}

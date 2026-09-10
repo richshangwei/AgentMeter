@@ -3,7 +3,8 @@
   "selected_serial": "USB-001",
   "devices": [{"serial": "USB-001", "state": "device", "transport": "usb", "emulator": false, "authorized": true}],
   "reverse_entries": [{"serial": "USB-001", "device_port": 43111, "host_port": 43111, "owner": "agentmeter"}],
+  "reverse_no_rebind": true,
   "probe": {"browser_launched": true, "authenticated_health": false},
   "events": [],
-  "teardown": {"serial": "USB-001", "device_port": 43111, "host_port": 43111}
+  "teardown": {"serial": "USB-001", "device_port": 43111, "host_port": 43111, "unrelated_entries_preserved": true}
 }

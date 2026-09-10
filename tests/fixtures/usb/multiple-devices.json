@@ -1,0 +1,18 @@
+{
+  "host_bind": {"address": "127.0.0.1", "port": 43111},
+  "selected_serial": "PHYSICAL-2",
+  "devices": [
+    {"serial": "EMULATOR-1", "state": "device", "transport": "usb", "emulator": true, "authorized": true},
+    {"serial": "TCP-1", "state": "device", "transport": "tcp", "emulator": false, "authorized": true},
+    {"serial": "OFFLINE-1", "state": "offline", "transport": "usb", "emulator": false, "authorized": true},
+    {"serial": "PHYSICAL-2", "state": "device", "transport": "usb", "emulator": false, "authorized": true}
+  ],
+  "reverse_entries": [
+    {"serial": "PHYSICAL-2", "device_port": 43222, "host_port": 43111, "owner": "agentmeter"},
+    {"serial": "EMULATOR-1", "device_port": 43222, "host_port": 43111, "owner": "other-app"}
+  ],
+  "reverse_no_rebind": true,
+  "probe": {"browser_launched": true, "authenticated_health": true},
+  "events": ["unplug", "replug", "adb_restart", "host_restart", "tablet_sleep", "stale_mapping"],
+  "teardown": {"serial": "PHYSICAL-2", "device_port": 43222, "host_port": 43111, "unrelated_entries_preserved": true}
+}

@@ -19,6 +19,10 @@ struct Fixture {
     refresh: Refresh,
     #[serde(default = "yes")]
     monitor_only: bool,
+    #[serde(default)]
+    tablet_routes: Vec<String>,
+    #[serde(default)]
+    measurements: Option<Measurements>,
 }
 fn four() -> Vec<Provider> {
     vec![]
@@ -30,11 +34,27 @@ fn yes() -> bool {
 #[derive(Debug, Deserialize)]
 struct Provider {
     id: String,
-    state: String,
+    signals: Signals,
     #[serde(default)]
     source_usage: Vec<Usage>,
     #[serde(default)]
     account_id: Option<String>,
+    #[serde(default)]
+    quota_windows: Vec<QuotaWindow>,
+}
+#[derive(Debug, Deserialize)]
+struct Signals {
+    setup: String,
+    paused: bool,
+    availability: String,
+    collection: String,
+    freshness: String,
+    quality: String,
+    maturity: String,
+}
+#[derive(Debug, Deserialize)]
+struct QuotaWindow {
+    bucket: String,
 }
 #[derive(Debug, Deserialize)]
 struct Usage {
@@ -52,12 +72,20 @@ struct Snapshot {
     canonical_setup: String,
     #[serde(default)]
     provider_fields: Vec<String>,
+    #[serde(default)]
+    stream_id: String,
+    #[serde(default)]
+    generated_at: String,
 }
 #[derive(Debug, Deserialize)]
 struct Event {
     kind: String,
     #[serde(default)]
     revision: u64,
+    #[serde(default)]
+    stream_id: String,
+    #[serde(default)]
+    complete: bool,
 }
 #[derive(Debug, Deserialize, Default)]
 struct Reconnect {
@@ -67,6 +95,8 @@ struct Reconnect {
     latest_revision: u64,
     #[serde(default)]
     fetched_complete: bool,
+    #[serde(default)]
+    reasons: Vec<String>,
 }
 #[derive(Debug, Deserialize, Default)]
 struct Refresh {
@@ -78,8 +108,18 @@ struct Refresh {
 #[derive(Debug, Deserialize)]
 struct RefreshRequest {
     #[serde(rename = "provider")]
-    _provider: String,
+    provider: String,
     result: String,
+    #[serde(default)]
+    status_code: u16,
+    #[serde(default)]
+    latency_ms: u64,
+}
+#[derive(Debug, Deserialize)]
+struct Measurements {
+    delivery_latency_ms_p95: u64,
+    reconnect_ms: u64,
+    idle_memory_mb: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -93,6 +133,7 @@ struct Report {
     async_refresh: Check,
     failure_isolation: Check,
     monitor_boundary: Check,
+    measurements: Check,
     diagnostics: Vec<String>,
 }
 #[derive(Debug, Serialize)]
@@ -117,12 +158,24 @@ fn evaluate(f: Fixture) -> Report {
         && f.snapshot.revision > 0
         && f.snapshot.schema == "dashboard-snapshot/v1"
         && f.snapshot.canonical_setup == "canonical"
-        && f.snapshot.provider_fields.len() >= 7;
+        && !f.snapshot.stream_id.is_empty()
+        && !f.snapshot.generated_at.is_empty()
+        && [
+            "setup",
+            "paused",
+            "availability",
+            "collection",
+            "freshness",
+            "quality",
+            "maturity",
+        ]
+        .iter()
+        .all(|field| f.snapshot.provider_fields.iter().any(|seen| seen == field));
     if !complete {
         d.push("complete authenticated snapshot requires four providers, revision, schema, and canonical fields".into());
     }
 
-    let mut accounts = std::collections::HashMap::<&str, usize>::new();
+    let mut multi_source_dedup_seen = false;
     let scoped = f.providers.iter().all(|p| {
         let distinct = p
             .source_usage
@@ -131,15 +184,21 @@ fn evaluate(f: Fixture) -> Report {
             .collect::<std::collections::HashSet<_>>()
             .len()
             == p.source_usage.len();
-        if let Some(a) = p.account_id.as_deref() {
-            *accounts.entry(a).or_default() += 1;
+        let quota_keys = p
+            .quota_windows
+            .iter()
+            .map(|q| q.bucket.as_str())
+            .collect::<std::collections::HashSet<_>>();
+        if p.account_id.is_some() && p.source_usage.len() > 1 && p.quota_windows.len() == 1 {
+            multi_source_dedup_seen = true;
         }
         distinct
+            && quota_keys.len() == p.quota_windows.len()
             && p.source_usage
                 .iter()
                 .all(|u| u.used >= 0.0 && u.limit >= 0.0)
     });
-    let dedup = scoped && accounts.values().all(|n| *n == 1);
+    let dedup = scoped && multi_source_dedup_seen;
     if !dedup {
         d.push(
             "source-scoped usage or approved Provider Account deduplication is ambiguous".into(),
@@ -153,6 +212,9 @@ fn evaluate(f: Fixture) -> Report {
     for e in &f.events {
         if e.kind == "heartbeat" {
             heartbeat = true;
+            if e.revision != last || e.stream_id != f.snapshot.stream_id {
+                stale = true;
+            }
             continue;
         }
         if e.revision <= last {
@@ -160,7 +222,7 @@ fn evaluate(f: Fixture) -> Report {
         } else {
             last = e.revision;
         }
-        if e.kind != "snapshot" {
+        if e.kind != "snapshot" || !e.complete || e.stream_id != f.snapshot.stream_id {
             complete_events = false;
         }
     }
@@ -173,31 +235,53 @@ fn evaluate(f: Fixture) -> Report {
         d.push("SSE must identify complete snapshots by strictly increasing revision and heartbeat events".into());
     }
 
-    let recovered = !f.reconnect.disconnected
-        || (f.reconnect.fetched_complete && f.reconnect.latest_revision >= f.snapshot.revision);
+    let required_reconnects = [
+        "disconnect",
+        "tablet-sleep",
+        "host-restart",
+        "expired-session",
+        "missed-events",
+    ];
+    let recovered = (!f.reconnect.disconnected
+        || (f.reconnect.fetched_complete && f.reconnect.latest_revision >= f.snapshot.revision))
+        && required_reconnects
+            .iter()
+            .all(|reason| f.reconnect.reasons.iter().any(|seen| seen == reason));
     if !recovered {
         d.push("disconnect recovery must fetch the latest complete snapshot".into());
     }
 
-    let accepted = f
+    let accepted_providers = f
         .refresh
         .requests
         .iter()
-        .filter(|r| r.result == "accepted")
-        .count();
-    let coalesced = f.refresh.requests.iter().any(|r| r.result == "coalesced");
-    let throttled = f.refresh.requests.iter().any(|r| r.result == "throttled");
-    let outcomes_ok = f.refresh.outcomes.iter().all(|o| {
-        [
-            "slow",
-            "failed",
-            "paused",
-            "unsupported",
-            "schema_changed",
-            "completed",
-        ]
-        .contains(&o.as_str())
+        .filter(|r| r.result == "accepted" && r.status_code == 202 && r.latency_ms <= 300)
+        .map(|r| r.provider.as_str())
+        .collect::<std::collections::HashSet<_>>();
+    let accepted = accepted_providers.len();
+    let coalesced = accepted_providers.iter().any(|provider| {
+        f.refresh
+            .requests
+            .iter()
+            .any(|request| request.provider.as_str() == *provider && request.result == "coalesced")
     });
+    let throttled = accepted_providers.iter().any(|provider| {
+        f.refresh
+            .requests
+            .iter()
+            .any(|request| request.provider.as_str() == *provider && request.result == "throttled")
+    });
+    let required_outcomes = [
+        "slow",
+        "failed",
+        "paused",
+        "unsupported",
+        "schema_changed",
+        "completed",
+    ];
+    let outcomes_ok = required_outcomes
+        .iter()
+        .all(|outcome| f.refresh.outcomes.iter().any(|seen| seen == outcome));
     let refresh_ok = accepted > 0 && coalesced && throttled && outcomes_ok;
     if !refresh_ok {
         d.push("refresh must return promptly and demonstrate accepted, coalesced, throttled, and isolated outcomes".into());
@@ -205,23 +289,28 @@ fn evaluate(f: Fixture) -> Report {
 
     let isolation = f.providers.len() == 4
         && f.providers.iter().all(|p| {
-            [
-                "ready",
-                "paused",
-                "available",
-                "collecting",
-                "fresh",
-                "failed",
-                "unsupported",
-                "schema_changed",
-                "slow",
-            ]
-            .contains(&p.state.as_str())
-        });
+            !p.signals.setup.is_empty()
+                && !p.signals.availability.is_empty()
+                && !p.signals.collection.is_empty()
+                && !p.signals.freshness.is_empty()
+                && !p.signals.quality.is_empty()
+                && !p.signals.maturity.is_empty()
+                && (p.signals.paused || !p.signals.collection.is_empty())
+        })
+        && required_outcomes
+            .iter()
+            .all(|outcome| f.refresh.outcomes.iter().any(|seen| seen == outcome));
     if !isolation {
         d.push("provider failures and schema changes must remain independently visible".into());
     }
-    let boundary = f.monitor_only;
+    let allowed_routes = ["dashboard", "history", "events", "refresh"];
+    let boundary = f.monitor_only
+        && f.tablet_routes
+            .iter()
+            .all(|route| allowed_routes.contains(&route.as_str()))
+        && allowed_routes
+            .iter()
+            .all(|route| f.tablet_routes.iter().any(|seen| seen == route));
     if !boundary {
         d.push(
             "tablet surface must be monitor-only and expose no credential/config mutation".into(),
@@ -273,6 +362,16 @@ fn evaluate(f: Fixture) -> Report {
         monitor_boundary: check(
             if boundary { "supported" } else { "blocked" },
             "tablet can inspect and request refresh only",
+        ),
+        measurements: check(
+            if f.measurements.as_ref().is_some_and(|m| {
+                m.delivery_latency_ms_p95 > 0 && m.reconnect_ms > 0 && m.idle_memory_mb > 0.0
+            }) {
+                "recorded"
+            } else {
+                "not_observed"
+            },
+            "real-device latency, reconnect time, and idle resource use",
         ),
         diagnostics: d,
     }

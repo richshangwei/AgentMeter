@@ -1,2 +1,7 @@
 /target/
+/desktop-p0/target/
+/desktop-p0/gen/
 /.scratch/codex-app-server-schema/
+/.scratch/quota-smoke-runtime/
+/scripts/quota-smoke-support/node_modules/
+/desktop-p0/resources/quota-helper/

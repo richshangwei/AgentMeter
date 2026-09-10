@@ -1,0 +1,38 @@
+{
+  "schema": "agentmeter.native-quota-evidence/v1",
+  "checked_at": "2026-09-09T22:30:30.985Z",
+  "outcome": "FAIL",
+  "executable_sha256": "efc1dc20a5277f9b2134b6b8a9dbe94e2b060cb7975b6bbfbccee3874c84f547",
+  "report": {
+    "results": [
+      {
+        "provider": "codex",
+        "quota": [],
+        "reason": "authentication_required",
+        "status": "FAIL"
+      },
+      {
+        "auth_source": "copilot_cli",
+        "provider": "copilot",
+        "quota": [],
+        "reason": "cli_not_found",
+        "status": "BLOCKED"
+      },
+      {
+        "collected_at": 1788993005573,
+        "provider": "claude",
+        "quota": [],
+        "reason": "cli_not_found",
+        "status": "BLOCKED"
+      },
+      {
+        "collected_at": 1788993030928,
+        "provider": "antigravity",
+        "quota": [],
+        "reason": "cli_quota_request_failed",
+        "status": "FAIL"
+      }
+    ],
+    "schema": "agentmeter.live-quota/v1"
+  }
+}

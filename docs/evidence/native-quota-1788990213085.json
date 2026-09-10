@@ -1,0 +1,111 @@
+{
+  "schema": "agentmeter.native-quota-evidence/v1",
+  "checked_at": "2026-09-09T21:43:33.074Z",
+  "outcome": "PASS",
+  "executable_sha256": "07224b67ffc886eb10814811bbebda5cebd47ec0109459376fc004d8ef6e1ba8",
+  "report": {
+    "results": [
+      {
+        "collected_at": 1788990202569,
+        "provider": "codex",
+        "quota": [
+          {
+            "bucket": "codex",
+            "remaining_percent": 46,
+            "resets_at": 1789007454,
+            "window": "primary"
+          },
+          {
+            "bucket": "codex",
+            "remaining_percent": 76,
+            "resets_at": 1789567491,
+            "window": "secondary"
+          },
+          {
+            "bucket": "base_model_inference",
+            "remaining_percent": 95,
+            "resets_at": 1789557147,
+            "window": "primary"
+          }
+        ],
+        "reason": "live_quota_received",
+        "status": "PASS"
+      },
+      {
+        "auth_source": "active_github_cli_account",
+        "collected_at": 1788990205173,
+        "provider": "copilot",
+        "quota": [
+          {
+            "bucket": "premium_interactions",
+            "entitlement": 1500,
+            "remaining_percent": 24.7,
+            "reported_reset_at": "2026-09-09T21:43:23.938Z",
+            "reset_time_verified": false,
+            "used": 1130
+          }
+        ],
+        "reason": "live_quota_received",
+        "status": "PASS"
+      },
+      {
+        "authenticated": true,
+        "collected_at": 1788990209973,
+        "limitation": "Version-sensitive English terminal parser; reset text is not an absolute timestamp.",
+        "maturity": "experimental",
+        "provider": "claude",
+        "quota": [
+          {
+            "remaining_percent": 100,
+            "reset_display": "10:29am (Etc/GMT-8)",
+            "window": "five_hour"
+          },
+          {
+            "remaining_percent": 2,
+            "reset_display": "Sep 10, 2:59pm (Etc/GMT-8)",
+            "window": "seven_day"
+          }
+        ],
+        "reason": "live_terminal_quota_received",
+        "status": "PASS",
+        "transport": "official_cli_usage_terminal",
+        "version": "2.1.266"
+      },
+      {
+        "collected_at": 1788990213002,
+        "maturity": "experimental",
+        "provider": "antigravity",
+        "quota": [
+          {
+            "bucket": "Gemini Models",
+            "remaining_percent": 58,
+            "resets_at": "2026-09-11T02:36:20Z",
+            "window": "Weekly Limit Remaining"
+          },
+          {
+            "bucket": "Gemini Models",
+            "remaining_percent": 100,
+            "resets_at": "2026-09-10T02:43:31Z",
+            "window": "Five Hour Limit Remaining"
+          },
+          {
+            "bucket": "Claude and GPT models",
+            "remaining_percent": 100,
+            "resets_at": "2026-09-16T21:43:31Z",
+            "window": "Weekly Limit Remaining"
+          },
+          {
+            "bucket": "Claude and GPT models",
+            "remaining_percent": 100,
+            "resets_at": "2026-09-10T02:43:31Z",
+            "window": "Five Hour Limit Remaining"
+          }
+        ],
+        "reason": "live_cli_quota_received",
+        "status": "PASS",
+        "transport": "official_cli_usage_tsv"
+      }
+    ],
+    "schema": "agentmeter.live-quota/v1"
+  }
+}

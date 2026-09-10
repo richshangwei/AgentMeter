@@ -23,6 +23,8 @@ fn pairing_session_and_security_boundary_are_exercised() {
     assert_eq!(report["csrf_origin"]["status"], "fail_closed");
     assert_eq!(report["revocation"]["status"], "supported");
     assert_eq!(report["secret_hygiene"]["status"], "supported");
+    assert_eq!(report["persisted_secret"]["status"], "not_observed");
+    assert_eq!(report["route_auth"]["status"], "fail_closed");
 }
 
 #[test]
@@ -36,4 +38,12 @@ fn unsafe_origin_is_blocked() {
             .iter()
             .any(|d| d.as_str().unwrap().contains("approved loopback"))
     );
+}
+
+#[test]
+fn wrong_code_policy_expiry_and_incomplete_route_auth_cannot_claim_support() {
+    let report = run("tests/fixtures/pairing/bad-policy.json");
+    assert_eq!(report["pair"]["status"], "not_observed");
+    assert_eq!(report["attack_cases"]["status"], "unsafe");
+    assert_eq!(report["route_auth"]["status"], "blocked");
 }

@@ -2,9 +2,9 @@
 
 **What to build:** A decision-ready P0 capability report that integrates the nine experiments, assigns each capability a supported, constrained, or blocked result, and translates the evidence into explicit v1 scope, setup requirements, risks, and go/no-go criteria for P1.
 
-**Blocked by:** 01: Prove Codex app-server can produce trusted Observations; 02: Prove Claude statusLine coexistence and quota collection; 03: Prove GitHub Copilot permission and quota boundaries; 04: Prove Antigravity quota sources and fallback; 05: Prove the Windows desktop lifecycle; 06: Prove clean Windows installation and WebView2 handling; 07: Prove the selected-device USB loopback channel; 08: Prove the Device Pair and Tablet Session security boundary; 09: Prove Dashboard Snapshot streaming and asynchronous refresh.
+**Evidence inputs:** 01: Prove Codex app-server can produce trusted Observations; 02: Prove Claude statusLine coexistence and quota collection; 03: Prove GitHub Copilot permission and quota boundaries; 04: Prove Antigravity quota sources and fallback; 05: Prove the Windows desktop lifecycle; 06: Prove clean Windows installation and WebView2 handling; 07: Prove the selected-device USB loopback channel; 08: Prove Device Pair and Tablet Session security; 09: Prove Dashboard Snapshot streaming and asynchronous refresh. These are evidence inputs rather than hard resolution blockers: this ticket publishes their current constrained or blocked state and does not declare P0 validation complete.
 
-**Status:** needs-info
+**Status:** resolved
 
 - [x] The matrix covers all four provider collectors, Windows lifecycle, clean installation and WebView2, selected-device USB transport, pair and session security, Dashboard Snapshot streaming, and asynchronous refresh.
 - [x] Every row links reproducible evidence and records tested versions, environments, account or device prerequisites, limitations, Data Quality, and Collector Maturity where applicable.
@@ -18,3 +18,8 @@
 ## Comments
 
 - 2026-09-06: Published `docs/evidence/p0-capability-gate-2026-09-06.md`. All nine capabilities are currently constrained: fixture experiments establish protocol seams and fail-closed behavior, while real provider accounts, clean Windows/Tauri VM, physical Android device, protected storage, and authenticated tablet evidence remain outstanding. P1 implementation may proceed behind explicit experimental gates; production release is no-go until the listed real-world acceptance gates pass.
+- 2026-09-06 audit: Clarified that tickets 01–09 are evidence inputs, not hard resolution blockers for publishing a no-go/constrained matrix. Updated every row to link its evidence package and record the tested or explicitly unavailable version boundary. Added an explicit requirements/ADR-change review. `resolved` applies only to this publication ticket; P0 validation and production release remain incomplete.
+
+## Answer
+
+The P0 capability matrix is published at `docs/evidence/p0-capability-gate-2026-09-06.md` and committed as `fcb5f5a`. All nine experiments are classified **constrained** using the stated supported/constrained/blocked criteria; none is treated as `supported` for v1. The report reconciles cross-experiment assumptions (account identity, source precedence, lifecycle ownership, local-only transport, authorization, revisions, failure-state terminology), records that this audit found no ADR change to approve, and concludes with an auditable P1 gate: **no-go for production release, go for bounded implementation behind feature flags**. The prioritized follow-up lists the real-account, clean-VM, physical-device, tablet, and security-review gates that must pass before P0 validation is complete. Issue 10 is resolved only as a publication task; the remaining validation work stays open in tickets 01–09.

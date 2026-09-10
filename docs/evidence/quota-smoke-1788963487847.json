@@ -1,0 +1,76 @@
+{
+  "schema": "agentmeter.real-quota-smoke/v1",
+  "checked_at": "2026-09-09T14:18:07.846Z",
+  "gate": "NO_GO",
+  "scope": "Current local account contexts; BLOCKED does not prove provider impossibility.",
+  "results": [
+    {
+      "provider": "codex",
+      "status": "PASS",
+      "reason": "live_quota_received",
+      "quota": [
+        {
+          "bucket": "base_model_inference",
+          "window": "primary",
+          "remaining_percent": 95,
+          "resets_at": 1789557147
+        },
+        {
+          "bucket": "codex",
+          "window": "primary",
+          "remaining_percent": 66,
+          "resets_at": 1788980691
+        },
+        {
+          "bucket": "codex",
+          "window": "secondary",
+          "remaining_percent": 95,
+          "resets_at": 1789567491
+        }
+      ]
+    },
+    {
+      "provider": "copilot",
+      "status": "PASS",
+      "reason": "live_quota_received",
+      "quota": [
+        {
+          "bucket": "chat",
+          "remaining_percent": 100,
+          "entitlement": 0,
+          "used": 0,
+          "resets_at": "2026-09-09T14:18:06.103Z"
+        },
+        {
+          "bucket": "completions",
+          "remaining_percent": 100,
+          "entitlement": 0,
+          "used": 0,
+          "resets_at": "2026-09-09T14:18:06.103Z"
+        },
+        {
+          "bucket": "premium_interactions",
+          "remaining_percent": 24.7,
+          "entitlement": 1500,
+          "used": 1130,
+          "resets_at": "2026-09-09T14:18:06.103Z"
+        }
+      ],
+      "auth_source": "active_github_cli_account"
+    },
+    {
+      "provider": "claude",
+      "status": "BLOCKED",
+      "reason": "installed_version_below_documented_statusline_quota_minimum",
+      "quota": [],
+      "version": "2.1.222",
+      "authenticated": true
+    },
+    {
+      "provider": "antigravity",
+      "status": "BLOCKED",
+      "reason": "official_cli_not_found_desktop_is_not_cli",
+      "quota": []
+    }
+  ]
+}

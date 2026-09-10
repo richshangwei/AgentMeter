@@ -86,7 +86,7 @@ fn subprocess_collection_performs_handshake_and_matches_responses_by_id() {
             "--codex-bin",
             env!("CARGO_BIN_EXE_fake-codex-app-server"),
             "--timeout-ms",
-            "1000",
+            "5000",
         ])
         .output()
         .expect("run AgentMeter P0 CLI");
@@ -114,6 +114,10 @@ fn subprocess_failures_remain_distinct_and_never_emit_an_observation() {
         ("malformed", "malformed_response"),
         ("timeout", "timeout"),
     ] {
+        // Exit/malformed cases test classification, not Windows process-start latency.
+        // A 50ms startup race can legitimately time out before either event occurs.
+        // Keep the short deadline only for the deliberately unresponsive fixture.
+        let timeout_ms = if mode == "timeout" { "50" } else { "2000" };
         let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
             .env("AGENTMETER_FAKE_MODE", mode)
             .args([
@@ -122,7 +126,7 @@ fn subprocess_failures_remain_distinct_and_never_emit_an_observation() {
                 "--codex-bin",
                 env!("CARGO_BIN_EXE_fake-codex-app-server"),
                 "--timeout-ms",
-                "50",
+                timeout_ms,
             ])
             .output()
             .expect("run AgentMeter P0 CLI");
@@ -192,7 +196,7 @@ fn partial_evidence_is_preserved_when_rate_limits_require_authentication() {
             "--codex-bin",
             env!("CARGO_BIN_EXE_fake-codex-app-server"),
             "--timeout-ms",
-            "1000",
+            "5000",
         ])
         .output()
         .expect("run AgentMeter P0 CLI");
@@ -255,6 +259,57 @@ fn successful_usage_and_credits_are_preserved_with_account_scope_and_source_time
 }
 
 #[test]
+fn optional_usage_failures_remain_distinct_after_quota_succeeds() {
+    for (fixture, capability, diagnostic) in [
+        (
+            "tests/fixtures/codex/usage-authentication-failed.jsonl",
+            "authentication_required",
+            "authentication_failed",
+        ),
+        (
+            "tests/fixtures/codex/usage-permission-denied.jsonl",
+            "permission_denied",
+            "permission_denied",
+        ),
+        (
+            "tests/fixtures/codex/usage-timeout.jsonl",
+            "timed_out",
+            "timeout",
+        ),
+        (
+            "tests/fixtures/codex/usage-schema-changed.jsonl",
+            "schema_changed",
+            "schema_changed",
+        ),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_agentmeter-p0"))
+            .args(["codex", "collect", "--fixture", fixture])
+            .output()
+            .expect("run AgentMeter P0 CLI");
+        assert!(output.status.success(), "fixture {fixture}");
+        let report: Value = serde_json::from_slice(&output.stdout).expect("valid JSON report");
+        assert_eq!(report["outcome"], "success", "fixture {fixture}");
+        assert_eq!(
+            report["capabilities"]["account/rateLimits/read"], "supported",
+            "fixture {fixture}"
+        );
+        assert_eq!(
+            report["capabilities"]["account/usage/read"], capability,
+            "fixture {fixture}"
+        );
+        assert!(report["observation"]["source_usage"].is_null());
+        assert!(
+            report["diagnostics"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|item| item["code"] == diagnostic),
+            "fixture {fixture}"
+        );
+    }
+}
+
+#[test]
 fn process_exit_reconnects_once_and_repeats_the_protocol_handshake() {
     let marker = std::env::temp_dir().join(format!(
         "agentmeter-reconnect-{}.marker",
@@ -270,7 +325,7 @@ fn process_exit_reconnects_once_and_repeats_the_protocol_handshake() {
             "--codex-bin",
             env!("CARGO_BIN_EXE_fake-codex-app-server"),
             "--timeout-ms",
-            "1000",
+            "5000",
         ])
         .output()
         .expect("run AgentMeter P0 CLI");

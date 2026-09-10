@@ -1,0 +1,9 @@
+pub mod claude;
+pub mod claude_setup;
+pub mod codex;
+pub mod copilot;
+pub mod live_dashboard;
+pub mod model;
+pub(crate) mod pair_store;
+pub mod tablet;
+pub mod usb;

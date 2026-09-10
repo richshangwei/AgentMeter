@@ -1,0 +1,9 @@
+# Claude statusLine event path — 2026-09-07
+
+Criterion #02.3 now has an actual wrapper subprocess path. `status <manifest>` reads stdin once, extracts supported quota fields into a sanitized report sidecar, and forwards the original bytes to the existing display command. The display command's stdout remains its own output; AgentMeter does not print quota JSON into Claude's status line. Installation previews `observation_sink`, beside the manifest with an `.observation.json` extension. Each event replaces the previous report, including missing-quota and invalid events.
+
+The [official statusLine documentation](https://code.claude.com/docs/en/statusline), checked on 2026-09-07, documents `rate_limits.five_hour` and `rate_limits.seven_day`, percentage usage and Unix epoch reset seconds. Missing/null windows and percentages remain unknown. Invalid types or percentages outside 0–100 return `schema_changed`. There is no documented measurement timestamp: `source_timestamp` stays null and receipt time is separate. Quality is `official`, maturity remains `experimental`, and Provider Account is unknown. The legacy `normalize` fixture command remains replay-marked and separate.
+
+`cargo test --offline --locked --test claude_statusline`: 8 passed. New subprocess coverage checks both quota windows, fractional and zero usage, reset and absent reset, missing/null quota, invalid usage/reset, preserved display output, receipt time, and exclusion of private session/path fields. Existing lifecycle, forwarding, configuration-conflict and prior-command failure tests pass.
+
+Limits: contract-based subprocess evidence uses isolated temporary settings, not an authenticated Claude session. Criterion #02.7 stays open. The sidecar is a P0 latest-report sink, not a transactional multi-session database; simultaneous readers/writers are not supported. No raw stdin is persisted. No real user configuration was changed.

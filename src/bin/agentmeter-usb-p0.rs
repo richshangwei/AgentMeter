@@ -11,6 +11,7 @@ struct Fixture {
     selected_serial: Option<String>,
     devices: Vec<Device>,
     reverse_entries: Vec<ReverseEntry>,
+    reverse_no_rebind: bool,
     probe: Probe,
     events: Vec<String>,
     teardown: Teardown,
@@ -45,6 +46,7 @@ struct Teardown {
     serial: String,
     device_port: u16,
     host_port: u16,
+    unrelated_entries_preserved: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -111,21 +113,16 @@ fn evaluate(f: Fixture) -> Report {
     let mut reverse_ok = false;
     if let Some(s) = &serial {
         if let Some(entry) = f.reverse_entries.iter().find(|e| &e.serial == s) {
-            reverse_ok = entry.host_port == host_port && entry.owner == "agentmeter";
+            reverse_ok =
+                entry.host_port == host_port && entry.owner == "agentmeter" && f.reverse_no_rebind;
             if !reverse_ok {
-                diagnostics
-                    .push("reverse mapping conflicts with the selected host port or owner".into());
+                diagnostics.push(
+                    "selected-device reverse mapping conflicts or was not created with no-rebind"
+                        .into(),
+                );
             }
         } else {
             diagnostics.push("no reverse mapping exists for selected serial".into());
-        }
-        if f.reverse_entries
-            .iter()
-            .any(|e| &e.serial != s && e.device_port == device_port && e.host_port == host_port)
-        {
-            reverse_ok = false;
-            diagnostics
-                .push("reverse mapping is occupied by another device; no-rebind required".into());
         }
     }
     let reachable = selection_ok && reverse_ok && f.probe.authenticated_health;
@@ -159,7 +156,8 @@ fn evaluate(f: Fixture) -> Report {
     }
     let teardown_ok = f.teardown.serial == serial.clone().unwrap_or_default()
         && f.teardown.host_port == host_port
-        && f.teardown.device_port == device_port;
+        && f.teardown.device_port == device_port
+        && f.teardown.unrelated_entries_preserved;
     if !teardown_ok {
         diagnostics.push("teardown target is not the owned selected-device mapping".into());
     }

@@ -1,0 +1,112 @@
+{
+  "contexts": [
+    {
+      "context": "Personal",
+      "plan": "Copilot Pro fixture",
+      "account_scope": "personal",
+      "billing_api": {"permission": "granted", "api_version": "2026-08-01 fixture contract"},
+      "permission_contract": {
+        "endpoint": "/users/{username}/settings/billing/ai_credit/usage",
+        "required_scopes": [],
+        "required_permissions": ["Plan:read"],
+        "required_roles": ["personal_account_owner"],
+        "observed_scopes": [],
+        "observed_permissions": ["Plan:read"],
+        "observed_roles": ["personal_account_owner"]
+      },
+      "quota": {"status": "reported", "remaining": 120, "limit": 300, "unit": "AI Credits", "billing_period": "2026-09"},
+      "ai_credits": {
+        "status": "reported",
+        "remaining": 120,
+        "included_allowance": 300,
+        "used": 180,
+        "unit": "AI Credits",
+        "billing_period": "2026-09",
+        "scope": {"pool_kind": "individual", "shared_pool_remaining": null, "individual_limit": 300},
+        "overage": {"enabled": true, "used": 12, "extra_paid": true, "unit": "AI Credits", "amount_usd": 0.12}
+      },
+      "legacy_premium_requests": {
+        "status": "reported",
+        "remaining": 30,
+        "included_allowance": 300,
+        "used": 270,
+        "unit": "premium requests",
+        "billing_period": "2026-09",
+        "scope": {"pool_kind": "individual", "shared_pool_remaining": null, "individual_limit": 300},
+        "overage": {"enabled": true, "used": 2, "extra_paid": true, "unit": "premium requests", "amount_usd": 0.08}
+      },
+      "preview_sdk": {"status": "reported", "remaining": 119, "stability": "public_preview", "permission": "Provider Account quota read", "permission_status": "granted_fixture", "sdk_version": "public-preview fixture contract"},
+      "unknowns": []
+    },
+    {
+      "context": "Business",
+      "plan": "Copilot Business fixture",
+      "account_scope": "organization",
+      "billing_api": {"permission": "denied", "api_version": "2026-08-01 fixture contract"},
+      "permission_contract": {
+        "endpoint": "/organizations/{org}/settings/billing/ai_credit/usage",
+        "required_scopes": [],
+        "required_permissions": ["Administration:read"],
+        "required_roles": ["organization_administrator"],
+        "observed_scopes": [],
+        "observed_permissions": [],
+        "observed_roles": [],
+        "denial_reason": "fixture omits Administration:read and organization_administrator"
+      },
+      "quota": {"status": "reported", "remaining": 99, "unit": "AI Credits", "billing_period": "2026-09"},
+      "ai_credits": {"status": "unknown"},
+      "legacy_premium_requests": {"status": "reported", "remaining": 99, "unit": "premium requests"},
+      "preview_sdk": {"status": "unavailable", "stability": "public_preview", "permission": "Provider Account quota read", "permission_status": "untested", "sdk_version": "public-preview fixture contract"},
+      "unknowns": ["tenant entitlement"]
+    },
+    {
+      "context": "Enterprise",
+      "plan": "Copilot Enterprise fixture",
+      "account_scope": "enterprise",
+      "billing_api": {"permission": "granted", "api_version": "2026-08-01 fixture contract"},
+      "permission_contract": {
+        "endpoint": "/enterprises/{enterprise}/settings/billing/ai_credit/usage",
+        "required_scopes": [],
+        "required_permissions": ["Enterprise billing:read"],
+        "required_roles": ["enterprise_administrator", "enterprise_billing_manager", "organization_owner_in_enterprise"],
+        "observed_scopes": [],
+        "observed_permissions": ["Enterprise billing:read"],
+        "observed_roles": ["enterprise_billing_manager"]
+      },
+      "quota": {"status": "unknown"},
+      "ai_credits": {
+        "status": "reported",
+        "remaining": 180000,
+        "included_allowance": 190000,
+        "used": 10000,
+        "unit": "AI Credits",
+        "billing_period": "2026-09",
+        "scope": {"pool_kind": "enterprise_shared", "shared_pool_remaining": 180000, "individual_limit": 5000},
+        "overage": {"enabled": false, "used": 0, "extra_paid": false, "unit": "AI Credits", "amount_usd": 0}
+      },
+      "legacy_premium_requests": {"status": "not_applicable"},
+      "preview_sdk": {"status": "reported", "remaining": 8, "stability": "public_preview", "permission": "Provider Account quota read", "permission_status": "granted_fixture", "sdk_version": "public-preview fixture contract"},
+      "unknowns": ["enterprise contract limit"]
+    }
+  ],
+  "unknowns": ["real preview endpoint stability", "real API scope and role verification"],
+  "evidence": {
+    "fixture_schema_version": "copilot-contexts-v1",
+    "evidence_kind": "sanitized_fixture_replay",
+    "tested_at": "2026-09-07T00:00:00+08:00",
+    "plan_types": ["Copilot Pro fixture", "Copilot Business fixture", "Copilot Enterprise fixture"],
+    "api_contract_versions": ["2026-08-01 fixture contract"],
+    "sdk_contract_versions": ["public-preview fixture contract"],
+    "observed_fields": {
+      "billing_api": ["permission", "api_version"],
+      "permission_contract": ["endpoint", "required_scopes", "required_permissions", "required_roles", "observed_scopes", "observed_permissions", "observed_roles", "denial_reason"],
+      "quota": ["status", "remaining", "limit", "unit", "billing_period"],
+      "ai_credits": ["status", "remaining", "included_allowance", "used", "unit", "billing_period", "scope", "overage"],
+      "legacy_premium_requests": ["status", "remaining", "included_allowance", "used", "unit", "billing_period", "scope", "overage"],
+      "preview_sdk": ["status", "remaining", "stability", "permission", "permission_status", "sdk_version"]
+    },
+    "credentials_present": false,
+    "billing_secrets_present": false,
+    "limitations": ["synthetic plan labels and response values", "fixture contract versions are not claims about a live endpoint", "no real Provider Account, organization role, token, credential, or billing secret", "permission contracts are official documentation mappings replayed without a live token"]
+  }
+}

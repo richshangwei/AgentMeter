@@ -149,6 +149,8 @@ impl FailureReport {
             ("method_unsupported", "unsupported")
         } else if error.starts_with("timeout:") {
             ("timeout", "available")
+        } else if error.starts_with("cancelled:") {
+            ("cancelled", "available")
         } else if error.starts_with("malformed_response") {
             ("malformed_response", "available")
         } else if error.starts_with("schema_changed:") {

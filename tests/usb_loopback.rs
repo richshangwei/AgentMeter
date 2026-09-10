@@ -29,9 +29,9 @@ fn browser_launch_alone_does_not_mean_online() {
     assert_eq!(report["reachability"]["status"], "blocked");
 }
 #[test]
-fn non_loopback_and_conflicting_mapping_fail_closed() {
+fn selected_device_mapping_conflict_fails_closed() {
     let report = run("tests/fixtures/usb/conflict.json");
-    assert_eq!(report["bind"]["status"], "blocked");
+    assert_eq!(report["bind"]["status"], "supported");
     assert_eq!(report["reverse"]["status"], "blocked");
     assert!(
         report["diagnostics"]
@@ -39,6 +39,27 @@ fn non_loopback_and_conflicting_mapping_fail_closed() {
             .unwrap()
             .iter()
             .any(|d| d.as_str().unwrap().contains("no-rebind"))
+    );
+}
+
+#[test]
+fn explicit_serial_wins_among_physical_emulator_tcp_and_offline_devices() {
+    let report = run("tests/fixtures/usb/multiple-devices.json");
+    assert_eq!(report["selected_serial"], "PHYSICAL-2");
+    assert_eq!(report["selection"]["status"], "supported");
+    assert_eq!(report["reverse"]["status"], "supported");
+}
+
+#[test]
+fn unauthorized_selected_device_has_actionable_failure() {
+    let report = run("tests/fixtures/usb/unauthorized.json");
+    assert_eq!(report["selection"]["status"], "blocked");
+    assert!(
+        report["diagnostics"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|value| { value.as_str().unwrap().contains("authorized=false") })
     );
 }
 #[test]

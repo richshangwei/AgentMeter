@@ -1,0 +1,248 @@
+Checking: PowerShell syntax (scripts\inspect-nsis.ps1)
+Checking: PowerShell syntax (scripts\test-nsis-lifecycle.ps1)
+Checking: PowerShell syntax (scripts\test-desktop-process-lifecycle.ps1)
+Checking: PowerShell syntax (scripts\test-copilot-live.ps1)
+Checking: PowerShell syntax (scripts\test-four-quota.ps1)
+Checking: PowerShell syntax (scripts\prepare-desktop-quota.ps1)
+Checking: PowerShell syntax (desktop-p0\tests\instance-probe.ps1)
+Checking: Quota parsers
+✔ Claude trust confirmation waits for the interactive prompt and rechecks it (2.1351ms)
+✔ Claude fresh-directory default No is explicitly changed to Yes before Enter (0.3184ms)
+✔ Codex accepts numeric zero but not missing or string quota (0.2729ms)
+✔ Copilot ignores zero-entitlement placeholders and never infers quota from tokens (0.3005ms)
+✔ Claude requires both labelled percentages; missing reset is unknown, not missing quota (0.6662ms)
+✔ Antigravity fails closed on changed/localized output and invalid values (0.4304ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 119.9145
+Checking: Quota desktop entry syntax
+Checking: Automatic quota UI
+✔ renders four real quota cards, reset caveats and stale data without source forms (22.2476ms)
+✔ quota bars use exact finite remaining values, clamp bounds and distinguish unknown (3.6708ms)
+✔ one refresh command has no source paths and explicit Claude trust only (1.6949ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 125.4334
+Checking: Root formatting
+Checking: Desktop formatting
+Checking: Root tests
+
+running 13 tests
+.............
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+
+
+running 5 tests
+.....
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.63s
+
+
+running 9 tests
+.........
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+
+
+running 14 tests
+..............
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.31s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.41s
+
+
+running 17 tests
+.................
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+
+running 8 tests
+........
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 1 test
+.
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 2 tests
+..
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+
+
+running 7 tests
+.......
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.05s
+
+
+running 19 tests
+...................
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.10s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.44s
+
+
+running 6 tests
+......
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+
+running 3 tests
+...
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+
+running 4 tests
+....
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+Checking: Desktop tests
+
+running 19 tests
+...................
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+Checking: Browser logic tests
+✔ initial inspection and cancelled preview never apply configuration or query providers (8.2846ms)
+✔ explicit apply saves the resulting source and starts monitoring only after success (2.2089ms)
+✔ a configuration conflict does not save a source or start monitoring (3.9412ms)
+✔ scanning preserves an explicit ADB path (3.3873ms)
+✔ repeats after completion and stops without another read (3.2419ms)
+✔ failure retries; a one-shot import does not poll (1.1037ms)
+✔ switching source suppresses old results and never overlaps reads (0.6201ms)
+✔ stopping an in-flight read suppresses its result and retry (0.3587ms)
+✔ only full fetch may switch streams; duplicates and late events are rejected (1.5755ms)
+✔ partial snapshots do not advance the accepted revision (1.0509ms)
+✔ fragmented CRLF, multiline data, and heartbeat do not invent revisions (0.8401ms)
+✔ invalid JSON and oversized unfinished events fail closed (0.5742ms)
+✔ watchdog resets on complete events and stop cancels pending expiry (0.3871ms)
+✔ recreated client restores exchange CSRF only and can forget it (1.7789ms)
+✔ invalid material and denied storage do not grant recovery (0.3238ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 158.3588
+Checking: Tablet client syntax
+Checking: Desktop client syntax
+Checking: Setup client syntax
+Checking: Root Clippy
+    Checking agentmeter-p0 v0.1.0 (D:\WorkSpace\AgentMeter)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.31s
+Checking: Desktop Clippy
+   Compiling agentmeter-desktop-p0 v0.1.0 (D:\WorkSpace\AgentMeter\desktop-p0)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.47s
+Local checks passed. This does not certify authenticated Providers, physical tablets or clean-VM installation.

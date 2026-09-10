@@ -5,6 +5,19 @@ use serde_json::{Value, json};
 fn main() {
     let mode = std::env::var("AGENTMETER_FAKE_MODE").unwrap_or_default();
     match mode.as_str() {
+        "cancellable_idle" => {
+            let marker = std::env::var("AGENTMETER_FAKE_READY").expect("fake ready path");
+            let mut options = std::fs::OpenOptions::new();
+            options.write(true).create_new(true);
+            #[cfg(windows)]
+            {
+                use std::os::windows::fs::OpenOptionsExt;
+                options.share_mode(0);
+            }
+            let _held_file = options.open(marker).expect("create readiness lock");
+            std::thread::sleep(std::time::Duration::from_secs(30));
+            return;
+        }
         "exit" => return,
         "malformed" => {
             println!("this is not JSON");

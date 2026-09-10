@@ -1,0 +1,45 @@
+[
+  {
+    "at": 1789012479508,
+    "event": "published",
+    "fields": {
+      "providers": [
+        {
+          "code": null,
+          "provider": "codex",
+          "windows": 3
+        },
+        {
+          "code": null,
+          "provider": "claude",
+          "windows": 2
+        },
+        {
+          "code": null,
+          "provider": "copilot",
+          "windows": 1
+        },
+        {
+          "code": null,
+          "provider": "antigravity",
+          "windows": 4
+        }
+      ]
+    },
+    "tag": "DEBUG-quota-desktop"
+  },
+  {
+    "at": 1789012481322,
+    "event": "ui_rendered",
+    "fields": {
+      "ready": 4,
+      "windows": [
+        3,
+        2,
+        1,
+        4
+      ]
+    },
+    "tag": "DEBUG-quota-desktop"
+  }
+]

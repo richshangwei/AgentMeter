@@ -1,0 +1,104 @@
+{
+  "schema": "agentmeter.real-quota-smoke/v1",
+  "checked_at": "2026-09-09T14:24:52.492Z",
+  "gate": "GO",
+  "scope": "Live quota acquisition feasibility only, not production readiness or reset-time validation. Current local account contexts; BLOCKED does not prove provider impossibility.",
+  "results": [
+    {
+      "provider": "codex",
+      "status": "PASS",
+      "reason": "live_quota_received",
+      "quota": [
+        {
+          "bucket": "base_model_inference",
+          "window": "primary",
+          "remaining_percent": 95,
+          "resets_at": 1789557147
+        },
+        {
+          "bucket": "codex",
+          "window": "primary",
+          "remaining_percent": 48,
+          "resets_at": 1788980691
+        },
+        {
+          "bucket": "codex",
+          "window": "secondary",
+          "remaining_percent": 92,
+          "resets_at": 1789567491
+        }
+      ]
+    },
+    {
+      "provider": "copilot",
+      "status": "PASS",
+      "reason": "live_quota_received",
+      "quota": [
+        {
+          "bucket": "premium_interactions",
+          "remaining_percent": 24.7,
+          "entitlement": 1500,
+          "used": 1130,
+          "reported_reset_at": "2026-09-09T14:24:43.203Z",
+          "reset_time_verified": false
+        }
+      ],
+      "auth_source": "active_github_cli_account"
+    },
+    {
+      "provider": "claude",
+      "status": "PASS",
+      "reason": "live_terminal_quota_received",
+      "quota": [
+        {
+          "window": "five_hour",
+          "remaining_percent": 90,
+          "reset_display": "2:59am (Etc/GMT-8)"
+        },
+        {
+          "window": "seven_day",
+          "remaining_percent": 8,
+          "reset_display": "Sep 10, 3pm (Etc/GMT-8)"
+        }
+      ],
+      "version": "2.1.266",
+      "authenticated": true,
+      "transport": "official_cli_usage_terminal",
+      "maturity": "experimental",
+      "limitation": "Version-sensitive English terminal parser; reset text is not an absolute timestamp."
+    },
+    {
+      "provider": "antigravity",
+      "status": "PASS",
+      "reason": "live_cli_quota_received",
+      "quota": [
+        {
+          "bucket": "Gemini Models",
+          "window": "Weekly Limit Remaining",
+          "remaining_percent": 58,
+          "resets_at": "2026-09-11T02:36:20Z"
+        },
+        {
+          "bucket": "Gemini Models",
+          "window": "Five Hour Limit Remaining",
+          "remaining_percent": 100,
+          "resets_at": "2026-09-09T19:24:51Z"
+        },
+        {
+          "bucket": "Claude and GPT models",
+          "window": "Weekly Limit Remaining",
+          "remaining_percent": 100,
+          "resets_at": "2026-09-16T14:24:51Z"
+        },
+        {
+          "bucket": "Claude and GPT models",
+          "window": "Five Hour Limit Remaining",
+          "remaining_percent": 100,
+          "resets_at": "2026-09-09T19:24:51Z"
+        }
+      ],
+      "transport": "official_cli_usage_tsv",
+      "maturity": "experimental"
+    }
+  ]
+}

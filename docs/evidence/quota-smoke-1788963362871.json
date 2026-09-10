@@ -1,0 +1,51 @@
+{
+  "schema": "agentmeter.real-quota-smoke/v1",
+  "checked_at": "2026-09-09T14:16:02.870Z",
+  "gate": "NO_GO",
+  "scope": "Current local account contexts; BLOCKED does not prove provider impossibility.",
+  "results": [
+    {
+      "provider": "codex",
+      "status": "PASS",
+      "reason": "live_quota_received",
+      "quota": [
+        {
+          "bucket": "codex",
+          "window": "primary",
+          "remaining_percent": 71,
+          "resets_at": 1788980691
+        },
+        {
+          "bucket": "codex",
+          "window": "secondary",
+          "remaining_percent": 96,
+          "resets_at": 1789567491
+        },
+        {
+          "bucket": "base_model_inference",
+          "window": "primary",
+          "remaining_percent": 95,
+          "resets_at": 1789557147
+        }
+      ]
+    },
+    {
+      "provider": "copilot",
+      "status": "FAIL",
+      "reason": "authentication_required",
+      "quota": []
+    },
+    {
+      "provider": "claude",
+      "status": "BLOCKED",
+      "reason": "live_statusline_event_required",
+      "quota": []
+    },
+    {
+      "provider": "antigravity",
+      "status": "BLOCKED",
+      "reason": "official_cli_not_found_desktop_is_not_cli",
+      "quota": []
+    }
+  ]
+}

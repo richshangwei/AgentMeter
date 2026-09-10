@@ -1,14 +1,15 @@
 {
   "authenticated": true,
   "providers": [
-    {"id":"codex","state":"ready","account_id":"a1","source_usage":[{"source":"app_server","used":10,"limit":100}]},
-    {"id":"claude","state":"collecting","account_id":"a2","source_usage":[{"source":"status_line","used":20,"limit":100}]},
-    {"id":"copilot","state":"paused","account_id":"a3","source_usage":[{"source":"github_api","used":30,"limit":100}]},
-    {"id":"antigravity","state":"slow","account_id":"a4","source_usage":[{"source":"status_line","used":40,"limit":100}]}
+    {"id":"codex","signals":{"setup":"ready","paused":false,"availability":"available","collection":"ready","freshness":"fresh","quality":"official","maturity":"experimental"},"account_id":"a1","source_usage":[{"source":"windows","used":10,"limit":100},{"source":"wsl","used":4,"limit":100}],"quota_windows":[{"bucket":"five-hour"}]},
+    {"id":"claude","signals":{"setup":"ready","paused":false,"availability":"available","collection":"collecting","freshness":"fresh","quality":"local_observed","maturity":"experimental"},"account_id":"a2","source_usage":[{"source":"status_line","used":20,"limit":100}],"quota_windows":[{"bucket":"weekly"}]},
+    {"id":"copilot","signals":{"setup":"ready","paused":true,"availability":"available","collection":"idle","freshness":"stale","quality":"official","maturity":"experimental"},"account_id":"a3","source_usage":[{"source":"github_api","used":30,"limit":100}],"quota_windows":[{"bucket":"monthly"}]},
+    {"id":"antigravity","signals":{"setup":"ready","paused":false,"availability":"available","collection":"backing_off","freshness":"stale","quality":"local_observed","maturity":"experimental"},"account_id":"a4","source_usage":[{"source":"status_line","used":40,"limit":100}],"quota_windows":[{"bucket":"provider-window"}]}
   ],
-  "snapshot":{"revision":7,"schema":"dashboard-snapshot/v1","canonical_setup":"canonical","provider_fields":["setup","paused","availability","collection","freshness","quality","maturity"]},
-  "events":[{"kind":"snapshot","revision":7},{"kind":"heartbeat","revision":7},{"kind":"snapshot","revision":8}],
-  "reconnect":{"disconnected":true,"latest_revision":8,"fetched_complete":true},
-  "refresh":{"requests":[{"provider":"claude","result":"accepted"},{"provider":"claude","result":"coalesced"},{"provider":"claude","result":"throttled"}],"outcomes":["slow","failed","paused","unsupported","schema_changed","completed"]},
-  "monitor_only":true
+  "snapshot":{"revision":7,"schema":"dashboard-snapshot/v1","canonical_setup":"canonical","stream_id":"run-001","generated_at":"2026-09-06T01:00:00Z","provider_fields":["setup","paused","availability","collection","freshness","quality","maturity"]},
+  "events":[{"kind":"snapshot","revision":7,"stream_id":"run-001","complete":true},{"kind":"heartbeat","revision":7,"stream_id":"run-001"},{"kind":"snapshot","revision":8,"stream_id":"run-001","complete":true}],
+  "reconnect":{"disconnected":true,"latest_revision":8,"fetched_complete":true,"reasons":["disconnect","tablet-sleep","host-restart","expired-session","missed-events"]},
+  "refresh":{"requests":[{"provider":"claude","result":"accepted","status_code":202,"latency_ms":15},{"provider":"claude","result":"coalesced"},{"provider":"claude","result":"throttled"}],"outcomes":["slow","failed","paused","unsupported","schema_changed","completed"]},
+  "monitor_only":true,
+  "tablet_routes":["dashboard","history","events","refresh"]
 }

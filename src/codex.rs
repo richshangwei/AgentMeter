@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::thread;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -14,6 +15,43 @@ use crate::model::{
     DataQuality, Diagnostic, FailureReport, Freshness, Observation, ProviderAccount, QuotaWindow,
     Source,
 };
+
+#[cfg(test)]
+mod cancellation_tests {
+    use super::*;
+    #[test]
+    fn pre_cancelled_collection_never_attempts_spawn() {
+        let result = collect_live_cancellable(
+            Path::new("missing-test-executable"),
+            Duration::from_secs(5),
+            &AtomicBool::new(true),
+        );
+        assert_eq!(result.unwrap_err().failure_code, "cancelled");
+    }
+    #[test]
+    fn cancellation_interrupts_a_pending_response_without_waiting_for_deadline() {
+        let (_sender, receiver) = mpsc::channel();
+        let cancelled = std::sync::Arc::new(AtomicBool::new(false));
+        let worker_cancelled = std::sync::Arc::clone(&cancelled);
+        let worker = thread::spawn(move || {
+            receive(
+                &receiver,
+                1,
+                "initialize",
+                Duration::from_secs(30),
+                &worker_cancelled,
+            )
+        });
+        cancelled.store(true, Ordering::Release);
+        assert!(
+            worker
+                .join()
+                .unwrap()
+                .unwrap_err()
+                .starts_with("cancelled:")
+        );
+    }
+}
 
 #[derive(Clone, Copy)]
 enum CollectionMode {
@@ -52,10 +90,18 @@ pub fn collect_live(
     codex_bin: &Path,
     timeout: Duration,
 ) -> Result<CollectionReport, Box<FailureReport>> {
-    match collect_live_once(codex_bin, timeout) {
+    collect_live_cancellable(codex_bin, timeout, &AtomicBool::new(false))
+}
+
+pub fn collect_live_cancellable(
+    codex_bin: &Path,
+    timeout: Duration,
+    cancelled: &AtomicBool,
+) -> Result<CollectionReport, Box<FailureReport>> {
+    match collect_live_once(codex_bin, timeout, cancelled) {
         Ok(report) => Ok(report),
         Err(first) if first.failure_code == "process_exited" => {
-            collect_live_once(codex_bin, timeout)
+            collect_live_once(codex_bin, timeout, cancelled)
         }
         Err(error) => Err(error),
     }
@@ -64,8 +110,18 @@ pub fn collect_live(
 fn collect_live_once(
     codex_bin: &Path,
     timeout: Duration,
+    cancelled: &AtomicBool,
 ) -> Result<CollectionReport, Box<FailureReport>> {
-    let mut child = Command::new(codex_bin)
+    if cancelled.load(Ordering::Acquire) {
+        return Err("cancelled: collection stopped".to_owned().into());
+    }
+    let mut command = Command::new(codex_bin);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW for background collection.
+    }
+    let mut child = command
         .args(["app-server", "--stdio"])
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -113,7 +169,7 @@ fn collect_live_once(
                 }
             }),
         )?;
-        responses.insert(1, receive(&receiver, 1, "initialize", timeout)?);
+        responses.insert(1, receive(&receiver, 1, "initialize", timeout, cancelled)?);
         if responses[&1].get("error").is_some() {
             return Ok(responses);
         }
@@ -127,7 +183,10 @@ fn collect_live_once(
                 "params": { "refreshToken": false }
             }),
         )?;
-        responses.insert(2, receive(&receiver, 2, "account/read", timeout)?);
+        responses.insert(
+            2,
+            receive(&receiver, 2, "account/read", timeout, cancelled)?,
+        );
         if responses[&2].get("error").is_some() {
             return Ok(responses);
         }
@@ -141,7 +200,7 @@ fn collect_live_once(
         )?;
         responses.insert(
             3,
-            receive(&receiver, 3, "account/rateLimits/read", timeout)?,
+            receive(&receiver, 3, "account/rateLimits/read", timeout, cancelled)?,
         );
 
         send(
@@ -152,13 +211,29 @@ fn collect_live_once(
                 "params": {}
             }),
         )?;
-        responses.insert(4, receive(&receiver, 4, "account/usage/read", timeout)?);
+        match receive(&receiver, 4, "account/usage/read", timeout, cancelled) {
+            Ok(response) => {
+                responses.insert(4, response);
+            }
+            Err(error) => {
+                responses.insert(
+                    4,
+                    serde_json::json!({
+                        "id": 4,
+                        "error": {"code": -32099, "message": error}
+                    }),
+                );
+            }
+        }
         Ok(responses)
     })();
 
     drop(stdin);
     let _ = child.kill();
     let _ = child.wait();
+    if cancelled.load(Ordering::Acquire) {
+        return Err("cancelled: collection stopped".to_owned().into());
+    }
     normalize_with_failure_evidence(result.map_err(FailureReport::from)?, CollectionMode::Live)
 }
 
@@ -176,22 +251,24 @@ fn receive(
     expected_id: i64,
     method: &str,
     timeout: Duration,
+    cancelled: &AtomicBool,
 ) -> Result<Value, String> {
     let deadline = Instant::now() + timeout;
     loop {
+        if cancelled.load(Ordering::Acquire) {
+            return Err("cancelled: collection stopped".to_owned());
+        }
         let remaining = deadline.saturating_duration_since(Instant::now());
         if remaining.is_zero() {
             return Err(format!("timeout: no response for {method}"));
         }
-        match receiver.recv_timeout(remaining) {
+        match receiver.recv_timeout(remaining.min(Duration::from_millis(50))) {
             Ok(Ok(value)) if value.get("id").and_then(Value::as_i64) == Some(expected_id) => {
                 return Ok(value);
             }
             Ok(Ok(_notification_or_other_response)) => continue,
             Ok(Err(error)) => return Err(error),
-            Err(mpsc::RecvTimeoutError::Timeout) => {
-                return Err(format!("timeout: no response for {method}"));
-            }
+            Err(mpsc::RecvTimeoutError::Timeout) => continue,
             Err(mpsc::RecvTimeoutError::Disconnected) => {
                 return Err(format!("process_exited: before response for {method}"));
             }
@@ -219,20 +296,11 @@ fn normalize(
         ("account/rateLimits/read".to_owned(), "supported"),
     ]);
     let mut diagnostics = Vec::new();
-    match responses.get(&4).and_then(|response| response.get("error")) {
-        Some(error) if error.get("code").and_then(Value::as_i64) == Some(-32601) => {
-            capabilities.insert("account/usage/read".to_owned(), "unsupported");
-            diagnostics.push(Diagnostic {
-                code: "method_unsupported",
-                message: "account/usage/read is not supported by this app-server version".into(),
-            });
-        }
-        Some(_) => {
-            capabilities.insert("account/usage/read".to_owned(), "error");
-        }
-        None => {
-            capabilities.insert("account/usage/read".to_owned(), "supported");
-        }
+    let usage_response = responses.get(&4);
+    let (usage_capability, usage_diagnostic) = classify_optional_usage_response(usage_response);
+    capabilities.insert("account/usage/read".to_owned(), usage_capability);
+    if let Some(diagnostic) = usage_diagnostic {
+        diagnostics.push(diagnostic);
     }
 
     let app_server_version = initialize
@@ -280,6 +348,7 @@ fn normalize(
     let source_usage = responses
         .get(&4)
         .and_then(|response| response.get("result"))
+        .filter(|usage| usage.is_object())
         .cloned();
     let source_timestamp = source_usage
         .as_ref()
@@ -330,6 +399,71 @@ fn normalize(
         },
         diagnostics,
     })
+}
+
+fn classify_optional_usage_response(
+    response: Option<&Value>,
+) -> (&'static str, Option<Diagnostic>) {
+    let Some(response) = response else {
+        return (
+            "timed_out",
+            Some(Diagnostic {
+                code: "timeout",
+                message: "account/usage/read produced no response".into(),
+            }),
+        );
+    };
+    if let Some(result) = response.get("result") {
+        if result.is_object() {
+            return ("supported", None);
+        }
+        return (
+            "schema_changed",
+            Some(Diagnostic {
+                code: "schema_changed",
+                message: "account/usage/read result is not an object".into(),
+            }),
+        );
+    }
+    let Some(error) = response.get("error") else {
+        return (
+            "schema_changed",
+            Some(Diagnostic {
+                code: "schema_changed",
+                message: "account/usage/read response has neither result nor error".into(),
+            }),
+        );
+    };
+    let message = error
+        .get("message")
+        .and_then(Value::as_str)
+        .unwrap_or("unknown account/usage/read error")
+        .to_owned();
+    let lowercase = message.to_ascii_lowercase();
+    let (capability, code) = if error.get("code").and_then(Value::as_i64) == Some(-32601) {
+        ("unsupported", "method_unsupported")
+    } else if lowercase.contains("auth") || lowercase.contains("login") {
+        ("authentication_required", "authentication_failed")
+    } else if lowercase.contains("permission") || lowercase.contains("forbidden") {
+        ("permission_denied", "permission_denied")
+    } else if lowercase.contains("timeout") {
+        ("timed_out", "timeout")
+    } else if lowercase.contains("schema") || lowercase.contains("malformed") {
+        ("schema_changed", "schema_changed")
+    } else if lowercase.contains("process_exited") || lowercase.contains("process exited") {
+        ("process_exited", "process_exited")
+    } else if lowercase.contains("rate limit") || lowercase.contains("429") {
+        ("rate_limited", "rate_limited")
+    } else {
+        ("error", "request_failed")
+    };
+    (
+        capability,
+        Some(Diagnostic {
+            code,
+            message: format!("account/usage/read: {message}"),
+        }),
+    )
 }
 
 fn failure_with_evidence(error: String, responses: &BTreeMap<i64, Value>) -> FailureReport {

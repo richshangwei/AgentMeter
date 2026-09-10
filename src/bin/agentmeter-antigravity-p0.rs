@@ -65,7 +65,11 @@ struct Diagnostic {
 #[derive(Debug, Serialize)]
 struct Evidence {
     tested_version: Option<String>,
+    version_evidence: &'static str,
+    tested_at: &'static str,
     source_precedence: Vec<&'static str>,
+    fallback_release_policy: &'static str,
+    limitations: &'static str,
     replay: bool,
 }
 
@@ -131,7 +135,11 @@ fn failure_report(code: String, message: String, version: Option<String>, replay
         diagnostics: vec![Diagnostic { code, message }],
         evidence: Evidence {
             tested_version: version,
+            version_evidence: "fixture_declared",
+            tested_at: "2026-09-07T00:00:00+08:00",
             source_precedence: vec!["structured_status_line", "headless_text_experimental"],
+            fallback_release_policy: "prohibited_pending_real_version_validation",
+            limitations: "fixture parser evidence; not a real Antigravity installation or account",
             replay,
         },
     }
@@ -154,6 +162,27 @@ fn collect(
         .map(str::to_owned);
     let version = cli_version.or(fixture_version);
     let replay = true;
+    if let Some(kind) = value
+        .pointer("/provider_error/kind")
+        .and_then(Value::as_str)
+    {
+        let code = match kind {
+            "authentication_required" => "authentication_failed",
+            "timeout" => "timeout",
+            "command_failed" => "command_failed",
+            _ => "schema_changed",
+        };
+        return Err((
+            code.into(),
+            value
+                .pointer("/provider_error/message")
+                .and_then(Value::as_str)
+                .unwrap_or("provider command failed")
+                .into(),
+            version,
+            replay,
+        ));
+    }
     if let Some(schema) = value.get("schema_version").and_then(Value::as_str) {
         if schema != "antigravity.statusline.v1" {
             return Err((
@@ -172,7 +201,9 @@ fn collect(
         return normalize_structured(data, version, replay);
     }
     if let Some(text) = value.get("headless_text").and_then(Value::as_str) {
-        return normalize_text(text, version, replay);
+        let locale = value.get("locale").and_then(Value::as_str);
+        let format_revision = value.get("format_revision").and_then(Value::as_str);
+        return normalize_text(text, version, locale, format_revision, replay);
     }
     Err((
         "schema_changed".into(),
@@ -196,18 +227,38 @@ fn normalize_structured(
     let raw = data
         .get("quota")
         .or_else(|| data.get("quotas"))
-        .and_then(Value::as_array)
         .ok_or_else(|| {
             (
                 "schema_changed".into(),
-                "structured statusLine quota array missing".into(),
+                "structured statusLine quota map or array missing".into(),
                 version.clone(),
                 replay,
             )
         })?;
+    let entries: Vec<(Option<&str>, &Value)> = match raw {
+        Value::Array(items) => items.iter().map(|item| (None, item)).collect(),
+        Value::Object(items) => items
+            .iter()
+            .map(|(bucket, item)| (Some(bucket.as_str()), item))
+            .collect(),
+        _ => {
+            return Err((
+                "schema_changed".into(),
+                "structured statusLine quota is neither a map nor an array".into(),
+                version,
+                replay,
+            ));
+        }
+    };
     let mut windows = Vec::new();
     let mut diagnostics = Vec::new();
-    for item in raw {
+    if account == "unknown" {
+        diagnostics.push(Diagnostic {
+            code: "account_scope_unknown".into(),
+            message: "structured statusLine did not identify a Provider Account".into(),
+        });
+    }
+    for (bucket, item) in entries {
         let Some(obj) = item.as_object() else {
             diagnostics.push(Diagnostic {
                 code: "schema_changed".into(),
@@ -216,6 +267,7 @@ fn normalize_structured(
             continue;
         };
         let window = string(obj.get("window").or_else(|| obj.get("window_name")))
+            .or_else(|| bucket.map(str::to_owned))
             .unwrap_or_else(|| "unknown".into());
         let scope = string(obj.get("scope")).unwrap_or_else(|| "account".into());
         let limit = number(obj.get("limit"));
@@ -232,7 +284,8 @@ fn normalize_structured(
         let remaining_percent = percent(remaining, limit)
             .or_else(|| number(obj.get("remaining_percent")).map(|x| x.round() as i64));
         windows.push(QuotaWindow {
-            limit_id: string(obj.get("id").or_else(|| obj.get("limit_id"))),
+            limit_id: string(obj.get("id").or_else(|| obj.get("limit_id")))
+                .or_else(|| bucket.map(str::to_owned)),
             limit_name: string(obj.get("name")),
             window,
             scope,
@@ -258,6 +311,13 @@ fn normalize_structured(
     let mut capabilities = BTreeMap::new();
     capabilities.insert("statusLine/structured_quota".into(), "supported");
     capabilities.insert("headless_text_quota".into(), "experimental");
+    let has_quota_value = windows.iter().any(|window| {
+        window.limit.is_some()
+            || window.used.is_some()
+            || window.remaining.is_some()
+            || window.used_percent.is_some()
+            || window.remaining_percent.is_some()
+    });
     Ok(Report {
         schema_version: "agentmeter.p0.collection-report.v1",
         outcome: "success",
@@ -277,7 +337,7 @@ fn normalize_structured(
             data_quality: "local_observed",
             collector_maturity: "experimental",
             availability: "available",
-            collection_state: "ready",
+            collection_state: if has_quota_value { "ready" } else { "idle" },
             freshness: "unknown",
             source_timestamp: timestamp(data.get("timestamp")),
             collected_at_unix_ms: now_ms(),
@@ -286,7 +346,11 @@ fn normalize_structured(
         diagnostics,
         evidence: Evidence {
             tested_version: version,
+            version_evidence: "fixture_declared",
+            tested_at: "2026-09-07T00:00:00+08:00",
             source_precedence: vec!["structured_status_line", "headless_text_experimental"],
+            fallback_release_policy: "prohibited_pending_real_version_validation",
+            limitations: "fixture parser evidence; not a real Antigravity installation or account",
             replay,
         },
     })
@@ -294,6 +358,8 @@ fn normalize_structured(
 fn normalize_text(
     text: &str,
     version: Option<String>,
+    locale: Option<&str>,
+    format_revision: Option<&str>,
     replay: bool,
 ) -> Result<Report, (String, String, Option<String>, bool)> {
     let Some(v) = version.as_deref() else {
@@ -304,10 +370,32 @@ fn normalize_text(
             replay,
         ));
     };
-    if !v.starts_with("1.") {
+    if v != "1.8.2" {
         return Err((
             "unsupported_version".into(),
-            format!("headless text fallback is not validated for {v}"),
+            format!("headless text fallback is validated only for 1.8.2, not {v}"),
+            version,
+            replay,
+        ));
+    }
+    if locale != Some("en-US") {
+        return Err((
+            "localization_unsupported".into(),
+            format!(
+                "headless text fallback is validated only for en-US, not {}",
+                locale.unwrap_or("unknown")
+            ),
+            version,
+            replay,
+        ));
+    }
+    if format_revision != Some("1") {
+        return Err((
+            "text_changed".into(),
+            format!(
+                "headless text format revision {} is not the validated revision 1",
+                format_revision.unwrap_or("unknown")
+            ),
             version,
             replay,
         ));
@@ -336,8 +424,8 @@ fn normalize_text(
     }
     if windows.is_empty() {
         return Err((
-            "text_changed".into(),
-            "headless output did not match the validated 1.x format".into(),
+            "unexpected_output".into(),
+            "headless output did not match the validated 1.8.2 en-US format".into(),
             version,
             replay,
         ));
@@ -376,7 +464,11 @@ fn normalize_text(
         }],
         evidence: Evidence {
             tested_version: version,
+            version_evidence: "fixture_declared",
+            tested_at: "2026-09-07T00:00:00+08:00",
             source_precedence: vec!["structured_status_line", "headless_text_experimental"],
+            fallback_release_policy: "prohibited_pending_real_version_validation",
+            limitations: "fixture parser evidence; not a real Antigravity installation or account",
             replay,
         },
     })
