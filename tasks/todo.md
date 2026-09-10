@@ -1,5 +1,40 @@
 # 2026-09-10 Continue Claude desktop handoff
 
+## 2026-09-10 Dynamic tablet monitors, silent collection, and updates
+
+### Goal & acceptance criteria
+- [ ] Desktop background refresh never opens a visible console window.
+- [ ] Tablet dashboard exposes an accessible fullscreen control and prioritizes quota data over explanatory copy.
+- [ ] Monitor tiles can be added or removed at runtime, persist across reloads, and never drop below one visible slot.
+- [ ] Settings allow monitor count/source selection and a manual update check.
+- [ ] App startup performs a non-blocking GitHub release check; failure never blocks monitoring.
+- [ ] Unavailable providers show provider-specific, step-by-step install/sign-in/retry guidance.
+- [ ] Existing pairing, monitor-only tablet permissions, stale-data semantics, and four-provider defaults remain intact.
+
+### Plan
+- [ ] Checkpoint A: build tight repro/tests for console process flags and current tablet/settings behavior.
+- [ ] Checkpoint A: inspect existing provider, persistence, packaging, and GitHub release seams.
+- [ ] Checkpoint B: implement the smallest silent-process and dynamic monitor/settings slice.
+- [ ] Checkpoint B: implement fullscreen and a content-first responsive tablet visual system.
+- [ ] Checkpoint C: add regression coverage for min-one, persistence, update states, and provider guidance.
+- [ ] Checkpoint C: run targeted tests, Clippy/build, browser geometry/a11y checks, then full local verifier.
+- [ ] Checkpoint D: document release/update trust boundaries, rollback, and any clean-VM or physical-tablet limits.
+
+### Risk & rollback
+- Risk: medium. Affected components: Windows child-process creation, tablet UI state, desktop settings, and release-network behavior.
+- Rollback: revert this section's focused files; no schema/data deletion. Persisted monitor preferences must tolerate absence and unknown future provider IDs.
+- Rollout: startup update checks are advisory and fail closed; installation remains an explicit user action.
+- Signals: no visible console regression test, update state/result, tablet render geometry, provider setup CTA availability.
+
+### Dependencies & environment
+- Windows/Tauri/Rust, vanilla browser UI, offline locked Cargo for normal verification.
+- GitHub release checks require network only at runtime; tests use fixtures/mocks.
+- Physical tablet and signed production releases remain separate acceptance boundaries unless available locally.
+
+### Working notes
+- Domain invariant: the tablet remains monitor-only; settings that mutate desktop/provider configuration must stay on desktop unless an existing contract explicitly permits otherwise.
+- Preserve unknown observations as unknown; never fabricate zero/full quota.
+
 ## 2026-09-10 Tablet request_parse_failed
 - [x] Reproduce delayed browser request failure on Windows before fixing.
 - [x] Restore blocking mode on per-connection workers; allow verified USB origin only.
