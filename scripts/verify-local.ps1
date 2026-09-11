@@ -8,6 +8,7 @@ try {
         'scripts\test-desktop-process-lifecycle.ps1',
         'scripts\test-copilot-live.ps1',
         'scripts\test-four-quota.ps1',
+        'scripts\test-refresh-console.ps1',
         'scripts\prepare-desktop-quota.ps1',
         'desktop-p0\tests\instance-probe.ps1'
     )) {
@@ -29,11 +30,14 @@ $checks = @(
         @{Name='Quota parsers'; Tool='node'; Args=@('--test','tests/quota_smoke.test.mjs')},
         @{Name='Quota desktop entry syntax'; Tool='node'; Args=@('--check','scripts/quota-desktop.mjs')},
         @{Name='Automatic quota UI'; Tool='node'; Args=@('--test','desktop-p0/tests/auto-quota-ui.test.cjs')},
+        @{Name='Desktop layout rules'; Tool='node'; Args=@('--test','tests/desktop_layout.test.cjs')},
+        @{Name='Responsive browser verifier syntax'; Tool='node'; Args=@('--check','scripts/verify-desktop-responsive.cjs')},
+        @{Name='Packaged updater startup config'; Tool='node'; Args=@('--test','tests/updater_boot_config.test.cjs')},
         @{Name='Root formatting'; Tool='cargo'; Args=@('fmt','--all','--','--check')},
         @{Name='Desktop formatting'; Tool='cargo'; Args=@('fmt','--manifest-path','desktop-p0/Cargo.toml','--all','--','--check')},
         @{Name='Root tests'; Tool='cargo'; Args=@('test','--offline','--locked','--quiet')},
         @{Name='Desktop tests'; Tool='cargo'; Args=@('test','--manifest-path','desktop-p0/Cargo.toml','--offline','--locked','--quiet')},
-        @{Name='Browser logic tests'; Tool='node'; Args=@('--test','tests/tablet_protocol.test.cjs','tests/tablet_recovery.test.cjs','desktop-p0/tests/source-watch.test.cjs','desktop-p0/tests/setup.test.cjs')},
+        @{Name='Browser logic tests'; Tool='node'; Args=@('--test','tests/tablet_protocol.test.cjs','tests/tablet_recovery.test.cjs','tests/tablet_view.test.cjs','tests/background_window_contract.test.cjs','tests/updater_contract.test.cjs','desktop-p0/tests/source-watch.test.cjs','desktop-p0/tests/setup.test.cjs')},
         @{Name='Tablet client syntax'; Tool='node'; Args=@('--check','tablet-ui/client.js')},
         @{Name='Desktop client syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/dashboard.js')},
         @{Name='Setup client syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/setup.js')},

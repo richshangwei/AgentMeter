@@ -1,0 +1,35 @@
+{
+  "schema_version": "agentmeter.desktop-process-lifecycle/v1",
+  "outcome": "success",
+  "executable": "D:\\WorkSpace\\AgentMeter\\desktop-p0\\target\\x86_64-pc-windows-msvc\\release\\agentmeter-desktop-p0.exe",
+  "executable_sha256": "E8A6745EB43E40669D719C2CBBD8D525D4995D893BED22C4786D88FA0DE5F9E3",
+  "product_version": "0.1.0",
+  "os_version": "Microsoft Windows NT 10.0.26200.0",
+  "primary_pid": 3516,
+  "readiness": "accepted",
+  "repeated_launches": [
+    {
+      "iteration": 1,
+      "secondary_exit": 0,
+      "resident_count": 1,
+      "resident_pid": 3516
+    }
+  ],
+  "full_exit_request_code": 0,
+  "resident_after_exit": 0,
+  "abnormal_termination": {
+    "terminated_pid": 51900,
+    "resident_after_termination": 0
+  },
+  "post_abnormal_relaunch": {
+    "primary_pid": 23744,
+    "readiness": "accepted",
+    "secondary_exit": 0,
+    "resident_count": 1,
+    "resident_pid": 23744,
+    "full_exit_request_code": 0,
+    "resident_after_exit": 0
+  },
+  "same_interactive_desktop_only": true,
+  "cross_desktop_policy": "reject_without_starting_a_second_instance"
+}

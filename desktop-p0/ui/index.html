@@ -1,12 +1,53 @@
 <!doctype html>
-<html lang="zh-Hant"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>AgentMeter</title><link rel="stylesheet" href="style.css"><script src="dashboard.js" defer></script></head>
-<body><main><header class="command-bar"><strong>◈ AgentMeter</strong><p id="message" role="status" aria-live="polite">正在自動連線…</p><label class="auto-toggle" title="每次完成後 60 秒再次讀取，視窗關閉到通知區後仍持續"><input id="auto-quota" type="checkbox" checked>自動更新</label><button id="refresh">全部重新整理 ↻</button></header>
-<section class="cards">
-<article><div class="heading"><h2>Codex</h2><span id="codex-status">等待讀取</span></div><p>本機登入 · 官方額度</p><div id="codex-quota" class="quota">— 尚未取得額度</div><p id="codex-time" class="hint">尚無資料</p><button data-provider="codex">重新整理</button><p id="codex-message" class="hint" role="status"></p></article>
-<article><div class="heading"><h2>Claude Code</h2><span id="claude-status">等待讀取</span></div><p>官方 /usage · 自動讀取</p><div id="claude-quota" class="quota">— 尚未取得額度</div><p id="claude-time" class="hint">尚无資料</p><button data-provider="claude">重新整理</button><button id="claude-enable" hidden>啟用 Claude 讀取</button><p id="claude-message" class="hint" role="status"></p></article>
-<article><div class="heading"><h2>GitHub Copilot</h2><span id="copilot-status">等待讀取</span></div><p>Premium interactions · 不使用 Billing</p><div id="copilot-quota" class="quota">— 尚未取得額度</div><p id="copilot-time" class="hint">尚无資料</p><button data-provider="copilot">重新整理</button><p id="copilot-message" class="hint" role="status"></p></article>
-<article><div class="heading"><h2>Antigravity</h2><span id="antigravity-status">等待讀取</span></div><p>官方 CLI · 自動讀取</p><div id="antigravity-quota" class="quota">— 尚未取得額度</div><p id="antigravity-time" class="hint">尚无資料</p><button data-provider="antigravity">重新整理</button><p id="antigravity-message" class="hint" role="status"></p></article>
-</section>
-<details class="tablet-settings"><summary>平板連線設定</summary><section class="tablet-control" aria-labelledby="tablet-title"><div><p class="eyebrow">TABLET / 安全監看</p><h2 id="tablet-title">平板服務</h2><p id="tablet-status" role="status" aria-live="polite">讀取平板服務狀態…</p><p id="tablet-origin" class="hint">尚未啟動。啟動服務不會自動建立 ADB mapping。</p><p id="tablet-usb-status" class="hint">USB 尚未設定；瀏覽器啟動與已認證在線狀態會分開顯示。</p></div><div class="tablet-actions"><div class="tablet-buttons"><button id="tablet-start">啟動服務</button><button id="tablet-stop" disabled>停止服務</button><button id="tablet-pair" disabled>產生 2 分鐘配對碼</button><button id="tablet-clear" disabled>清除配對</button></div><output id="tablet-code" aria-live="polite">••••••••</output><p class="hint">配對碼只顯示在此桌面畫面，不會加入網址或一般狀態。請勿將含配對碼的畫面截圖或分享。</p><div class="usb-fields"><label for="adb-path">ADB 執行檔完整路徑</label><input id="adb-path" placeholder="C:\…\platform-tools\adb.exe"><label for="device-serial">明確裝置 serial</label><input id="device-serial" autocomplete="off"><label for="device-port">Tablet device port</label><input id="device-port" type="number" min="1" max="65535" value="8317"></div><div class="tablet-buttons"><button id="tablet-usb-connect" disabled>建立 USB mapping</button><button id="tablet-usb-open" disabled>在平板開啟</button><button id="tablet-usb-recover" disabled>復原 mapping</button><button id="tablet-usb-disconnect" disabled>安全中斷 USB</button></div></div></section>
-</details>
-<footer>0.1.0 · 使用已登入的官方工具 · 讀取失敗會標示舊資料 · 關閉視窗後仍可由通知區開啟</footer></main></body></html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AgentMeter</title>
+  <link rel="icon" type="image/png" href="assets/agentmeter-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style-overrides.css">
+  <script src="layout.js" defer></script>
+  <script src="dashboard.js" defer></script>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="command-bar">
+      <div class="brand brand-lockup">
+        <img src="assets/agentmeter-icon.png" alt="" class="brand-icon">
+        <strong class="brand-name">Agent<span>Meter</span></strong>
+        <span class="brand-divider" aria-hidden="true"></span>
+        <span class="brand-caption">AI 代理監控</span>
+      </div>
+      <div class="sync-summary">
+        <p id="message" class="system-state" role="status" aria-live="polite">正在自動連線…</p>
+        <span class="sync-divider" aria-hidden="true"></span>
+        <span class="sync-label">同步時間</span>
+        <time id="sync-clock">--:--</time>
+      </div>
+      <label class="auto-toggle" title="每次完成後 60 秒再次讀取，視窗關閉到通知區後仍持續"><input id="auto-quota" type="checkbox" checked><span>自動更新</span></label>
+      <nav class="top-actions" aria-label="主要操作"><button id="tablet-settings-open" class="ghost">平板連線</button><button id="app-settings" class="ghost">設定</button><button id="refresh">全部更新</button></nav>
+    </header>
+
+    <section class="dashboard-head"><div><p class="eyebrow">LIVE AGENT OVERVIEW</p><h1>AI 工具使用狀態</h1></div><p>即時額度、週期與連線狀態集中顯示</p></section>
+
+    <section id="desktop-cards" class="cards" aria-label="監控卡片">
+      <article id="codex-card" class="monitor-card" data-provider-card="codex"><div class="heading"><div class="provider-title"><img class="provider-mark" src="assets/codex-icon.png" alt=""><div><h2>Codex</h2><p>AI 程式開發助手</p></div></div><span id="codex-status">等待讀取</span></div><div id="codex-quota" class="quota">—</div><p id="codex-time" class="hint">尚無資料</p><button data-provider="codex">更新</button><p id="codex-message" class="hint card-message" role="status"></p></article>
+      <article id="claude-card" class="monitor-card" data-provider-card="claude"><div class="heading"><div class="provider-title"><img class="provider-mark" src="assets/claude-icon.png" alt=""><div><h2>Claude Code</h2><p>AI 協作開發助手</p></div></div><span id="claude-status">等待讀取</span></div><div id="claude-quota" class="quota">—</div><p id="claude-time" class="hint">尚無資料</p><div class="button-row"><button data-provider="claude">更新</button><button id="claude-enable" class="ghost" hidden>啟用讀取</button></div><p id="claude-message" class="hint card-message" role="status"></p></article>
+      <article id="copilot-card" class="monitor-card" data-provider-card="copilot"><div class="heading"><div class="provider-title"><img class="provider-mark" src="assets/copilot-icon.png" alt=""><div><h2>GitHub Copilot</h2><p>AI 程式碼助手</p></div></div><span id="copilot-status">等待讀取</span></div><div id="copilot-quota" class="quota">—</div><p id="copilot-time" class="hint">尚無資料</p><button data-provider="copilot">更新</button><p id="copilot-message" class="hint card-message" role="status"></p></article>
+      <article id="antigravity-card" class="monitor-card" data-provider-card="antigravity"><div class="heading"><div class="provider-title"><img class="provider-mark" src="assets/antigravity-icon.png" alt=""><div><h2>Antigravity</h2><p>AI 研究與推理助手</p></div></div><span id="antigravity-status">等待讀取</span></div><div id="antigravity-quota" class="quota">—</div><p id="antigravity-time" class="hint">尚無資料</p><button data-provider="antigravity">更新</button><p id="antigravity-message" class="hint card-message" role="status"></p></article>
+      <div id="desktop-empty" class="dashboard-empty" hidden><strong>尚未選擇監控</strong><span>請從設定加入要顯示的 AI Agent。</span><button id="desktop-empty-settings" class="ghost">開啟設定</button></div>
+    </section>
+
+    <footer><span>0.1.0 · 使用已登入的官方工具 · 失敗時保留舊資料</span><nav id="desktop-pager" class="pager" aria-label="監控分頁" hidden><button id="desktop-prev" class="ghost">上一頁</button><span id="desktop-page">1 / 1</span><button id="desktop-next" class="ghost">下一頁</button></nav></footer>
+  </main>
+
+  <dialog id="app-settings-dialog"><div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div><section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section><section class="update-panel"><p class="eyebrow">APP UPDATE</p><h3>版本更新</h3><p id="update-status" role="status" aria-live="polite">正在檢查更新…</p><div class="button-row"><button id="check-update">檢查更新</button><button id="install-update" hidden>下載、驗證並安裝</button></div><p class="hint">開啟 AgentMeter 時會自動檢查；只有通過公開金鑰驗證的版本才能安裝。</p></section></dialog>
+
+  <dialog id="tablet-settings-dialog"><div class="dialog-title"><div><p class="eyebrow">TABLET / SECURE VIEW</p><h2>平板連線</h2></div><button id="tablet-settings-close" class="icon-button" aria-label="關閉平板設定">×</button></div><section class="tablet-control" aria-labelledby="tablet-title"><div class="connection-panel"><h3 id="tablet-title">連線狀態</h3><p id="tablet-status" role="status" aria-live="polite">讀取平板服務狀態…</p><p id="tablet-origin" class="hint">尚未啟動。</p><p id="tablet-usb-status" class="hint">USB 尚未設定。</p><output id="tablet-code" aria-live="polite">••••••••</output><p class="hint">配對碼只顯示在桌面，不會加入網址。</p></div><div class="tablet-actions"><div class="tablet-buttons"><button id="tablet-start">啟動服務</button><button id="tablet-stop" disabled>停止服務</button><button id="tablet-pair" disabled>產生配對碼</button><button id="tablet-clear" disabled>清除配對</button></div><div class="usb-fields"><label for="adb-path">ADB 完整路徑</label><input id="adb-path" placeholder="C:\…\platform-tools\adb.exe"><label for="device-serial">裝置 serial</label><input id="device-serial" autocomplete="off"><label for="device-port">裝置連接埠</label><input id="device-port" type="number" min="1" max="65535" value="8317"></div><div class="tablet-buttons"><button id="tablet-usb-connect" disabled>建立 USB</button><button id="tablet-usb-open" disabled>在平板開啟</button><button id="tablet-usb-recover" disabled>復原連線</button><button id="tablet-usb-disconnect" disabled>中斷 USB</button></div></div></section></dialog>
+
+  <dialog id="desktop-guide-dialog"><div class="dialog-title"><h2 id="desktop-guide-title">安裝步驟</h2><button id="desktop-guide-close" class="icon-button" aria-label="關閉安裝教學">×</button></div><ol id="desktop-guide-steps" class="guide-steps"></ol><a id="desktop-guide-link" class="official-link" target="_blank" rel="noopener noreferrer">開啟官方安裝說明</a></dialog>
+  <nav id="desktop-options-pager" class="pager" aria-label="桌面監控選項分頁" hidden><button id="desktop-options-prev" class="ghost">上一組</button><span id="desktop-options-page">1 / 1</span><button id="desktop-options-next" class="ghost">下一組</button></nav>
+  <p id="pair-safety-note" class="hint" hidden>請勿將含配對碼的畫面截圖或分享。</p>
+</body>
+</html>

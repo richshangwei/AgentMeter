@@ -9,6 +9,8 @@ mod lifecycle;
 mod settings;
 mod setup;
 mod tablet_bridge;
+#[cfg(windows)]
+mod updater;
 use tauri::{
     Manager, WindowEvent,
     image::Image,
@@ -134,9 +136,11 @@ fn main() {
 
     let launch_hidden = env::args().any(|arg| arg == "--hidden");
     let result = tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(dashboard::Dashboard::default())
         .manage(setup::SetupState::default())
         .manage(tablet_bridge::TabletBridge::default())
+        .manage(updater::PendingUpdate(std::sync::Mutex::new(None)))
         .invoke_handler(tauri::generate_handler![
             dashboard::snapshot,
             auto_quota::refresh_quota,
@@ -161,7 +165,10 @@ fn main() {
             tablet_bridge::tablet_usb_connect,
             tablet_bridge::tablet_usb_disconnect,
             tablet_bridge::tablet_usb_recover,
-            tablet_bridge::tablet_usb_open
+            tablet_bridge::tablet_usb_open,
+            updater::update_status,
+            updater::check_update,
+            updater::install_update
         ])
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if argv.iter().any(|arg| arg == "--probe-ready") {
@@ -219,14 +226,14 @@ fn main() {
             app.manage(settings::SettingsStore(std::sync::Mutex::new(
                 app.path().app_config_dir()?.join("sources.json"),
             )));
-            let show = MenuItem::with_id(app, "show", "Show AgentMeter", true, None::<&str>)?;
-            let exit = MenuItem::with_id(app, "exit", "Exit", true, None::<&str>)?;
+            let show = MenuItem::with_id(app, "show", "顯示 AgentMeter", true, None::<&str>)?;
+            let exit = MenuItem::with_id(app, "exit", "結束 AgentMeter", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &exit])?;
-            let pixels = [0x58, 0xa6, 0xff, 0xff].repeat(32 * 32);
+            let pixels = include_bytes!("../icons/tray-icon.rgba").to_vec();
 
             TrayIconBuilder::with_id("main")
                 .icon(Image::new_owned(pixels, 32, 32))
-                .tooltip("AgentMeter P0")
+                .tooltip("AgentMeter · AI 代理監控")
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(|app, event| match event.id().as_ref() {

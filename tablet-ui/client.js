@@ -1,124 +1,33 @@
 const get = id => document.getElementById(id);
-let session = '', csrf = '', pairCsrf = '';
+const providerCatalog = {codex:{name:'Codex'},claude:{name:'Claude Code'},copilot:{name:'GitHub Copilot'},antigravity:{name:'Antigravity'},cursor:{name:'Cursor',catalogOnly:true},kiro:{name:'Kiro',catalogOnly:true}};
+const providerNames = Object.fromEntries(Object.entries(providerCatalog).map(([id,item])=>[id,item.name]));
+const providerAccents = {codex:'#35dcff',claude:'#ffae57',copilot:'#52dcff',antigravity:'#a478ff'};
+const providerIcons = {codex:'/assets/codex-icon.png',claude:'/assets/claude-icon.png',copilot:'/assets/copilot-icon.png',antigravity:'/assets/antigravity-icon.png'};
+function providerName(provider){return Object.prototype.hasOwnProperty.call(providerNames,provider)?providerNames[provider]:provider;}
+function providerAccent(provider){return Object.prototype.hasOwnProperty.call(providerAccents,provider)?providerAccents[provider]:'#1269ed';}
+let session = '', csrf = '', pairCsrf = '', latestSnapshot = null, selectedMonitors = null, monitorPage = 0, settingsOptionPage = 0;
 const acceptSnapshot = createSnapshotGate();
-const recovery = createPairRecovery({
-  getItem: key => localStorage.getItem(key),
-  setItem: (key,value) => localStorage.setItem(key,value),
-  removeItem: key => localStorage.removeItem(key)
-});
+const recovery = createPairRecovery({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value),removeItem:key=>localStorage.removeItem(key)});
 let controller, connecting = false, retry;
-async function api(path, body = {}, signal) {
-  return fetch(path, {method:'POST', credentials:'same-origin', cache:'no-store',
-    headers:{'Content-Type':'application/json', Authorization:`Bearer ${session}`, 'X-CSRF-Token':csrf},
-    body:JSON.stringify(body), signal});
-}
-function render(value, allowNewStream = false) {
-  if (!acceptSnapshot(value, allowNewStream)) return;
-  get('revision').textContent = `版本 ${value.revision} · 完整快照 · ${value.provider_data === 'live' ? '桌面收集資料' : '模擬資料'}`;
-  get('cards').replaceChildren();
-  for (const provider of value.providers) {
-    const card = document.createElement('article'), title = document.createElement('h2');
-    title.textContent = provider.provider; card.append(title);
-    const details = document.createElement('details'), summary = document.createElement('summary');
-    summary.textContent = '資料來源與狀態'; details.append(summary);
-    const names = {setup:'連線設定',paused:'暫停',availability:'來源狀態',collection_state:'收集狀態',freshness:'新鮮度',data_quality:'資料品質',collector_maturity:'支援程度',failure_code:'問題代碼'};
-    for (const [key,label] of Object.entries(names)) {
-      const row = document.createElement('p'); row.textContent = `${label}：${provider[key] ?? '未知'}`; details.append(row);
-    }
-    if (!(provider.quota_windows || []).length) {
-      const row = document.createElement('p'); row.textContent = '剩餘額度：尚未取得'; card.append(row);
-    }
-    for (const quota of provider.quota_windows || []) {
-      const row = document.createElement('p'); row.textContent = `${quota.label || quota.bucket_key || '額度'}：${quota.remaining_percent == null ? '未知' : `${quota.remaining_percent}% 剩餘`}`; card.append(row);
-    }
-    for (const usage of provider.source_usage || []) {
-      const row = document.createElement('p'); row.textContent = `${usage.label || usage.model || '使用量'}：${usage.used ?? '未知'} ${usage.unit || ''}`; card.append(row);
-    }
-    const stamp = document.createElement('p'); stamp.textContent = `資料時間：${provider.collected_at ? new Date(Number(provider.collected_at)).toLocaleString('zh-TW') : '尚未取得'}`; card.append(stamp);
-    card.append(details);
-    const button = document.createElement('button'); button.textContent = '要求重新整理';
-    button.onclick = async () => {
-      button.disabled = true;
-      try {
-        const response = await api('/api/v1/refresh', {source:provider.provider});
-        const result = await response.json();
-        const messages = {accepted:'已接受，等待新快照。',coalesced:'正在更新中，請稍候。',throttled:'剛剛已更新，請稍後再試。',unsupported:'此來源尚未支援更新。',paused:'監控已暫停，請在桌面恢復。'};
-        get('status').textContent = response.status === 202 ? (messages[result.result] || '請稍後重試。') : '重新整理未接受；請稍後重試。';
-      } catch { get('status').textContent = '連線中斷，顯示的數值可能已過期。'; }
-      finally { button.disabled = false; }
-    };
-    card.append(button); get('cards').append(card);
-  }
-}
-async function connect() {
-  if (connecting || !session) return;
-  connecting = true; clearTimeout(retry); controller = new AbortController();
-  const currentController = controller;
-  const watchdog = createWatchdog(() => currentController.abort());
-  watchdog.touch();
-  try {
-    let response = await api('/api/v1/dashboard', {}, controller.signal);
-    if (response.status === 401 && pairCsrf) {
-      const exchange = await fetch('/api/v1/session', {method:'POST',credentials:'same-origin',
-        headers:{'Content-Type':'application/json','X-CSRF-Token':pairCsrf},body:'{}',signal:controller.signal});
-      if (!exchange.ok) {
-        if (exchange.status === 401 || exchange.status === 403) { recovery.clear(); pairCsrf = ''; session = ''; get('pairing').hidden = false; }
-        throw Error('pair exchange failed');
-      }
-      const next = await exchange.json(); session = next.tablet_session; csrf = next.csrf_token;
-      response = await api('/api/v1/dashboard', {}, controller.signal);
-    }
-    if (!response.ok) throw Error('dashboard unavailable');
-    const initial = await response.json();
-    render(initial, true); get('status').textContent = initial.provider_data === 'live' ? '已連接桌面 · 請核對各來源的資料時間' : '已連接 · 模擬資料';
-    const events = await api('/api/v1/events', {}, controller.signal);
-    if (!events.ok || !events.body) throw Error('stream unavailable');
-    const reader = events.body.getReader(), decoder = new TextDecoder();
-    const parse = createEventParser(value => render(value), () => watchdog.touch());
-    while (true) {
-      const {done,value} = await reader.read(); if (done) throw Error('stream closed');
-      parse(decoder.decode(value, {stream:true}));
-    }
-  } catch {
-    get('status').textContent = session ? '連線中斷；舊資料可能過期，正在重新連線。' : '需要重新配對。';
-  } finally {
-    watchdog.stop();
-    controller.abort(); connecting = false;
-    if (session) retry = setTimeout(connect, 3000);
-  }
-}
-get('pair').onclick = async () => {
-  get('pair').disabled = true;
-  try {
-    const code = get('code').value; get('code').value = '';
-    if (!/^\d{8}$/.test(code)) throw Error('invalid code');
-    const response = await api('/api/v1/pair', {code});
-    if (!response.ok) throw Error('pair failed');
-    const result = await response.json(); session = result.tablet_session; csrf = result.csrf_token; pairCsrf = result.pair_csrf_token;
-    const saved = recovery.save(pairCsrf);
-    get('recovery-status').textContent = saved ? '已保留此瀏覽器的配對恢復資料。' : '瀏覽器不允許儲存；重新開啟後需重新配對。';
-    get('pairing').hidden = true; connect();
-  } catch { get('status').textContent = '配對未成功，請在桌面確認有效配對碼。'; }
-  finally { get('code').value = ''; get('pair').disabled = false; }
-};
-window.addEventListener('online', connect);
-async function restorePair() {
-  pairCsrf = recovery.read();
-  if (!pairCsrf) return;
-  get('pair').disabled = true;
-  const attempt = new AbortController();
-  const deadline = setTimeout(() => attempt.abort(), 10000);
-  try {
-    const response = await fetch('/api/v1/session', {method:'POST',credentials:'same-origin',cache:'no-store',
-      headers:{'Content-Type':'application/json','X-CSRF-Token':pairCsrf},body:'{}',signal:attempt.signal});
-    if (!response.ok) {
-      if (response.status === 401 || response.status === 403) { recovery.clear(); pairCsrf = ''; }
-      throw Error('restore failed');
-    }
-    const result = await response.json(); session = result.tablet_session; csrf = result.csrf_token;
-    get('pairing').hidden = true; get('recovery-status').textContent = '已恢復配對，正在取得最新完整快照。';
-    connect();
-  } catch { get('status').textContent = '暫時無法恢復配對。確認主機已啟動且網址相同，再重新載入；配對已撤銷時請重新配對。'; }
-  finally { clearTimeout(deadline); get('pair').disabled = false; }
-}
-restorePair();
+async function api(path,body={},signal){return fetch(path,{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json',Authorization:`Bearer ${session}`,'X-CSRF-Token':csrf},body:JSON.stringify(body),signal});}
+function availableIds(){return(latestSnapshot?.providers||[]).map(provider=>provider.provider);}
+function loadSelection(ids){if(selectedMonitors!==null)return normalizeMonitorSelection(selectedMonitors,ids);try{const raw=localStorage.getItem(monitorPreferenceKey);selectedMonitors=normalizeMonitorSelection(raw===null?null:JSON.parse(raw),ids);}catch{selectedMonitors=normalizeMonitorSelection(null,ids);}return selectedMonitors;}
+function saveSelection(){try{localStorage.setItem(monitorPreferenceKey,JSON.stringify(selectedMonitors));}catch{}}
+function statusText(provider){if(provider.collection_state==='error')return provider.freshness==='stale'?'舊資料':'需處理';return(provider.quota_windows||[]).length||(provider.source_usage||[]).length?'即時':'等待';}
+function formatReset(value){if(value==null)return'';if(typeof value==='number')return`重設 ${new Date(value*1000).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}`;return`重設 ${value}`;}
+function level(value){return value==null||value>30?'#62f3c5':value>10?'#ffc66d':'#ff7185';}
+function createMetric(item,index){const metric=document.createElement('div');metric.className='metric';const label=document.createElement('span');label.className='metric-label';label.textContent=item.label||item.bucket_key||'可用額度';const value=document.createElement('strong');value.className='metric-value';const remaining=typeof item.remaining_percent==='number'&&Number.isFinite(item.remaining_percent)?Math.max(0,Math.min(100,item.remaining_percent)):null;metric.style.setProperty('--remaining',remaining==null?0:remaining);value.textContent=remaining==null?'—':`${remaining}%`;const track=document.createElement('div');track.className='track';if(remaining!=null){const fill=document.createElement('div');fill.className='fill';fill.style.width=`${remaining}%`;fill.style.background='var(--accent)';track.append(fill);}metric.append(label,value,track);if(index>0)metric.className+=' secondary-metric';return metric;}
+function createUsageMetric(item,index){const metric=document.createElement('div');metric.className='metric'+(index>0?' secondary-metric':'');const label=document.createElement('span');label.className='metric-label';label.textContent=item.label||item.model||'使用量';const value=document.createElement('strong');value.className='metric-value';const used=typeof item.used==='number'&&Number.isFinite(item.used)?item.used:null;value.textContent=used==null?'—':`${used}${item.unit?` ${item.unit}`:''}`;metric.append(label,value);return metric;}
+function showGuide(provider){const guide=setupGuide(provider.provider,provider.failure_code);get('guide-title').textContent=`${guide.name} 安裝與連線`;get('guide-steps').replaceChildren(...guide.steps.map(text=>{const item=document.createElement('li');item.textContent=text;return item;}));const link=get('guide-link');link.hidden=!guide.url;if(guide.url)link.href=guide.url;else link.removeAttribute('href');get('guide-dialog').showModal();}
+function refreshButton(provider){const button=document.createElement('button');button.textContent='更新';button.onclick=async()=>{button.disabled=true;try{const response=await api('/api/v1/refresh',{source:provider.provider});const result=await response.json();const messages={accepted:'更新中',coalesced:'更新中',throttled:'稍後再試',unsupported:'暫不支援',paused:'桌機已暫停'};get('status').textContent=response.status===202?(messages[result.result]||'更新中'):'更新未接受';}catch{get('status').textContent='連線中斷，正在重連';}finally{button.disabled=false;}};return button;}
+function createCard(provider){const card=document.createElement('article');card.className='card';card.dataset.provider=provider.provider;card.style.setProperty('--accent',providerAccent(provider.provider));card.style.setProperty('--accent-soft',providerAccent(provider.provider)+'88');const head=document.createElement('div');head.className='card-head';let badge;if(providerIcons[provider.provider]){badge=document.createElement('img');badge.src=providerIcons[provider.provider];badge.alt='';}else{badge=document.createElement('span');badge.textContent=providerName(provider.provider).slice(0,1);badge.setAttribute('aria-hidden','true');}badge.className='provider-badge';const title=document.createElement('h2');title.textContent=providerName(provider.provider);const chip=document.createElement('span');chip.className='chip';chip.textContent=statusText(provider);if(provider.collection_state==='error')chip.className+=provider.freshness==='stale'?' stale':' error';head.append(badge,title,chip);card.append(head);const metrics=document.createElement('div');metrics.className='metrics';const quotas=provider.quota_windows||[],usage=provider.source_usage||[];if(quotas.length)quotas.forEach((item,index)=>metrics.append(createMetric(item,index)));else if(usage.length)usage.forEach((item,index)=>metrics.append(createUsageMetric(item,index)));else{const unknown=document.createElement('div');unknown.className='unknown';const image=document.createElement('img');image.src='/assets/empty-cloud.png';image.alt='';const title=document.createElement('strong');title.textContent='尚未取得資料';const note=document.createElement('span');note.textContent='未同步';unknown.append(image,title,note);metrics.append(unknown);}card.append(metrics);const foot=document.createElement('div');foot.className='card-foot';const first=quotas[0],parts=[];if(first)parts.push(formatReset(first.resets_at??first.reset_display));parts.push(provider.collected_at?new Date(Number(provider.collected_at)).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'未同步');foot.textContent=parts.filter(Boolean).join(' · ');card.append(foot);const actions=document.createElement('div');actions.className='card-actions';actions.append(refreshButton(provider));if(needsSetupGuide(provider)){const guide=document.createElement('button');guide.className='secondary';guide.textContent='安裝步驟';guide.onclick=()=>showGuide(provider);actions.append(guide);}card.append(actions);return card;}
+function renderSettings(){const ids=availableIds();selectedMonitors=normalizeMonitorSelection(loadSelection(ids),ids);const optionIds=[...selectedMonitors,...Object.keys(providerCatalog).filter(id=>!selectedMonitors.includes(id)),...ids.filter(id=>!selectedMonitors.includes(id)&&!Object.prototype.hasOwnProperty.call(providerCatalog,id))];const optionHeight=window.innerHeight||640,pageSize=optionHeight<520?2:optionHeight<760?4:8,pages=Math.max(1,Math.ceil(optionIds.length/pageSize));settingsOptionPage=Math.max(0,Math.min(settingsOptionPage,pages-1));const visible=optionIds.slice(settingsOptionPage*pageSize,(settingsOptionPage+1)*pageSize);get('monitor-options').replaceChildren(...visible.map(id=>{const row=document.createElement('div');row.className='monitor-option';const monitorable=ids.includes(id),selected=selectedMonitors.includes(id);if(monitorable){const input=document.createElement('input');input.type='checkbox';input.checked=selected;input.setAttribute('aria-label',`${providerName(id)} 顯示在主畫面`);input.onchange=()=>{selectedMonitors=setMonitorEnabled(selectedMonitors,id,input.checked,ids);monitorPage=0;saveSelection();renderCards();renderSettings();};row.append(input);}else{const dot=document.createElement('span');dot.className='catalog-dot';dot.setAttribute('aria-hidden','true');row.append(dot);}const info=document.createElement('span');info.className='monitor-option-info';const name=document.createElement('strong');name.textContent=providerName(id);const state=document.createElement('small');state.textContent=monitorable?(selected?'顯示中 · 可監控':'可監控 · 未顯示'):'尚未支援監控 · 請在桌面設定';info.append(name,state);row.append(info);if(selected){const order=document.createElement('span');order.className='monitor-order';const index=selectedMonitors.indexOf(id);for(const [direction,label] of [[-1,'上移'],[1,'下移']]){const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=label;button.setAttribute('aria-label',`${providerName(id)}${label}`);button.disabled=direction<0?index===0:index===selectedMonitors.length-1;button.onclick=()=>{selectedMonitors=moveMonitor(selectedMonitors,id,direction);monitorPage=0;saveSelection();renderCards();renderSettings();};order.append(button);}row.append(order);}else if(!monitorable){const badge=document.createElement('span');badge.className='catalog-badge';badge.textContent='候選 Agent';row.append(badge);}return row;}));get('monitor-count').textContent=`主畫面顯示 ${selectedMonitors.length} 個監控；每頁最多 4 張。`;get('settings-options-pager').hidden=pages<=1;get('settings-options-page').textContent=`${settingsOptionPage+1} / ${pages}`;get('settings-options-prev').disabled=settingsOptionPage===0;get('settings-options-next').disabled=settingsOptionPage===pages-1;}
+function renderCards(){if(!latestSnapshot)return;const ids=availableIds();selectedMonitors=normalizeMonitorSelection(loadSelection(ids),ids);const byId=new Map(latestSnapshot.providers.map(provider=>[provider.provider,provider]));const page=pagedMonitorSlots(selectedMonitors,ids,monitorPage,4),grid=tabletViewportGrid(window.innerWidth,window.innerHeight,page.slots.length);monitorPage=page.page;const nodes=page.slots.map(id=>createCard(byId.get(id)));if(!nodes.length){const empty=document.createElement('div');empty.className='dashboard-empty';const title=document.createElement('strong');title.textContent='尚未選擇監控';const note=document.createElement('span');note.textContent='請從設定加入要顯示的 AI Agent。';const button=document.createElement('button');button.className='secondary';button.textContent='開啟設定';button.onclick=()=>{renderSettings();get('settings-dialog').showModal();};empty.append(title,note,button);nodes.push(empty);}const cards=get('cards');cards.dataset.count=String(page.slots.length);cards.dataset.density=page.slots.length===3||window.innerHeight<600?'compact':'comfortable';cards.style.setProperty('--grid-columns',grid.columns);cards.style.setProperty('--grid-rows',grid.rows);cards.replaceChildren(...nodes);const pager=get('pager');pager.hidden=page.pages<=1;get('page-indicator').textContent=`${page.page+1} / ${page.pages}`;get('previous-page').disabled=page.page===0;get('next-page').disabled=page.page===page.pages-1;}
+function render(value,allowNewStream=false){if(!acceptSnapshot(value,allowNewStream))return;latestSnapshot=value;renderCards();renderSettings();get('revision').textContent=value.provider_data==='live'?'桌面即時資料':'模擬資料';get('last-sync').textContent=`同步 ${new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'})}`;}
+async function connect(){if(connecting||!session)return;connecting=true;clearTimeout(retry);controller=new AbortController();const currentController=controller;const watchdog=createWatchdog(()=>currentController.abort());watchdog.touch();try{let response=await api('/api/v1/dashboard',{},controller.signal);if(response.status===401&&pairCsrf){const exchange=await fetch('/api/v1/session',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json','X-CSRF-Token':pairCsrf},body:'{}',signal:controller.signal});if(!exchange.ok){if(exchange.status===401||exchange.status===403){recovery.clear();pairCsrf='';session='';get('pairing').hidden=false;}throw Error('pair exchange failed');}const next=await exchange.json();session=next.tablet_session;csrf=next.csrf_token;response=await api('/api/v1/dashboard',{},controller.signal);}if(!response.ok)throw Error('dashboard unavailable');const initial=await response.json();render(initial,true);get('pairing').hidden=true;get('dashboard').hidden=false;get('connection').className='connection online';get('status').textContent='已連接';const events=await api('/api/v1/events',{},controller.signal);if(!events.ok||!events.body)throw Error('stream unavailable');const reader=events.body.getReader(),decoder=new TextDecoder();const parse=createEventParser(value=>render(value),()=>watchdog.touch());while(true){const{done,value}=await reader.read();if(done)throw Error('stream closed');parse(decoder.decode(value,{stream:true}));}}catch{get('connection').className='connection';get('status').textContent=session?'連線中斷，正在重連':'需要重新配對';}finally{watchdog.stop();controller.abort();connecting=false;if(session)retry=setTimeout(connect,3000);}}
+get('pair').onclick=async()=>{get('pair').disabled=true;try{const code=get('code').value;get('code').value='';if(!/^\d{8}$/.test(code))throw Error('invalid code');const response=await api('/api/v1/pair',{code});if(!response.ok)throw Error('pair failed');const result=await response.json();session=result.tablet_session;csrf=result.csrf_token;pairCsrf=result.pair_csrf_token;get('recovery-status').textContent=recovery.save(pairCsrf)?'已保留此瀏覽器的配對。':'瀏覽器不允許儲存，重開後需重新配對。';connect();}catch{get('status').textContent='配對未成功，請確認桌機配對碼';}finally{get('code').value='';get('pair').disabled=false;}};
+window.addEventListener('online',connect);
+async function restorePair(){pairCsrf=recovery.read();if(!pairCsrf)return;get('pair').disabled=true;const attempt=new AbortController();const deadline=setTimeout(()=>attempt.abort(),10000);try{const response=await fetch('/api/v1/session',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json','X-CSRF-Token':pairCsrf},body:'{}',signal:attempt.signal});if(!response.ok){if(response.status===401||response.status===403){recovery.clear();pairCsrf='';}throw Error('restore failed');}const result=await response.json();session=result.tablet_session;csrf=result.csrf_token;connect();}catch{get('status').textContent='無法恢復配對，請重新載入或重新配對';}finally{clearTimeout(deadline);get('pair').disabled=false;}}
+const touchStyle=document.createElement('style');touchStyle.textContent='.pager button,.card-actions button{min-height:44px}';document.head.append(touchStyle);
+const settingsPager=document.createElement('nav');settingsPager.id='settings-options-pager';settingsPager.className='pager';settingsPager.setAttribute('aria-label','監控選項分頁');settingsPager.hidden=true;const settingsPrev=document.createElement('button');settingsPrev.id='settings-options-prev';settingsPrev.textContent='上一組';const settingsPage=document.createElement('span');settingsPage.id='settings-options-page';settingsPage.textContent='1 / 1';const settingsNext=document.createElement('button');settingsNext.id='settings-options-next';settingsNext.textContent='下一組';settingsPager.append(settingsPrev,settingsPage,settingsNext);get('settings-dialog').append(settingsPager);
+const toggleFullscreen=createFullscreenController(document,get('fullscreen'));get('fullscreen').onclick=async()=>{if(!await toggleFullscreen())get('status').textContent='瀏覽器未允許全螢幕';};get('settings').onclick=()=>{settingsOptionPage=0;renderSettings();get('settings-dialog').showModal();};get('previous-page').onclick=()=>{monitorPage--;renderCards();};get('next-page').onclick=()=>{monitorPage++;renderCards();};settingsPrev.onclick=()=>{settingsOptionPage--;renderSettings();};settingsNext.onclick=()=>{settingsOptionPage++;renderSettings();};window.addEventListener('resize',()=>{renderCards();if(get('settings-dialog').open)renderSettings();});for(const button of document.querySelectorAll('[data-close]'))button.onclick=()=>get(button.dataset.close).close();restorePair();

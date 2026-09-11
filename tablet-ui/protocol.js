@@ -1,11 +1,16 @@
+function validProviderId(value) {
+  return typeof value === 'string' && /^[a-z0-9][a-z0-9._-]{0,79}$/.test(value) && value !== 'constructor' && value !== '__proto__';
+}
+
 function createSnapshotGate() {
   let stream = null, revision = -1;
   return (value, allowNewStream = false) => {
-    const names = ['claude', 'codex', 'copilot', 'antigravity'];
+    const names = Array.isArray(value?.providers) ? value.providers.map(item => item?.provider) : [];
     if (!value || typeof value.stream_id !== 'string' || !value.stream_id ||
         !Number.isSafeInteger(value.revision) || value.revision < 0 ||
-        !Array.isArray(value.providers) || value.providers.length !== 4 ||
-        names.some(name => value.providers.filter(p => p && p.provider === name).length !== 1)) {
+        !Array.isArray(value.providers) || !value.providers.length ||
+        names.some(name => !validProviderId(name)) ||
+        new Set(names).size !== names.length) {
       throw Error('invalid complete snapshot');
     }
     if (value.stream_id !== stream) {

@@ -142,6 +142,83 @@ const providerSetup = {
   copilot:'GitHub Copilot：安裝 GitHub Copilot CLI，執行 copilot login（或 gh auth login）後按「重新整理」。',
   antigravity:'Antigravity：請重新執行 AgentMeter 安裝程式以補齊內建官方工具，確認後再按「重新整理」。'
 };
+const desktopGuides = {
+  codex:{name:'Codex',url:'https://learn.chatgpt.com/docs/codex/cli',steps:['依 Windows 官方說明安裝 Codex CLI。','在終端機執行 codex，使用 ChatGPT 帳號完成登入。','回到 AgentMeter 按「更新」，確認卡片出現額度。']},
+  claude:{name:'Claude Code',url:'https://docs.anthropic.com/en/docs/claude-code/getting-started',steps:['依 Anthropic 官方說明安裝 Claude Code。','在終端機執行 claude，完成登入；若提示工作目錄信任，回 AgentMeter 按「啟用讀取」。','回到 AgentMeter 按「更新」，確認卡片出現額度。']},
+  copilot:{name:'GitHub Copilot',url:'https://docs.github.com/en/copilot/how-tos/copilot-cli/set-up-copilot-cli/install-copilot-cli',steps:['依 GitHub 官方說明安裝 Copilot CLI。','執行 copilot login；必要時先執行 gh auth login，完成帳號驗證。','確認方案或組織政策允許 Copilot CLI，再回 AgentMeter 按「更新」。']},
+  antigravity:{name:'Antigravity',url:'https://codelabs.developers.google.com/antigravity-cli-hands-on',steps:['先重新執行 AgentMeter 安裝程式，補齊內建收集元件。','若仍缺少工具，依 Google 官方教學安裝並執行 agy 完成登入。','回到 AgentMeter 按「更新」，確認卡片出現額度。']}
+};
+function showDesktopGuide(provider){const guide=desktopGuides[provider]||{name:desktopProviderName(provider),url:'',steps:['安裝此監控來源的官方工具。','完成官方工具登入或授權。','回到 AgentMeter 按「更新」重試。']};get('desktop-guide-title').textContent=`${guide.name} 安裝與連線`;get('desktop-guide-steps').replaceChildren(...guide.steps.map(text=>{const item=document.createElement('li');item.textContent=text;return item;}));const link=get('desktop-guide-link');link.hidden=!guide.url;if(guide.url)link.href=guide.url;else link.removeAttribute('href');get('desktop-guide-dialog').showModal();}
+function updateDesktopGuideButton(provider,visible){const card=get(provider+'-card');if(!card?.querySelector)return;let button=card.querySelector('.desktop-guide-button');if(!button){const update=card.querySelector('button[data-provider]');if(!update)return;let row=update.parentElement?.classList?.contains('button-row')?update.parentElement:null;if(!row){row=document.createElement('div');row.className='button-row';update.replaceWith(row);row.append(update);}button=document.createElement('button');button.className='ghost desktop-guide-button';button.textContent='安裝步驟';button.onclick=()=>showDesktopGuide(provider);row.append(button);}button.hidden=!visible;}
+const desktopCatalog = {
+  codex:{name:'Codex'},claude:{name:'Claude Code'},copilot:{name:'GitHub Copilot'},antigravity:{name:'Antigravity'},
+  cursor:{name:'Cursor',catalogOnly:true},kiro:{name:'Kiro',catalogOnly:true}
+};
+const desktopNames=Object.fromEntries(Object.entries(desktopCatalog).map(([id,item])=>[id,item.name]));
+const coreDesktopProviders=['codex','claude','copilot','antigravity'];
+let desktopAvailable = [...coreDesktopProviders], desktopSelection = null, desktopPage = 0, desktopOptionPage = 0, desktopOptionsSignature = '';
+function validDesktopProviderId(value) {
+  return typeof value === 'string' && /^[a-z0-9][a-z0-9._-]{0,79}$/.test(value) && value !== 'constructor' && value !== '__proto__' && !value.startsWith('desktop-');
+}
+function desktopProviderName(provider) {
+  return Object.prototype.hasOwnProperty.call(desktopNames,provider) ? desktopNames[provider] : provider;
+}
+function loadDesktopSelection() {
+  if (desktopSelection !== null) return desktopSelection;
+  try {
+    const raw = window.localStorage?.getItem(desktopMonitorKey);
+    desktopSelection = normalizeDesktopSelection(raw == null ? null : JSON.parse(raw),desktopAvailable);
+  } catch { desktopSelection = normalizeDesktopSelection(null,desktopAvailable); }
+  return desktopSelection;
+}
+function saveDesktopSelection() {
+  try { window.localStorage?.setItem(desktopMonitorKey,JSON.stringify(desktopSelection)); } catch {}
+}
+function ensureDesktopCard(provider) {
+  if (document.getElementById(provider+'-card')) return;
+  const card=document.createElement('article');card.id=provider+'-card';card.className='monitor-card';card.dataset.providerCard=provider;
+  const heading=document.createElement('div');heading.className='heading';const titleWrap=document.createElement('div');titleWrap.className='provider-title';
+  const mark=document.createElement('span');mark.className='provider-mark';mark.textContent=(provider[0]||'?').toUpperCase();mark.setAttribute('aria-hidden','true');
+  const titleBox=document.createElement('div'),title=document.createElement('h2'),subtitle=document.createElement('p');title.textContent=desktopProviderName(provider);subtitle.textContent='AI Agent';titleBox.append(title,subtitle);titleWrap.append(mark,titleBox);
+  const status=document.createElement('span');status.id=provider+'-status';status.textContent='等待讀取';heading.append(titleWrap,status);
+  const quota=document.createElement('div');quota.id=provider+'-quota';quota.className='quota';quota.textContent='—';
+  const timeNode=document.createElement('p');timeNode.id=provider+'-time';timeNode.className='hint';timeNode.textContent='尚無資料';
+  const button=document.createElement('button');button.dataset.provider=provider;button.textContent='更新';button.addEventListener('click',()=>refreshQuota(provider));
+  const message=document.createElement('p');message.id=provider+'-message';message.className='hint card-message';message.setAttribute('role','status');
+  card.append(heading,quota,timeNode,button,message);get('desktop-cards').append(card);
+}
+function renderDesktopOptions() {
+  loadDesktopSelection();
+  const optionIds=[...desktopSelection,...Object.keys(desktopCatalog).filter(id=>!desktopSelection.includes(id)),...desktopAvailable.filter(id=>!desktopSelection.includes(id)&&!Object.prototype.hasOwnProperty.call(desktopCatalog,id))];
+  const optionHeight=Number(window.innerHeight)||640,pageSize=optionHeight<520?2:optionHeight<760?4:6,pages=Math.max(1,Math.ceil(optionIds.length/pageSize));
+  desktopOptionPage=Math.max(0,Math.min(desktopOptionPage,pages-1));
+  const signature=JSON.stringify([optionIds,desktopAvailable,desktopSelection,desktopOptionPage,pageSize]);
+  if(signature===desktopOptionsSignature)return;
+  desktopOptionsSignature=signature;
+  const host=get('desktop-monitor-options');
+  const visibleOptions=optionIds.slice(desktopOptionPage*pageSize,(desktopOptionPage+1)*pageSize);
+  host.replaceChildren(...visibleOptions.map(id=>{
+    const row=document.createElement('div');row.className='monitor-option';
+    const monitorable=desktopAvailable.includes(id),selected=desktopSelection.includes(id);
+    if(monitorable){const input=document.createElement('input');input.type='checkbox';input.checked=selected;input.setAttribute('aria-label',`${desktopProviderName(id)} 顯示在主畫面`);input.onchange=()=>{desktopSelection=input.checked?[...desktopSelection,id]:desktopSelection.filter(value=>value!==id);desktopSelection=normalizeDesktopSelection(desktopSelection,desktopAvailable);desktopPage=0;desktopOptionsSignature='';saveDesktopSelection();applyDesktopLayout();renderDesktopOptions();};row.append(input);}
+    else{const pending=document.createElement('span');pending.className='catalog-dot';pending.setAttribute('aria-hidden','true');row.append(pending);}
+    const info=document.createElement('span');info.className='monitor-option-info';const name=document.createElement('strong');name.textContent=desktopProviderName(id);const state=document.createElement('small');state.textContent=monitorable?(selected?'顯示中 · 可監控':'可監控 · 未顯示'):'尚未支援監控 · 安裝狀態未檢查';info.append(name,state);row.append(info);
+    if(selected){const order=document.createElement('span');order.className='monitor-order';const index=desktopSelection.indexOf(id);for(const [direction,label] of [[-1,'上移'],[1,'下移']]){const button=document.createElement('button');button.type='button';button.className='ghost';button.textContent=label;button.setAttribute('aria-label',`${desktopProviderName(id)}${label}`);button.disabled=direction<0?index===0:index===desktopSelection.length-1;button.onclick=()=>{desktopSelection=moveDesktopMonitor(desktopSelection,id,direction);desktopPage=0;desktopOptionsSignature='';saveDesktopSelection();applyDesktopLayout();renderDesktopOptions();};order.append(button);}row.append(order);}
+    else if(!monitorable){const badge=document.createElement('span');badge.className='catalog-badge';badge.textContent='候選 Agent';row.append(badge);}
+    return row;
+  }));
+  get('desktop-monitor-count').textContent=`主畫面顯示 ${desktopSelection.length} 個監控；每頁最多 4 張，更多項目會自動分頁。`;
+  const pager=get('desktop-options-pager');pager.hidden=pages<=1;get('desktop-options-page').textContent=`${desktopOptionPage+1} / ${pages}`;get('desktop-options-prev').disabled=desktopOptionPage===0;get('desktop-options-next').disabled=desktopOptionPage===pages-1;
+}
+function applyDesktopLayout() {
+  loadDesktopSelection();
+  const width=Number(window.innerWidth)||1080,height=Number(window.innerHeight)||640;
+  const page=pagedMonitorIds(desktopSelection,desktopPage,4),grid=desktopViewportGrid(width,height,page.ids.length);desktopPage=page.page;
+  const visible=new Set(page.ids);for(const id of desktopAvailable){const card=get(id+'-card');if(card){card.hidden=!visible.has(id);card.style.order=String(page.ids.indexOf(id));}}
+  const empty=get('desktop-empty');if(empty)empty.hidden=page.ids.length!==0;
+  const cards=get('desktop-cards');cards.dataset.count=String(page.ids.length);cards.dataset.density=page.ids.length===3||(page.ids.length>=4&&height<700)||height<620?'compact':'comfortable';if(cards.style.setProperty){cards.style.setProperty('--grid-columns',grid.columns);cards.style.setProperty('--grid-rows',grid.rows);}
+  const pager=get('desktop-pager');pager.hidden=page.pages<=1;get('desktop-page').textContent=`${page.page+1} / ${page.pages}`;get('desktop-prev').disabled=page.page===0;get('desktop-next').disabled=page.page===page.pages-1;
+}
 function quotaErrorMessage(provider, code) {
   if (code === 'cli_not_found') return providerSetup[provider] || quotaErrors.cli_not_found;
   if (code === 'authentication_required') return `${providerSetup[provider] || '請先完成官方工具登入。'} 若已登入仍失敗，請確認使用的是目前 Windows 帳號。`;
@@ -161,49 +238,86 @@ function render(snapshot) {
   const busy = localRefreshing || snapshot.refreshing === true;
   for (const button of document.querySelectorAll('[data-provider], #refresh, #claude-enable')) button.disabled = busy;
   let ready = 0;
-  for (const provider of snapshot.provider_states || []) {
+  const states=(snapshot.provider_states || []).filter(item=>validDesktopProviderId(item?.provider));
+  const previousAvailable=[...desktopAvailable];
+  const future=states.map(item=>item.provider).filter(name=>validDesktopProviderId(name)&&!coreDesktopProviders.includes(name));
+  const nextAvailable=[...coreDesktopProviders,...new Set(future)];
+  const added=nextAvailable.filter(name=>!previousAvailable.includes(name));
+  loadDesktopSelection();
+  for(const name of previousAvailable)if(!nextAvailable.includes(name)){const card=get(name+'-card');if(card)card.hidden=true;}
+  desktopAvailable=nextAvailable;
+  for(const name of added)ensureDesktopCard(name);
+  desktopSelection=normalizeDesktopSelection(desktopSelection,desktopAvailable);
+  saveDesktopSelection();
+  for (const provider of states) {
     const name = provider.provider;
     const failed = provider.collection_state === 'error';
     const stale = provider.freshness === 'stale';
     const windows = provider.quota_windows || [];
-    if (!failed && windows.length) ready++;
-    get(name+'-status').textContent = failed ? (stale ? '更新失敗 · 舊資料' : '需要處理') : windows.length ? '已連線' : '等待讀取';
+    const usage = provider.source_usage || [],hasData=windows.length||usage.length;
+    if (!failed && hasData) ready++;
+    get(name+'-status').textContent = failed ? (stale ? '更新失敗 · 舊資料' : '需要處理') : hasData ? '已連線' : '等待讀取';
     get(name+'-status').className = failed ? 'status-error' : '';
     const quota = get(name+'-quota');
-    quota.replaceChildren();
-    if (!windows.length) quota.textContent = '— 尚未取得額度';
-    for (const item of windows) {
-      const row = document.createElement('div'); row.className = 'window';
-      const label = document.createElement('div'); label.className = 'detail'; label.textContent = quotaLabel(item);
-      const value = document.createElement('div');
-      const remaining = typeof item.remaining_percent === 'number' && Number.isFinite(item.remaining_percent)
-        ? Math.max(0, Math.min(100, item.remaining_percent)) : null;
-      value.textContent = remaining === null ? '剩餘未知' : remaining+'% 剩餘';
-      const track = document.createElement('div'); track.className = 'quota-track';
-      if (remaining !== null) {
-        const fill = document.createElement('div');
-        fill.className = 'quota-fill ' + (remaining > 30 ? 'quota-good' : remaining > 10 ? 'quota-warning' : 'quota-low');
-        fill.style.width = remaining+'%';
-        track.append(fill);
-      } else { track.className += ' quota-unknown'; }
-      const reset = document.createElement('div'); reset.className = 'detail';
-      reset.textContent = item.reset_display ? '重設：'+item.reset_display :
-        item.resets_at == null ? '重設時間尚未確認' : '重設：'+new Date(typeof item.resets_at === 'number' ? item.resets_at*1000 : item.resets_at).toLocaleString('zh-TW');
-      row.append(label,value,track,reset);
-      if (typeof item.entitlement === 'number' && typeof item.used === 'number') {
-        const used = document.createElement('div'); used.className = 'detail';
-        used.textContent = '已用 '+item.used+' / '+item.entitlement; row.append(used);
+    const readingPosition = quota.scrollTop || 0;
+    quota.tabIndex = 0;
+    quota.setAttribute('role', 'region');
+    quota.setAttribute('aria-label', name + ' 額度明細，可捲動查看全部');
+    const contentSignature = JSON.stringify([windows, usage]);
+    if (quota.dataset.contentSignature !== contentSignature) {
+      quota.dataset.contentSignature = contentSignature;
+      quota.replaceChildren();
+      if (!windows.length && !usage.length) {
+        const empty=document.createElement('div');empty.className='empty-state';
+        const image=document.createElement('img');image.src='assets/empty-cloud.png';image.alt='';
+        const title=document.createElement('strong');title.textContent='尚未取得資料';
+        const note=document.createElement('span');note.textContent='未同步';
+        const legacy=document.createElement('span');legacy.className='sr-only';legacy.textContent='— 尚未取得額度';
+        empty.append(image,title,note,legacy);quota.append(empty);
       }
-      quota.append(row);
+      for (const item of windows) {
+        const row = document.createElement('div'); row.className = 'window';
+        const label = document.createElement('div'); label.className = 'detail'; label.textContent = quotaLabel(item);
+        const value = document.createElement('div');
+        const remaining = typeof item.remaining_percent === 'number' && Number.isFinite(item.remaining_percent)
+          ? Math.max(0, Math.min(100, item.remaining_percent)) : null;
+        if(row.style.setProperty)row.style.setProperty('--remaining',remaining === null ? 0 : remaining);else row.style['--remaining']=remaining === null ? 0 : remaining;
+        value.textContent = remaining === null ? '—' : remaining+'%';
+        const valueMeaning=document.createElement('span');valueMeaning.className='sr-only';valueMeaning.textContent=remaining === null ? '剩餘未知' : ' 剩餘';value.append(valueMeaning);
+        const track = document.createElement('div'); track.className = 'quota-track';
+        if (remaining !== null) {
+          const fill = document.createElement('div');
+          fill.className = 'quota-fill ' + (remaining > 30 ? 'quota-good' : remaining > 10 ? 'quota-warning' : 'quota-low');
+          fill.style.width = remaining+'%';
+          track.append(fill);
+        } else { track.className += ' quota-unknown'; }
+        const reset = document.createElement('div'); reset.className = 'detail';
+        reset.textContent = item.reset_display ? '重設：'+item.reset_display :
+          item.resets_at == null ? '重設時間尚未確認' : '重設：'+new Date(typeof item.resets_at === 'number' ? item.resets_at*1000 : item.resets_at).toLocaleString('zh-TW');
+        row.append(label,value,track,reset);
+        if (typeof item.entitlement === 'number' && typeof item.used === 'number') {
+          const used = document.createElement('div'); used.className = 'detail';
+          used.textContent = '已用 '+item.used+' / '+item.entitlement; row.append(used);
+        }
+        quota.append(row);
+      }
+      if (!windows.length) for (const item of usage) {
+        const row=document.createElement('div');row.className='window usage-row';const label=document.createElement('div');label.className='detail';label.textContent=item.label||item.model||'使用量';const value=document.createElement('div');value.textContent=typeof item.used==='number'?`${item.used}${item.unit?' '+item.unit:''}`:'使用量未知';row.append(label,value);quota.append(row);
+      }
+      quota.scrollTop = readingPosition;
     }
-    get(name+'-time').textContent = '資料更新：'+time(provider.collected_at)+(stale ? '（舊資料，不代表目前額度）':'');
+    const rowCount = windows.length || usage.length;
+    get(name+'-time').textContent = '資料更新：'+time(provider.collected_at)+(stale ? '（舊資料，不代表目前額度）':'')+(rowCount > 1 ? ` · 共 ${rowCount} 筆，捲動查看明細` : '');
     get(name+'-message').textContent = failed ? quotaErrorMessage(name, provider.failure_code) :
       name === 'copilot' ? '顯示 Premium interactions 權益，不是 Billing 或 AI credits 餘額。' :
       name === 'claude' ? '自動讀取官方 /usage；終端格式相容性仍屬實驗性。' :
       name === 'antigravity' ? '自動讀取官方 CLI 額度；不需要手動提供資料檔。' : '沿用本機 Codex 登入，自動取得官方額度。';
+    updateDesktopGuideButton(name,failed&&(!hasData||['cli_not_found','authentication_required','workspace_trust_required','collector_runtime_missing'].includes(provider.failure_code)));
     if (name === 'claude') get('claude-enable').hidden = provider.failure_code !== 'workspace_trust_required';
   }
-  get('message').textContent = busy ? '正在讀取額度…' : ready+'/4 個服務已取得額度';
+  get('message').textContent = busy ? '正在讀取額度…' : ready+'/'+states.length+' 個服務已取得資料';
+  const syncClock=get('sync-clock');if(syncClock)syncClock.textContent=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  applyDesktopLayout();renderDesktopOptions();
 }
 async function refreshQuota(provider = 'all', enableClaude = false) {
   if (localRefreshing) return;
@@ -238,3 +352,37 @@ restoreTabletStatus();
 pollQuota();
 setInterval(pollTabletActivity, 2000);
 setInterval(pollQuota,2000);
+
+function updateMessage(result) {
+  get('install-update').hidden = !result.available;
+  if (!result.configured) return '此預覽版尚未綁定 GitHub Release 與更新公開金鑰。';
+  return result.available ? `發現新版 ${result.version}；目前版本 ${result.current_version}。` : `目前已是最新版 ${result.current_version}。`;
+}
+async function checkAppUpdate() {
+  get('check-update').disabled = true;
+  get('update-status').textContent = '正在安全檢查 GitHub Release…';
+  try { get('update-status').textContent = updateMessage(await tabletCommand('check_update')); }
+  catch { get('install-update').hidden = true; get('update-status').textContent = '目前無法檢查更新；監控功能不受影響，請稍後重試。'; }
+  finally { get('check-update').disabled = false; }
+}
+get('app-settings').addEventListener('click',()=>{renderDesktopOptions();get('app-settings-dialog').showModal();});
+get('app-settings-close').addEventListener('click',()=>get('app-settings-dialog').close());
+get('desktop-empty-settings').addEventListener('click',()=>{renderDesktopOptions();get('app-settings-dialog').showModal();});
+get('desktop-prev').addEventListener('click',()=>{desktopPage--;applyDesktopLayout();});
+get('desktop-next').addEventListener('click',()=>{desktopPage++;applyDesktopLayout();});
+get('desktop-options-prev').addEventListener('click',()=>{desktopOptionPage--;desktopOptionsSignature='';renderDesktopOptions();});
+get('desktop-options-next').addEventListener('click',()=>{desktopOptionPage++;desktopOptionsSignature='';renderDesktopOptions();});
+get('desktop-guide-close').addEventListener('click',()=>get('desktop-guide-dialog').close());
+get('tablet-settings-open').addEventListener('click',()=>{const note=get('pair-safety-note');note.hidden=false;get('tablet-settings-dialog').append(note);get('tablet-settings-dialog').showModal();});
+get('tablet-settings-close').addEventListener('click',()=>get('tablet-settings-dialog').close());
+get('check-update').addEventListener('click',checkAppUpdate);
+get('install-update').addEventListener('click',async()=>{
+  if (!window.confirm('更新檔驗證成功後，AgentMeter 會關閉並開始安裝。要繼續嗎？')) return;
+  get('install-update').disabled = true; get('update-status').textContent = '正在下載並驗證更新簽章…';
+  try { await tabletCommand('install_update'); }
+  catch { get('update-status').textContent = '更新下載、簽章驗證或安裝失敗；目前版本保持不變。'; get('install-update').disabled = false; }
+});
+if(get('desktop-monitor-options').parentElement)get('desktop-monitor-options').parentElement.append(get('desktop-options-pager'));
+checkAppUpdate();
+loadDesktopSelection();renderDesktopOptions();applyDesktopLayout();
+if (window.addEventListener) window.addEventListener('resize',applyDesktopLayout);

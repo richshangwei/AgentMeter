@@ -13,12 +13,26 @@ Open AgentMeter after signing in to the official tools. It discovers them automa
 - Claude: automatic official `/usage` terminal reading. First use may require clicking **啟用 Claude 讀取**, which trusts only AgentMeter's dedicated workspace. No model tools are enabled. Terminal parsing remains experimental.
 - Antigravity: bundled official CLI `/usage`. Text-format compatibility remains experimental.
 
-The desktop and tablet share observations and refresh handling. Failed refreshes preserve the previous quota with an explicit stale marker; missing values are never replaced with a fabricated zero or full allowance. Legacy experiment commands below remain for historical regression coverage, not the default UI.
+The desktop and tablet share observations and refresh handling. Failed refreshes preserve the previous quota with an explicit stale marker; missing values are never replaced with a fabricated zero or full allowance. The tablet can select any currently advertised Provider cards, always keeps one empty add slot, and has a fullscreen control. Legacy experiment commands below remain for historical regression coverage, not the default UI.
+
+### Signed GitHub updates
+
+The desktop checks for a signed GitHub release at startup without blocking monitoring; installation always requires an explicit confirmation. A release build must provide the exact latest manifest URL and Tauri public key at compile time, then enable updater artifacts with the overlay config:
+
+```powershell
+$env:AGENTMETER_UPDATE_ENDPOINT = 'https://github.com/OWNER/REPOSITORY/releases/latest/download/latest.json'
+$env:AGENTMETER_UPDATE_PUBLIC_KEY = '<Tauri updater public key>'
+$env:TAURI_SIGNING_PRIVATE_KEY = '<private key or path>'
+Push-Location desktop-p0
+cargo tauri build --config tauri.updater.conf.json
+Pop-Location
+```
+
+Publish the generated installer, signature and `latest.json` from that build to the GitHub release. Normal local builds remain unsigned when those release-only values are absent. Tauri's updater verifies the signed artifact before installation; see the [official updater guide](https://v2.tauri.app/plugin/updater/) and [GitHub Releases API documentation](https://docs.github.com/en/rest/releases/releases).
 
 Build-time preparation (developers only; the packaged app includes its runtime):
 
 ```powershell
-npm ci --ignore-scripts --prefix scripts/quota-smoke-support
 node scripts/prepare-quota-smoke.mjs # first preparation only; refuses overwrite
 ./scripts/prepare-desktop-quota.ps1
 ```
@@ -71,6 +85,10 @@ The auditable capability matrix is in `docs/evidence/p0-capability-gate-2026-09-
 The [guided setup and Claude integration handoff](docs/handoffs/2026-09-09-claude-setup-flow.md) records automatic local setup checks, preview/backup/enable/restore actions, the built-in receiver, verification and the remaining installer/real-account limits. It follows the [automatic source discovery batch](docs/handoffs/2026-09-09-source-discovery.md).
 
 The [startup diagnostics and WebView2 contract handoff](docs/handoffs/2026-09-09-startup-diagnostics-webview.md) records native startup-failure reporting, packaged diagnostic markers, exact installer runtime branches and two newly completed checklist items.
+
+The [dynamic tablet monitors, silent collection and signed updates handoff](docs/handoffs/2026-09-10-tablet-dynamic-monitors-and-silent-updates.md) records the new fullscreen/data-first tablet view, expandable monitor slots, invisible background collection and release signing boundary.
+
+The [packaged updater startup fix handoff](docs/handoffs/2026-09-10-updater-startup-config-fix.md) records the reproduced `desktop_startup_failed`, its non-WebView root cause, release-process proof and replacement installer hash.
 
 The [desktop repeated-process lifecycle handoff](docs/handoffs/2026-09-09-desktop-process-lifecycle.md) records five real second-launch dispatches, one resident primary, bounded full exit, cross-desktop fail-closed scope and the reclosed single-instance tick.
 

@@ -40,6 +40,26 @@ fn package_identity_version_and_frontend_are_explicit_and_consistent() {
 }
 
 #[test]
+fn desktop_brand_assets_drive_header_window_bundle_and_tray_icons() {
+    let config = config();
+    assert_eq!(config["bundle"]["icon"][0], "icons/icon.ico");
+    assert_eq!(config["bundle"]["icon"][1], "icons/icon.png");
+    let html = include_str!("../desktop-p0/ui/index.html");
+    assert!(html.contains("assets/agentmeter-icon.png"));
+    assert!(html.contains("class=\"brand-name\">Agent<span>Meter</span>"));
+    assert!(html.contains("assets/agentmeter-icon.png"));
+    let icon = include_bytes!("../desktop-p0/icons/icon.ico");
+    assert_eq!(&icon[..4], &[0, 0, 1, 0]);
+    let png = include_bytes!("../desktop-p0/icons/icon.png");
+    assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
+    let build = include_str!("../desktop-p0/build.rs");
+    let main = include_str!("../desktop-p0/src/main.rs");
+    assert!(build.contains("icons/icon.ico"));
+    assert!(main.contains("include_bytes!(\"../icons/tray-icon.rgba\")"));
+    assert!(!main.contains("[0x58, 0xa6, 0xff, 0xff].repeat"));
+}
+
+#[test]
 fn release_startup_failures_have_a_webview_independent_diagnostic_path() {
     let main = include_str!("../desktop-p0/src/main.rs");
     let diagnostics = include_str!("../desktop-p0/src/diagnostics.rs");
@@ -95,7 +115,12 @@ fn desktop_tablet_controls_keep_pair_codes_ephemeral_and_out_of_navigation() {
     assert!(bridge.contains("mapping_ownership_lost"));
     assert!(!script.contains("innerHTML"));
     assert!(!script.contains("clipboard"));
-    assert!(!script.contains("localStorage"));
+    for line in script.lines().filter(|line| line.contains("localStorage")) {
+        assert!(
+            line.contains("desktopMonitorKey"),
+            "localStorage may persist display preferences only, never pairing material"
+        );
+    }
     assert!(!script.contains("location.href"));
 }
 

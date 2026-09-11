@@ -668,6 +668,36 @@ fn handle_connection(mut stream: TcpStream, state: Arc<Mutex<State>>, origin: &s
         return;
     }
     if request.method == "GET" {
+        let image: Option<&'static [u8]> = match request.path.as_str() {
+            "/assets/agentmeter-icon.png" => {
+                Some(include_bytes!("../tablet-ui/assets/agentmeter-icon.png").as_slice())
+            }
+            "/assets/codex-icon.png" => {
+                Some(include_bytes!("../tablet-ui/assets/codex-icon.png").as_slice())
+            }
+            "/assets/claude-icon.png" => {
+                Some(include_bytes!("../tablet-ui/assets/claude-icon.png").as_slice())
+            }
+            "/assets/copilot-icon.png" => {
+                Some(include_bytes!("../tablet-ui/assets/copilot-icon.png").as_slice())
+            }
+            "/assets/antigravity-icon.png" => {
+                Some(include_bytes!("../tablet-ui/assets/antigravity-icon.png").as_slice())
+            }
+            "/assets/empty-cloud.png" => {
+                Some(include_bytes!("../tablet-ui/assets/empty-cloud.png").as_slice())
+            }
+            _ => None,
+        };
+        if let Some(body) = image {
+            write_binary_response(&mut stream, 200, "OK", "image/png", body, &[
+                "Cache-Control: no-store".into(),
+                "Referrer-Policy: no-referrer".into(),
+                "X-Content-Type-Options: nosniff".into(),
+                "Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; form-action 'none'; base-uri 'none'".into(),
+            ]);
+            return;
+        }
         let asset = match request.path.as_str() {
             "/recovery.js" => Some((
                 "text/javascript; charset=utf-8",
@@ -676,6 +706,10 @@ fn handle_connection(mut stream: TcpStream, state: Arc<Mutex<State>>, origin: &s
             "/protocol.js" => Some((
                 "text/javascript; charset=utf-8",
                 include_str!("../tablet-ui/protocol.js"),
+            )),
+            "/view.js" => Some((
+                "text/javascript; charset=utf-8",
+                include_str!("../tablet-ui/view.js"),
             )),
             "/" => Some((
                 "text/html; charset=utf-8",
@@ -692,7 +726,7 @@ fn handle_connection(mut stream: TcpStream, state: Arc<Mutex<State>>, origin: &s
                 "Cache-Control: no-store".into(),
                 "Referrer-Policy: no-referrer".into(),
                 "X-Content-Type-Options: nosniff".into(),
-                "Content-Security-Policy: default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; frame-ancestors 'none'; form-action 'none'; base-uri 'none'".into(),
+                "Content-Security-Policy: default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; img-src 'self'; frame-ancestors 'none'; form-action 'none'; base-uri 'none'".into(),
             ]);
             return;
         }
@@ -902,7 +936,7 @@ fn handle_pair(
     );
     guard.record_authenticated_activity(&request.path, true);
     let cookie = format!(
-        "Set-Cookie: device_pair={pair_token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000"
+        "Set-Cookie: device_pair={pair_token}; HttpOnly; SameSite=Strict; Path=/api/v1/session; Max-Age=31536000"
     );
     write_json(
         stream,
@@ -1348,4 +1382,25 @@ fn write_response(
         body.len()
     );
     let _ = stream.write_all(response.as_bytes());
+}
+
+fn write_binary_response(
+    stream: &mut TcpStream,
+    status: u16,
+    reason: &str,
+    content_type: &str,
+    body: &[u8],
+    extra_headers: &[String],
+) {
+    let extra = if extra_headers.is_empty() {
+        String::new()
+    } else {
+        format!("{}\r\n", extra_headers.join("\r\n"))
+    };
+    let headers = format!(
+        "HTTP/1.1 {status} {reason}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\n{extra}\r\n",
+        body.len()
+    );
+    let _ = stream.write_all(headers.as_bytes());
+    let _ = stream.write_all(body);
 }

@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const fs = require('node:fs');
 const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname,'../tablet-ui/protocol.js'),'utf8'), context);
-const snapshot = (stream_id, revision) => ({stream_id,revision,providers:['claude','codex','copilot','antigravity'].map(provider => ({provider}))});
+const snapshot = (stream_id, revision, providers = ['claude','codex','copilot','antigravity']) => ({stream_id,revision,providers:providers.map(provider => ({provider}))});
 test('only full fetch may switch streams; duplicates and late events are rejected', () => {
   const accept = context.createSnapshotGate();
   assert.equal(accept(snapshot('a',4)), false);
@@ -18,9 +18,17 @@ test('only full fetch may switch streams; duplicates and late events are rejecte
 });
 test('partial snapshots do not advance the accepted revision', () => {
   const accept = context.createSnapshotGate();
-  const broken = snapshot('a',2); broken.providers.pop();
+  const broken = snapshot('a',2); broken.providers.push({provider:'codex'});
   assert.throws(() => accept(broken,true));
   assert.equal(accept(snapshot('a',1),true), true);
+});
+test('complete snapshots accept one or future providers but reject duplicates and empty ids', () => {
+  const accept = context.createSnapshotGate();
+  assert.equal(accept(snapshot('a',1,['codex']),true),true);
+  assert.equal(accept(snapshot('a',2,['codex','future-provider'])),true);
+  assert.throws(() => accept(snapshot('a',3,['codex','codex'])));
+  assert.throws(() => accept(snapshot('a',3,[''])));
+  for (const unsafe of ['__proto__','constructor','two words','\u202efake']) assert.throws(() => accept(snapshot('a',3,[unsafe])));
 });
 test('fragmented CRLF, multiline data, and heartbeat do not invent revisions', () => {
   const values = []; let events = 0;

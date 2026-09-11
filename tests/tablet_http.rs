@@ -18,6 +18,15 @@ fn request(addr: SocketAddr, request: &str) -> String {
     response
 }
 
+fn request_bytes(addr: SocketAddr, request: &str) -> Vec<u8> {
+    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(1)).unwrap();
+    stream.write_all(request.as_bytes()).unwrap();
+    stream.shutdown(std::net::Shutdown::Write).unwrap();
+    let mut response = Vec::new();
+    stream.read_to_end(&mut response).unwrap();
+    response
+}
+
 #[test]
 fn verified_usb_origin_is_allowed_and_revoked_with_transport() {
     let server = TabletServer::start(ServerConfig::for_tests()).unwrap();
@@ -337,6 +346,40 @@ fn public_client_has_no_secrets_and_browser_post_keeps_authorization_boundary() 
 }
 
 #[test]
+fn public_brand_and_provider_icons_are_served_as_png_without_relaxing_navigation() {
+    let server = TabletServer::start(ServerConfig::for_tests()).unwrap();
+    for route in [
+        "/assets/agentmeter-icon.png",
+        "/assets/codex-icon.png",
+        "/assets/claude-icon.png",
+        "/assets/copilot-icon.png",
+        "/assets/antigravity-icon.png",
+        "/assets/empty-cloud.png",
+    ] {
+        let raw = request_bytes(
+            server.addr(),
+            &format!("GET {route} HTTP/1.1\r\nHost: {}\r\n\r\n", server.addr()),
+        );
+        let split = raw
+            .windows(4)
+            .position(|bytes| bytes == b"\r\n\r\n")
+            .unwrap();
+        let headers = String::from_utf8_lossy(&raw[..split]);
+        assert!(headers.starts_with("HTTP/1.1 200 OK"), "{headers}");
+        assert!(headers.contains("Content-Type: image/png"), "{headers}");
+        assert_eq!(&raw[split + 4..split + 12], b"\x89PNG\r\n\x1a\n");
+    }
+    let query = http(
+        &server,
+        "GET",
+        "/assets/agentmeter-icon.png?token=secret",
+        &[],
+        "",
+    );
+    assert_eq!(status(&query), 400);
+}
+
+#[test]
 fn transport_status_advances_only_after_authenticated_activity() {
     let server = TabletServer::start(ServerConfig::for_tests()).unwrap();
     let initial = server.transport_status();
@@ -411,6 +454,7 @@ fn pair(server: &TabletServer) -> PairResult {
     );
     assert!(cookie.contains("HttpOnly"));
     assert!(cookie.contains("SameSite=Strict"));
+    assert!(cookie.contains("Path=/api/v1/session"));
     assert!(cookie.contains("Max-Age=31536000"));
     let device_pair = cookie
         .split(';')

@@ -16,6 +16,7 @@ tauri-plugin-single-instance = "=2.4.3"
 [target.'cfg(windows)'.dependencies]
 winreg = "=0.55.0"
 windows-sys = { version = "=0.61.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_Security"] }
+tauri-plugin-updater = "=2.10.1"
 
 [patch.crates-io]
 tauri-plugin-single-instance = { path = "vendor/tauri-plugin-single-instance" }

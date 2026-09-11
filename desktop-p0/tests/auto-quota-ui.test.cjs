@@ -8,7 +8,7 @@ function harness() {
   function element(id='') {
     if (!elements.has(id)) elements.set(id,{textContent:'',className:'',children:[],hidden:false,disabled:false,value:'',dataset:{},style:{},handlers:{},
       querySelectorAll(selector){return selector === '.window' ? this.children.filter(n=>n.className==='window') : [];},
-      addEventListener(type,fn){this.handlers[type]=fn;},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;this.textContent='';}});
+      setAttribute(name,value){this[name]=value;},addEventListener(type,fn){this.handlers[type]=fn;},append(...nodes){this.children.push(...nodes);},replaceChildren(...nodes){this.children=nodes;this.textContent='';}});
     return elements.get(id);
   }
   const providers=['codex','claude','copilot','antigravity'];
@@ -17,7 +17,8 @@ function harness() {
   const context={document:{getElementById:element,createElement:()=>element('new'+serial++),
     querySelectorAll:selector=>selector==='[data-provider]'?buttons:[...buttons,element('refresh'),element('claude-enable')]},
     setTimeout(){},clearTimeout(){},setInterval(){},Date,Number,String,
-    window:{confirm:()=>true,__TAURI__:{core:{invoke:async(command,args)=>{calls.push({command,args});return command==='snapshot'||command==='refresh_quota'?{provider_states:[],refreshing:false}:{running:false};}}}}};
+    window:{innerWidth:1080,innerHeight:900,confirm:()=>true,__TAURI__:{core:{invoke:async(command,args)=>{calls.push({command,args});return command==='snapshot'||command==='refresh_quota'?{provider_states:[],refreshing:false}:{running:false};}}}}};
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../ui/layout.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../ui/dashboard.js'),'utf8'),context);
   return {context,element,calls};
 }
@@ -59,4 +60,42 @@ test('one refresh command has no source paths and explicit Claude trust only',as
   const refresh=calls.find(c=>c.command==='refresh_quota');
   assert.equal(JSON.stringify(refresh.args),JSON.stringify({provider:'all',enableClaude:false}));
   assert.ok(!calls.some(c=>['load_claude','refresh_copilot','source_settings'].includes(c.command)));
+});
+
+test('future providers cannot collide with reserved DOM ids and disappearing providers leave the selector',()=>{
+  const {context,element}=harness();
+  const value=provider=>({provider,collection_state:'ready',freshness:'fresh',quota_windows:[{remaining_percent:50}]});
+  assert.doesNotThrow(()=>context.render({provider_states:[value('codex'),value('cursor'),value('future-1'),value('desktop-add'),value('constructor')]}));
+  assert.deepEqual(Array.from(vm.runInContext('desktopAvailable',context)),['codex','claude','copilot','antigravity','cursor','future-1']);
+  assert.deepEqual(Array.from(vm.runInContext('desktopSelection',context)),['codex','claude','copilot','antigravity']);
+  assert.match(text(element('desktop-monitor-options')),/Cursor/);
+  assert.match(text(element('desktop-monitor-options')),/Kiro/);
+  context.render({provider_states:[value('codex')]});
+  assert.deepEqual(Array.from(vm.runInContext('desktopAvailable',context)),['codex','claude','copilot','antigravity']);
+});
+
+test('unchanged polling preserves desktop settings option nodes and focus targets',()=>{
+  const {context,element}=harness();
+  const before=element('desktop-monitor-options').children[0];
+  context.render({provider_states:[{provider:'codex',collection_state:'ready',freshness:'fresh',quota_windows:[{remaining_percent:50}]}]});
+  const after=element('desktop-monitor-options').children[0];
+  assert.equal(after,before);
+});
+
+test('polling preserves quota nodes and reading position while changed data still renders',()=>{
+  const {context,element}=harness();
+  const snapshot={provider_states:[{provider:'codex',collection_state:'ready',quota_windows:Array.from({length:8},(_,index)=>({label:`window ${index}`,remaining_percent:24.7}))}]};
+  context.render(snapshot);
+  const quota=element('codex-quota'),before=quota.children[0];
+  quota.scrollTop=120;
+  context.render(snapshot);
+  assert.equal(quota.children[0],before);
+  assert.equal(quota.scrollTop,120);
+  assert.match(element('codex-time').textContent,/共 8 筆，捲動查看明細/);
+  snapshot.provider_states[0].quota_windows[0].remaining_percent=23.5;
+  context.render(snapshot);
+  assert.notEqual(quota.children[0],before);
+  assert.match(text(quota.children[0]),/23.5%/);
+  assert.equal(quota.scrollTop,120);
+  assert.equal(quota.children.length,8);
 });
