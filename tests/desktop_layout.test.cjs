@@ -47,3 +47,30 @@ test('desktop settings can reorder selected monitors without changing membership
   assert.deepEqual(Array.from(context.moveDesktopMonitor(selected,'copilot',-1)),['codex','copilot','claude','antigravity']);
   assert.deepEqual(Array.from(context.moveDesktopMonitor(selected,'claude',1)),['codex','copilot','claude','antigravity']);
 });
+
+test('page capacity keeps the count topology until a card would become unreadable', () => {
+  assert.equal(context.desktopPageCapacity(1026,528,4,12),4,'default 1080 × 640 window keeps 2 × 2');
+  assert.equal(context.desktopPageCapacity(1350,424,4,12),4,'short wide windows keep 2 × 2 with wide cards');
+  assert.equal(context.desktopPageCapacity(616,424,4,12),2,'minimum window shows two readable cards per page');
+  assert.equal(context.desktopPageCapacity(1026,528,3,12),4,'three cards keep the 1 × 3 composition');
+  assert.equal(context.desktopPageCapacity(NaN,NaN,4,12),4,'unmeasured layouts keep the default');
+  assert.equal(context.desktopCardShape(1026,168),'wide');
+  assert.equal(context.desktopCardShape(507,258),'normal');
+});
+
+test('quota tiles always fit the measured region and pick a readable variant', () => {
+  for (const [width,height] of [[483,140],[1200,540],[278,92],[306,100],[280,300],[616,300],[150,60],[900,120]]) {
+    for (let count = 1; count <= 12; count++) {
+      const layout = context.quotaTileLayout(width,height,count);
+      assert.ok(layout.columns * layout.rows >= count, `${width}x${height} n=${count} cells`);
+      assert.ok(layout.columns * layout.tileWidth + (layout.columns - 1) * layout.gap <= width + .5, `${width}x${height} n=${count} width`);
+      assert.ok(layout.rows * layout.tileHeight + (layout.rows - 1) * layout.gap <= height + .5, `${width}x${height} n=${count} height`);
+      if (layout.variant === 'ring' || layout.variant === 'stack') {
+        assert.ok(layout.ring <= layout.tileHeight - layout.pad * 2 + .5, `${width}x${height} n=${count} ring height`);
+        assert.ok(layout.ring <= layout.tileWidth, `${width}x${height} n=${count} ring width`);
+      }
+    }
+  }
+  assert.equal(context.quotaTileLayout(483,140,8).columns,4,'eight windows use two readable rows, not eight thin rows');
+  assert.equal(context.quotaTileLayout(0,140,8),null);
+});

@@ -1,9 +1,3 @@
 :root [hidden]{display:none!important}
-.monitor-card{display:flex;flex-direction:column}
 .guide-steps{list-style:none;padding:0;display:grid;gap:10px;counter-reset:guide}.guide-steps li{counter-increment:guide;display:grid;grid-template-columns:30px 1fr;gap:9px;color:#c6ddeb;font-size:12px;line-height:1.5}.guide-steps li::before{content:counter(guide);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#0d547c;color:#64efff;font-weight:800}.official-link{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;padding:0 14px;border-radius:10px;background:#0c76bd;color:#fff;text-decoration:none;font-weight:800}
-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.pager{display:flex;align-items:center;gap:8px}
-.pager button{min-height:30px;padding:0 10px;font-size:10px}
-.pager span{font-size:10px;color:#b7d7ea}
-@media(max-height:620px){footer:has(.pager:not([hidden])){display:flex}.pager button{min-height:28px}}
 @media(max-height:520px){dialog{padding:10px}.dialog-title{margin-bottom:5px}.dialog-title h2,dialog h3{font-size:14px;margin:2px 0}dialog p{margin:3px 0}.monitor-option{min-height:36px}.update-panel{margin-top:5px;padding-top:5px}.update-panel>.hint{display:none}.monitor-options{gap:4px}}

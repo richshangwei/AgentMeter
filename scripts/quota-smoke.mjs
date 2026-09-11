@@ -268,8 +268,12 @@ export async function collectProviders(options = {}) {
   let antigravity = {provider:'antigravity',status:'BLOCKED',reason:'official_cli_not_found_desktop_is_not_cli',quota:[]};
   if (agy) {
     try {
+      // agy's built-in auto-updater starts a detached background process that has no
+      // console of its own; its helpers then open a new, visible console (a CMD /
+      // Windows Terminal flash). The bundled binary is checksum-pinned anyway.
       const {stdout} = await run(agy,['--print','/usage','--print-timeout','20s'],{
-        cwd:workingDirectory,windowsHide:true,timeout:25_000,maxBuffer:65536});
+        cwd:workingDirectory,windowsHide:true,timeout:25_000,maxBuffer:65536,
+        env:{...process.env,AGY_CLI_DISABLE_AUTO_UPDATE:'1'}});
       const quota = antigravityWindows(stdout);
       antigravity = {provider:'antigravity',status:quota.length ? 'PASS':'FAIL',
         reason:quota.length ? 'live_cli_quota_received':'quota_schema_unrecognized',quota,

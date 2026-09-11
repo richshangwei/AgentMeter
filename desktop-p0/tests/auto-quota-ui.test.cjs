@@ -82,20 +82,33 @@ test('unchanged polling preserves desktop settings option nodes and focus target
   assert.equal(after,before);
 });
 
-test('polling preserves quota nodes and reading position while changed data still renders',()=>{
+test('polling preserves quota nodes while changed data still renders every quota without scrolling',()=>{
   const {context,element}=harness();
   const snapshot={provider_states:[{provider:'codex',collection_state:'ready',quota_windows:Array.from({length:8},(_,index)=>({label:`window ${index}`,remaining_percent:24.7}))}]};
   context.render(snapshot);
   const quota=element('codex-quota'),before=quota.children[0];
-  quota.scrollTop=120;
   context.render(snapshot);
   assert.equal(quota.children[0],before);
-  assert.equal(quota.scrollTop,120);
-  assert.match(element('codex-time').textContent,/共 8 筆，捲動查看明細/);
+  assert.match(element('codex-time').textContent,/共 8 項/);
+  assert.doesNotMatch(element('codex-time').textContent+element('codex-message').textContent,/捲動/);
+  assert.notEqual(quota.tabIndex,0,'a non-scrolling region must not become a tab stop');
   snapshot.provider_states[0].quota_windows[0].remaining_percent=23.5;
   context.render(snapshot);
   assert.notEqual(quota.children[0],before);
   assert.match(text(quota.children[0]),/23.5%/);
-  assert.equal(quota.scrollTop,120);
   assert.equal(quota.children.length,8);
+});
+
+test('quota tiles carry the full detail in a tooltip and a level for the gauge colour',()=>{
+  const {context,element}=harness();
+  context.render({provider_states:[{provider:'antigravity',collection_state:'ready',quota_windows:[
+    {label:'Gemini Models Weekly Limit Remaining',remaining_percent:8,reset_display:'Monday'},
+    {label:'codex_bengalfox secondary',remaining_percent:66.66,entitlement:10,used:3}]}]});
+  const [first,second]=element('antigravity-quota').children;
+  assert.equal(first.dataset.level,'low');
+  assert.match(first.title,/Gemini · 每週/);
+  assert.match(first.title,/重設：Monday/);
+  assert.match(text(second),/66.7%/);
+  assert.match(second.title,/bengalfox · 次視窗/);
+  assert.match(second.title,/已用 3 \/ 10/);
 });

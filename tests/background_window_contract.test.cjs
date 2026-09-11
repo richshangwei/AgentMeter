@@ -17,3 +17,19 @@ test('runtime preparation reapplies the pinned node-pty no-window patch after np
   assert.match(source,/windowsHide:\s*true/);
   assert.match(source,/conpty_console_list_agent/);
 });
+
+test('Antigravity collection never starts the agy background auto-updater (console flash source)', () => {
+  for (const file of ['scripts/quota-smoke.mjs','desktop-p0/resources/quota-helper/quota-smoke.mjs']) {
+    const source = fs.readFileSync(path.join(__dirname,'..',file),'utf8');
+    const call = /run\(agy,\['--print','\/usage'[^;]+;/s.exec(source);
+    assert.ok(call, file);
+    assert.match(call[0],/windowsHide:\s*true/, file);
+    assert.match(call[0],/AGY_CLI_DISABLE_AUTO_UPDATE:\s*'1'/, file);
+  }
+});
+
+test('every other bundled provider CLI also runs with its updater disabled', () => {
+  const source = fs.readFileSync(path.join(__dirname,'../scripts/quota-smoke.mjs'),'utf8');
+  assert.match(source,/'--no-auto-update'/);
+  assert.equal((source.match(/DISABLE_AUTOUPDATER:'1'/g) || []).length, 2);
+});

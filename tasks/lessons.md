@@ -73,3 +73,20 @@
 - Classification: verification gap.
 - Signal: a process monitor on an isolated desktop can report zero visible windows even for deliberately visible console creation.
 - Prevention: verify the observer can see the interactive desktop and detects a positive-control console before interpreting zero observations. Do not claim a console-flash fix from process flags or static tests alone.
+
+## 2026-09-11 "Reachable by scrolling" is not "readable"
+- Classification: misunderstood requirement.
+- Signal: the user rejected nested scroll regions after the real-data fix; at 1498 × 908 only one of eight Codex windows was visible per card.
+- Prevention: desktop monitoring views must fit the viewport. Measure the region, compute tile count/size and derive typography from it; when content cannot be readable, reduce cards per page (pager) instead of adding scrollbars.
+- Tripwire: `scripts/verify-desktop-responsive.cjs` rejects any scrollable or overflowing `.app-shell`, `.cards`, card or quota region.
+
+## 2026-09-11 Hidden grid rows shift implicit placement
+- Classification: incorrect assumption about CSS behaviour.
+- Signal: after a viewport change the card grid collapsed to 106px because `display:none` on `.dashboard-head` moved `.cards` into the second `auto` row.
+- Prevention: give app-shell children explicit `grid-row` whenever a row can be hidden; verify after resizing from a different size, not only on fresh load.
+
+## 2026-09-11 Third-party CLIs can open consoles we never spawn
+- Classification: verification gap / integration boundary.
+- Signal: process flags and windowsHide were correct everywhere, yet a flash was tied to AgY/Terminal and was intermittent (agy checks for updates at most every 15 minutes).
+- Prevention: for every bundled/official CLI, disable self-update and background daemons via their documented env/flags; inspect binaries (`strings`) for updater/daemon code paths. Reproduction attempts must span the tool's update TTL.
+- Tripwire: `tests/background_window_contract.test.cjs` requires `AGY_CLI_DISABLE_AUTO_UPDATE`, `DISABLE_AUTOUPDATER` and `--no-auto-update`.

@@ -1,5 +1,21 @@
 # 2026-09-10 Continue Claude desktop handoff
 
+## 2026-09-11 Repackage current fit-to-viewport build on Windows
+- [x] Verify current source/staged Antigravity updater-disable flag matches.
+- [x] Run Windows full local verifier (exit 0), targeted UI/layout tests (13 passed), and Edge responsive verifier (18 viewport matrices passed).
+- [x] Build locked offline x64 NSIS and inspect final installer/version/hash: version 0.1.0, unsigned, 73,576,709 bytes; SHA256 `12077DBE3CF8307736A242A5E51681249A6746FF9A5025B4B409FA2D8D1D88B1`; inspection exit 0.
+- Scope: packaging only; no installation or configuration changes. The long-interval interactive console probe is not rerun for this packaging request.
+
+## 2026-09-11 Fit-to-viewport desktop cards and silent Antigravity refresh
+- [x] User report: resizing produced cramped/cropped content with scrollbars; detection still flashed a console window.
+- [x] Replace scrollable `.cards`/`.quota` regions with a measured fit: `quotaTileLayout` (layout.js) places every quota window as a tile and derives ring/text sizes from the tile rectangle; variants ring → stack → bar → line.
+- [x] `desktopPageCapacity` keeps the 1×1 / 2×1 / 1×3 / 2×2 topology and only drops to 2 or 1 cards per page when a card (or the densest card's tiles, min 90×56) would be unreadable; the pager reaches the rest.
+- [x] Wide short cards lay out heading | quota | actions horizontally; informational notes move to the update-time tooltip (failures always visible, 2–3 line clamp + tooltip + guide).
+- [x] Root cause for the console flash: bundled `agy.exe` (Go, console subsystem) contains `jetski/cli/updater.RunBackgroundUpdate` / `prepareBgCommand` and honours `AGY_CLI_DISABLE_AUTO_UPDATE`. Its background updater starts outside our hidden console, so its helpers open a visible console/Windows Terminal. The collector now sets `AGY_CLI_DISABLE_AUTO_UPDATE=1` (both quota-smoke.mjs copies); Claude (`DISABLE_AUTOUPDATER`) and Copilot (`--no-auto-update`) were already covered.
+- [x] Verification (Linux Chromium, synthetic data): `scripts/verify-desktop-responsive.cjs` passes 18 viewports × 1/2/3/4 cards with 8/2/1/4 windows plus edge states — no scrollable/overflowing container, every tile/child inside its box, no sibling overlap, percentages inside ring openings, no value truncation, ≥10px text, pager reaches every monitor. Node tests: desktop_layout, auto-quota-ui, background_window_contract (new agy test), quota_smoke pass.
+- [ ] On Windows: run `scripts/verify-local.ps1`, `AGENTMETER_BROWSER_CHANNEL=msedge node scripts/verify-desktop-responsive.cjs`, rebuild NSIS, then `scripts/test-refresh-console.ps1 -LiveProvider antigravity` a few times >15 minutes apart (agy only checks for updates every 15 min). Not run from this session: the device shell was unavailable.
+- Risk: medium (desktop presentation + one collector env var). Rollback: revert desktop-p0/ui/{index.html,style.css,style-overrides.css,layout.js,dashboard.js}, scripts/verify-desktop-responsive.cjs and the agy `env` line.
+
 ## 2026-09-11 Real-data responsive layout and silent refresh
 - [x] Reproduce clipping with 8 quota windows, fractional percentages, long labels, and scaled viewports.
 - [x] Fix layout containment without changing provider data semantics.
@@ -289,4 +305,3 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Added honest catalog-only Cursor and Kiro rows. They cannot create cards, quota refreshes, or fabricated installation status until a backend collector publishes support.
 - Targeted UI contracts passed 16/16. Adaptive browser verification passed 5 desktop and 7 tablet/phone viewports with all four count states, 12-monitor pagination, zero add tiles, zero document scroll, and contained card/dialog content.
 - `scripts/verify-local.ps1`, locked offline desktop build, and `git diff --check` passed. Physical tablet, authenticated providers, clean-VM installation, and signed production packaging remain external acceptance boundaries.
-

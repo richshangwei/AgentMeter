@@ -181,11 +181,13 @@ function ensureDesktopCard(provider) {
   const mark=document.createElement('span');mark.className='provider-mark';mark.textContent=(provider[0]||'?').toUpperCase();mark.setAttribute('aria-hidden','true');
   const titleBox=document.createElement('div'),title=document.createElement('h2'),subtitle=document.createElement('p');title.textContent=desktopProviderName(provider);subtitle.textContent='AI Agent';titleBox.append(title,subtitle);titleWrap.append(mark,titleBox);
   const status=document.createElement('span');status.id=provider+'-status';status.textContent='等待讀取';heading.append(titleWrap,status);
-  const quota=document.createElement('div');quota.id=provider+'-quota';quota.className='quota';quota.textContent='—';
+  const quota=document.createElement('div');quota.id=provider+'-quota';quota.className='quota';quota.textContent='—';quota.setAttribute('role','region');quota.setAttribute('aria-label',desktopProviderName(provider)+' 額度明細');
+  const foot=document.createElement('div');foot.className='card-foot';
   const timeNode=document.createElement('p');timeNode.id=provider+'-time';timeNode.className='hint';timeNode.textContent='尚無資料';
-  const button=document.createElement('button');button.dataset.provider=provider;button.textContent='更新';button.addEventListener('click',()=>refreshQuota(provider));
+  const row=document.createElement('div');row.className='button-row';
+  const button=document.createElement('button');button.dataset.provider=provider;button.textContent='更新';button.addEventListener('click',()=>refreshQuota(provider));row.append(button);
   const message=document.createElement('p');message.id=provider+'-message';message.className='hint card-message';message.setAttribute('role','status');
-  card.append(heading,quota,timeNode,button,message);get('desktop-cards').append(card);
+  foot.append(timeNode,row,message);card.append(heading,quota,foot);get('desktop-cards').append(card);observeQuotaRegion(quota);
 }
 function renderDesktopOptions() {
   loadDesktopSelection();
@@ -210,14 +212,64 @@ function renderDesktopOptions() {
   get('desktop-monitor-count').textContent=`主畫面顯示 ${desktopSelection.length} 個監控；每頁最多 4 張，更多項目會自動分頁。`;
   const pager=get('desktop-options-pager');pager.hidden=pages<=1;get('desktop-options-page').textContent=`${desktopOptionPage+1} / ${pages}`;get('desktop-options-prev').disabled=desktopOptionPage===0;get('desktop-options-next').disabled=desktopOptionPage===pages-1;
 }
+function measureDesktopCards(cards) {
+  const width=Number(cards.clientWidth),height=Number(cards.clientHeight);
+  let gap=12;
+  if(typeof getComputedStyle==='function'){const value=parseFloat(getComputedStyle(cards).rowGap);if(Number.isFinite(value))gap=value;}
+  return {width,height,gap};
+}
+function layoutQuotaRegion(quota) {
+  if(!quota||quota.hidden)return;
+  const width=Number(quota.clientWidth),height=Number(quota.clientHeight);
+  if(!(width>0&&height>0)||!quota.style?.setProperty)return;
+  const tiles=[...(quota.children||[])].filter(node=>node.classList?.contains('window'));
+  quota.style.setProperty('--q-h',height+'px');
+  if(!tiles.length){
+    quota.dataset.variant='empty';
+    quota.dataset.emptyShape=height<96?'row':'column';
+    return;
+  }
+  delete quota.dataset.emptyShape;
+  const layout=quotaTileLayout(width,height,tiles.length);
+  if(!layout)return;
+  quota.dataset.variant=layout.variant;quota.dataset.used=String(layout.showUsed);quota.dataset.track=layout.inlineTrack?'inline':'none';
+  quota.style.setProperty('--q-reset-lines',String(layout.resetLines));quota.style.setProperty('--q-label-lines',String(layout.labelLines));
+  for(const [name,value] of [['--q-cols',layout.columns],['--q-rows',layout.rows],['--q-gap',layout.gap+'px'],['--q-tile-w',layout.tileWidth+'px'],['--q-tile-h',layout.tileHeight+'px'],
+    ['--q-pad',layout.pad+'px'],['--q-ring',layout.ring+'px'],['--q-label',layout.label+'px'],['--q-value',layout.value+'px'],['--q-small',layout.small+'px']])quota.style.setProperty(name,String(value));
+}
+function layoutVisibleQuotaRegions() {
+  if(!document.querySelectorAll)return;
+  for(const quota of document.querySelectorAll('.monitor-card:not([hidden]) .quota'))layoutQuotaRegion(quota);
+}
+let quotaObserver=null;
+function observeQuotaRegion(quota) {
+  if(typeof ResizeObserver!=='function'||!quota)return;
+  if(!quotaObserver)quotaObserver=new ResizeObserver(entries=>{for(const entry of entries)layoutQuotaRegion(entry.target);});
+  quotaObserver.observe(quota);
+}
 function applyDesktopLayout() {
   loadDesktopSelection();
-  const width=Number(window.innerWidth)||1080,height=Number(window.innerHeight)||640;
-  const page=pagedMonitorIds(desktopSelection,desktopPage,4),grid=desktopViewportGrid(width,height,page.ids.length);desktopPage=page.page;
+  const cards=get('desktop-cards'),area=measureDesktopCards(cards);
+  const pageSize=desktopPageCapacity(area.width,area.height,desktopSelection.length,area.gap,Math.max(1,...desktopSelection.map(id=>desktopTileCounts[id]||1)));
+  const page=pagedMonitorIds(desktopSelection,desktopPage,pageSize),grid=desktopViewportGrid(area.width,area.height,page.ids.length);desktopPage=page.page;
   const visible=new Set(page.ids);for(const id of desktopAvailable){const card=get(id+'-card');if(card){card.hidden=!visible.has(id);card.style.order=String(page.ids.indexOf(id));}}
   const empty=get('desktop-empty');if(empty)empty.hidden=page.ids.length!==0;
-  const cards=get('desktop-cards');cards.dataset.count=String(page.ids.length);cards.dataset.density=page.ids.length===3||(page.ids.length>=4&&height<700)||height<620?'compact':'comfortable';if(cards.style.setProperty){cards.style.setProperty('--grid-columns',grid.columns);cards.style.setProperty('--grid-rows',grid.rows);}
+  cards.dataset.count=String(page.ids.length);
+  if(area.width>0&&area.height>0){
+    const cardWidth=(area.width-area.gap*(grid.columns-1))/grid.columns,cardHeight=(area.height-area.gap*(grid.rows-1))/grid.rows;
+    const shape=desktopCardShape(cardWidth,cardHeight);
+    cards.dataset.shape=shape;cards.dataset.density=desktopCardDensity(cardWidth,cardHeight,shape);
+  }
+  if(cards.style.setProperty){cards.style.setProperty('--grid-columns',grid.columns);cards.style.setProperty('--grid-rows',grid.rows);}
   const pager=get('desktop-pager');pager.hidden=page.pages<=1;get('desktop-page').textContent=`${page.page+1} / ${page.pages}`;get('desktop-prev').disabled=page.page===0;get('desktop-next').disabled=page.page===page.pages-1;
+  layoutVisibleQuotaRegions();
+}
+const desktopTileCounts={};
+let desktopLayoutFrame=0;
+function scheduleDesktopLayout() {
+  if(typeof requestAnimationFrame!=='function'){applyDesktopLayout();return;}
+  if(desktopLayoutFrame)return;
+  desktopLayoutFrame=requestAnimationFrame(()=>{desktopLayoutFrame=0;applyDesktopLayout();});
 }
 function quotaErrorMessage(provider, code) {
   if (code === 'cli_not_found') return providerSetup[provider] || quotaErrors.cli_not_found;
@@ -232,7 +284,14 @@ function quotaLabel(item) {
     .replace('codex primary','Codex 主視窗').replace('codex secondary','Codex 次視窗')
     .replace('five_hour','5 小時').replace('seven_day','每週')
     .replace('Gemini Models','Gemini').replace('Claude and GPT models','Claude / GPT')
-    .replace('Weekly Limit Remaining','每週').replace('Five Hour Limit Remaining','5 小時');
+    .replace('Weekly Limit Remaining','每週').replace('Five Hour Limit Remaining','5 小時')
+    .replace(/^(?:default|codex) (primary|secondary)$/,(_,w)=>'Codex '+(w==='primary'?'主視窗':'次視窗'))
+    .replace(/^codex_(\S+) (primary|secondary)$/,(_,model,w)=>model+' · '+(w==='primary'?'主視窗':'次視窗'))
+    .replace(/([^·]) (?=(?:主視窗|次視窗|每週|5 小時)$)/,'$1 · ');
+}
+const shortTime = value => value == null ? '尚無資料' : new Date(Number(value)).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+function displayPercent(value) {
+  return String(Math.round(value * 10) / 10);
 }
 function render(snapshot) {
   const busy = localRefreshing || snapshot.refreshing === true;
@@ -259,10 +318,8 @@ function render(snapshot) {
     get(name+'-status').textContent = failed ? (stale ? '更新失敗 · 舊資料' : '需要處理') : hasData ? '已連線' : '等待讀取';
     get(name+'-status').className = failed ? 'status-error' : '';
     const quota = get(name+'-quota');
-    const readingPosition = quota.scrollTop || 0;
-    quota.tabIndex = 0;
-    quota.setAttribute('role', 'region');
-    quota.setAttribute('aria-label', name + ' 額度明細，可捲動查看全部');
+    const card = get(name+'-card');
+    if (card?.dataset) card.dataset.failed = String(failed);
     const contentSignature = JSON.stringify([windows, usage]);
     if (quota.dataset.contentSignature !== contentSignature) {
       quota.dataset.contentSignature = contentSignature;
@@ -277,41 +334,51 @@ function render(snapshot) {
       }
       for (const item of windows) {
         const row = document.createElement('div'); row.className = 'window';
-        const label = document.createElement('div'); label.className = 'detail'; label.textContent = quotaLabel(item);
-        const value = document.createElement('div');
+        const label = document.createElement('div'); label.className = 'q-label'; label.textContent = quotaLabel(item);
+        const value = document.createElement('div'); value.className = 'q-value';
         const remaining = typeof item.remaining_percent === 'number' && Number.isFinite(item.remaining_percent)
           ? Math.max(0, Math.min(100, item.remaining_percent)) : null;
         if(row.style.setProperty)row.style.setProperty('--remaining',remaining === null ? 0 : remaining);else row.style['--remaining']=remaining === null ? 0 : remaining;
-        value.textContent = remaining === null ? '—' : remaining+'%';
+        const level = remaining === null ? 'unknown' : remaining > 30 ? 'good' : remaining > 10 ? 'warning' : 'low';
+        row.dataset.level = level;
+        value.textContent = remaining === null ? '—' : displayPercent(remaining)+'%';
         const valueMeaning=document.createElement('span');valueMeaning.className='sr-only';valueMeaning.textContent=remaining === null ? '剩餘未知' : ' 剩餘';value.append(valueMeaning);
         const track = document.createElement('div'); track.className = 'quota-track';
         if (remaining !== null) {
           const fill = document.createElement('div');
-          fill.className = 'quota-fill ' + (remaining > 30 ? 'quota-good' : remaining > 10 ? 'quota-warning' : 'quota-low');
+          fill.className = 'quota-fill quota-' + level;
           fill.style.width = remaining+'%';
           track.append(fill);
         } else { track.className += ' quota-unknown'; }
-        const reset = document.createElement('div'); reset.className = 'detail';
+        const reset = document.createElement('div'); reset.className = 'detail q-reset';
         reset.textContent = item.reset_display ? '重設：'+item.reset_display :
-          item.resets_at == null ? '重設時間尚未確認' : '重設：'+new Date(typeof item.resets_at === 'number' ? item.resets_at*1000 : item.resets_at).toLocaleString('zh-TW');
+          item.resets_at == null ? '重設時間尚未確認' : '重設：'+new Date(typeof item.resets_at === 'number' ? item.resets_at*1000 : item.resets_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
         row.append(label,value,track,reset);
+        const details = [label.textContent, remaining === null ? '剩餘未知' : `剩餘 ${displayPercent(remaining)}%`, reset.textContent];
         if (typeof item.entitlement === 'number' && typeof item.used === 'number') {
-          const used = document.createElement('div'); used.className = 'detail';
-          used.textContent = '已用 '+item.used+' / '+item.entitlement; row.append(used);
+          const used = document.createElement('div'); used.className = 'detail q-used';
+          used.textContent = '已用 '+item.used+' / '+item.entitlement; row.append(used); details.push(used.textContent);
         }
+        row.title = details.join('\n');
         quota.append(row);
       }
       if (!windows.length) for (const item of usage) {
-        const row=document.createElement('div');row.className='window usage-row';const label=document.createElement('div');label.className='detail';label.textContent=item.label||item.model||'使用量';const value=document.createElement('div');value.textContent=typeof item.used==='number'?`${item.used}${item.unit?' '+item.unit:''}`:'使用量未知';row.append(label,value);quota.append(row);
+        const row=document.createElement('div');row.className='window usage-row';const label=document.createElement('div');label.className='q-label';label.textContent=item.label||item.model||'使用量';const value=document.createElement('div');value.className='q-value';value.textContent=typeof item.used==='number'?`${item.used}${item.unit?' '+item.unit:''}`:'使用量未知';row.title=`${label.textContent}\n${value.textContent}`;row.append(label,value);quota.append(row);
       }
-      quota.scrollTop = readingPosition;
+      layoutQuotaRegion(quota);
     }
     const rowCount = windows.length || usage.length;
-    get(name+'-time').textContent = '資料更新：'+time(provider.collected_at)+(stale ? '（舊資料，不代表目前額度）':'')+(rowCount > 1 ? ` · 共 ${rowCount} 筆，捲動查看明細` : '');
-    get(name+'-message').textContent = failed ? quotaErrorMessage(name, provider.failure_code) :
+    desktopTileCounts[name] = Math.max(1,rowCount);
+    const timeText = '更新於 '+shortTime(provider.collected_at)+(stale ? ' · 舊資料，不代表目前額度':'')+(rowCount > 1 ? ` · 共 ${rowCount} 項` : '');
+    get(name+'-time').textContent = timeText;
+    get(name+'-time').title = '資料更新：'+time(provider.collected_at)+(stale ? '（舊資料，不代表目前額度）':'');
+    const messageText = failed ? quotaErrorMessage(name, provider.failure_code) :
       name === 'copilot' ? '顯示 Premium interactions 權益，不是 Billing 或 AI credits 餘額。' :
       name === 'claude' ? '自動讀取官方 /usage；終端格式相容性仍屬實驗性。' :
       name === 'antigravity' ? '自動讀取官方 CLI 額度；不需要手動提供資料檔。' : '沿用本機 Codex 登入，自動取得官方額度。';
+    get(name+'-message').textContent = messageText;
+    get(name+'-message').title = messageText;
+    if (!failed) get(name+'-time').title += '\n'+messageText;
     updateDesktopGuideButton(name,failed&&(!hasData||['cli_not_found','authentication_required','workspace_trust_required','collector_runtime_missing'].includes(provider.failure_code)));
     if (name === 'claude') get('claude-enable').hidden = provider.failure_code !== 'workspace_trust_required';
   }
@@ -385,4 +452,8 @@ get('install-update').addEventListener('click',async()=>{
 if(get('desktop-monitor-options').parentElement)get('desktop-monitor-options').parentElement.append(get('desktop-options-pager'));
 checkAppUpdate();
 loadDesktopSelection();renderDesktopOptions();applyDesktopLayout();
-if (window.addEventListener) window.addEventListener('resize',applyDesktopLayout);
+if (window.addEventListener) window.addEventListener('resize',scheduleDesktopLayout);
+if (typeof ResizeObserver === 'function') {
+  new ResizeObserver(scheduleDesktopLayout).observe(get('desktop-cards'));
+  for (const quota of document.querySelectorAll('.quota')) observeQuotaRegion(quota);
+}

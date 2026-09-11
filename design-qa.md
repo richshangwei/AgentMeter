@@ -1,5 +1,9 @@
 # AgentMeter redesign — design QA
 
+## 2026-09-11 Fit-to-viewport rewrite (supersedes the scrollable real-data correction)
+
+User feedback rejected scrollbars and cramped resize behaviour. The desktop dashboard now never scrolls: the card grid, cards and quota regions are fixed to the viewport; every quota window is a tile sized from the measured region (ring / stack / bar / line variants) with the full label, reset and usage in a tooltip. Small windows keep the count topology but show fewer cards per page when a card or its densest quota tiles would fall below 90×56 px. Verified with `scripts/verify-desktop-responsive.cjs` (18 viewports × 1/2/3/4 cards + edge states) in Chromium on Linux; Windows/Edge (Segoe UI metrics) and a packaged build still need a run.
+
 ## 2026-09-11 Real-data correction (supersedes prior desktop completion claims)
 
 The earlier two-window fixtures missed real data cardinality. Eight-window Codex data reproduced a clipped primary ring at 2048 × 1190; a start-alignment-only probe then exposed the fractional percentage sizing gap. The corrected desktop uses start-aligned scrollable quota regions, explicit four-row gauge placement, gauge-relative percentage sizing, wrapping labels, and nonshrinking footer actions. Cards keep count-driven columns/rows at supported desktop widths and use a minimum readable height with grid scrolling when needed; below 600px they stack. No quota rows or refresh buttons are hidden for short screens.
