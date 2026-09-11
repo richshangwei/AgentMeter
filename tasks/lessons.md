@@ -1,5 +1,10 @@
 # Lessons
 
+## 2026-09-11 Verify release-host filename normalization before freezing an updater allowlist
+- Failure: the updater and manifest pinned Tauri's default NSIS filename containing a space, but GitHub normalized that space to a period on upload; the immutable 0.2.0 client therefore requested a 404 URL.
+- Detection: publish as a non-Latest prerelease first and compare the exact manifest URL against the actual asset URL using unauthenticated HTTP requests.
+- Prevention: release assets use an ASCII safe filename with letters, digits, hyphen, underscore and period only. Unit tests reject `%20`/spaces; every release gate verifies exact uploaded names and HTTP 200 before setting Latest.
+
 ## 2026-09-11 Quota transport fields are not product terminology
 - Classification: misunderstood domain data / missing metadata propagation.
 - Signal: Codex `primary` and `secondary` were rendered as 「主視窗／次視窗」 and an internal `base_model_inference` ID became 「基本模型」, although the API supplied actual window durations and a displayable limit name.

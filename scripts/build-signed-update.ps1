@@ -32,12 +32,15 @@ try {
     [IO.File]::WriteAllText($publicConfigPath, $publicConfig, (New-Object Text.UTF8Encoding($false)))
     & cargo tauri build --ci --config tauri.updater.conf.json --config $publicConfigPath --target x86_64-pc-windows-msvc --bundles nsis -- --offline --locked
     if ($LASTEXITCODE -ne 0) { throw 'Signed Tauri build failed; no manifest was created.' }
-    $installer = Join-Path $desktopPath "target/x86_64-pc-windows-msvc/release/bundle/nsis/AgentMeter P0_${Version}_x64-setup.exe"
-    & (Join-Path $PSScriptRoot 'inspect-nsis.ps1') -InstallerPath $installer -ExpectedVersion $Version
+    $builtInstaller = Join-Path $desktopPath "target/x86_64-pc-windows-msvc/release/bundle/nsis/AgentMeter P0_${Version}_x64-setup.exe"
+    & (Join-Path $PSScriptRoot 'inspect-nsis.ps1') -InstallerPath $builtInstaller -ExpectedVersion $Version
+    # GitHub rewrites spaces in release asset names. Publish an explicit safe name
+    # so the manifest, backend allowlist and public asset URL remain identical.
+    $installer = Join-Path $draftDirectory "AgentMeter-P0_${Version}_x64-setup.exe"
+    Copy-Item -LiteralPath $builtInstaller -Destination $installer
+    Copy-Item -LiteralPath ($builtInstaller + '.sig') -Destination ($installer + '.sig')
     & node (Join-Path $PSScriptRoot 'create-update-manifest.mjs') $Version $installer (Join-Path $draftDirectory 'latest.json')
     if ($LASTEXITCODE -ne 0) { throw 'Update manifest validation failed.' }
-    Copy-Item -LiteralPath $installer -Destination $draftDirectory
-    Copy-Item -LiteralPath ($installer + '.sig') -Destination $draftDirectory
     Write-Output "Local release draft ready: $draftDirectory"
     Write-Output 'Nothing has been uploaded, published or installed.'
 } finally {

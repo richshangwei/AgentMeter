@@ -31,6 +31,8 @@ powershell -ExecutionPolicy Bypass -File scripts/build-signed-update.ps1 -Versio
 
 成功輸出在 `desktop-p0/target/update-drafts/<版本>-<唯一識別碼>/`，包含 NSIS `.exe`、相鄰 `.exe.sig` 和 `latest.json`。草稿不覆寫前次結果，全部留在忽略的 target 目錄。
 
+Release 資產固定使用 GitHub 安全檔名 `AgentMeter-P0_<版本>_x64-setup.exe`。不得改回含空白的 Tauri 原始輸出名稱；GitHub 會把空白正規化成句點，造成 manifest URL 與實際資產不一致。建置腳本會在草稿目錄複製成安全檔名，簽章仍驗證相同的安裝包內容。
+
 ## 發佈前人工驗收
 
 在隔離 Windows 環境安裝帶正確公鑰與 endpoint 的前一版，驗證檢查新版本、下載、簽章驗證、安裝及重啟；另外驗證拒絕被修改的安裝包、離線、同版／舊版、下載失敗及重試。測試用 fixture 只檢查 manifest 格式，不證明真實私鑰／公鑰相符或更新可安裝。

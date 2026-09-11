@@ -11,6 +11,17 @@
 - Risk: high, public executable release and permanent update trust. Rollback before install by removing Latest exposure; after install publish a higher fixed version, never replace an existing tag asset.
 - Build evidence: draft `desktop-p0/target/update-drafts/0.2.1-9e235b558b5f4e828e11b6122ba13747`; installer 73,590,196 bytes; SHA256 `F03CADE3C22603B118800F6195C36D3187FADD5FC1E2FD2FF24D3FDEBDC149F3`; embedded version 0.2.1. Tauri signature and trusted comment verified; in-memory single-byte tamper rejected. Windows Authenticode remains NotSigned.
 - Verification: full verify-local.ps1 passed serially; updater/manifest/lifecycle 17 tests passed; settings updater UI passed 1080x640, 640x520 and 375x844; desktop dashboard passed all 18 responsive matrices.
+- Release discovery: GitHub normalized spaces in uploaded asset names to dots; the 0.2.0-required `%20` URL returned HTTP 404 while the dotted URL returned 200. v0.2.1 was exposed only as a non-Latest prerelease for the HTTP probe and immediately returned to draft. Existing 0.2.0 cannot consume a differently named asset.
+
+## 2026-09-11 GitHub-safe bootstrap 0.2.2 and update 0.2.3
+- [x] Capture the public release failure: `%20` asset URL is 404 while GitHub-normalized dotted asset is 200; keep v0.2.1 as a draft.
+- [x] Require the GitHub-safe `AgentMeter-P0_<version>_x64-setup.exe` name in manifest and backend, rejecting the legacy space form.
+- [ ] Build, verify, commit, tag and publish 0.2.2 as the one-time manual bootstrap (local build and verification complete; Git publication pending).
+- [ ] Bump, build, verify, commit, tag and publish 0.2.3 as Latest.
+- [ ] Verify unauthenticated latest manifest/asset HTTP status, downloaded SHA256/signature and 0.2.2-to-0.2.3 discovery contract.
+- Acceptance: GitHub does not rewrite either 0.2.2/0.2.3 release asset name; 0.2.3 latest.json contains the exact public 200 URL and valid signature; user receives a clear one-time 0.2.2 install handoff.
+- Risk: existing 0.2.0 is permanently unable to auto-update because its immutable allowlist requires a GitHub asset name that cannot exist. Recovery is a single manual 0.2.2 install; all later versions use the safe name.
+- 0.2.2 build evidence: draft `desktop-p0/target/update-drafts/0.2.2-ef13221be66544ad8e62934b585c018d`; installer 73,592,379 bytes; SHA256 `0D5376ADBBC56814D2A6658C46DF9C0E78628638EEFE57B3D57BB1BB3FE43607`; embedded version 0.2.2. Signature/trusted comment pass and modified-byte verification fails as required. Full serial verifier passes.
 
 ## 2026-09-11 Local signing bootstrap
 - [x] Generate private key only in memory and store only Windows CurrentUser DPAPI ciphertext outside Git; never log secret material.

@@ -126,7 +126,7 @@ fn validate_artifact(endpoint: &str, version: &str, url: &tauri::Url) -> bool {
         return false;
     }
     let expected_path =
-        format!("/{repo}/releases/download/v{version}/AgentMeter%20P0_{version}_x64-setup.exe");
+        format!("/{repo}/releases/download/v{version}/AgentMeter-P0_{version}_x64-setup.exe");
     url.scheme() == "https"
         && url.host_str() == Some("github.com")
         && url.port().is_none()
@@ -317,14 +317,14 @@ mod tests {
         assert!(validate_artifact(
             ENDPOINT,
             "0.2.0",
-            &"https://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe"
+            &"https://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter-P0_0.2.0_x64-setup.exe"
                 .parse()
                 .unwrap()
         ));
         for url in [
-            "http://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe",
-            "https://github.com/attacker/agentmeter/releases/download/v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe",
-            "https://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe?x=1",
+            "http://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter-P0_0.2.0_x64-setup.exe",
+            "https://github.com/attacker/agentmeter/releases/download/v0.2.0/AgentMeter-P0_0.2.0_x64-setup.exe",
+            "https://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter-P0_0.2.0_x64-setup.exe?x=1",
             "https://example.com/app.exe",
             "https://github.com/example/agentmeter/releases/download/v1/app.json",
         ] {
@@ -334,18 +334,19 @@ mod tests {
     #[test]
     fn artifact_tag_and_exact_installer_name_must_match_manifest_version() {
         for path in [
-            "v0.1.0/AgentMeter%20P0_0.2.0_x64-setup.exe",
-            "v0.2.0/AgentMeter%20P0_0.1.0_x64-setup.exe",
+            "v0.1.0/AgentMeter-P0_0.2.0_x64-setup.exe",
+            "v0.2.0/AgentMeter-P0_0.1.0_x64-setup.exe",
             "v0.2.0/OtherApp_0.2.0_x64-setup.exe",
-            "v0.2.0/AgentMeter%20P0_0.2.0_arm64-setup.exe",
-            "v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe.nsis.zip",
+            "v0.2.0/AgentMeter-P0_0.2.0_arm64-setup.exe",
+            "v0.2.0/AgentMeter-P0_0.2.0_x64-setup.exe.nsis.zip",
+            "v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe",
         ] {
             let url = format!("https://github.com/example/agentmeter/releases/download/{path}")
                 .parse()
                 .unwrap();
             assert!(!validate_artifact(ENDPOINT, "0.2.0", &url));
         }
-        let url = "https://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe".parse().unwrap();
+        let url = "https://github.com/example/agentmeter/releases/download/v0.2.0/AgentMeter-P0_0.2.0_x64-setup.exe".parse().unwrap();
         for version in ["", "../0.2.0", "00.2.0", "0.2", "0.2.0-beta.1"] {
             assert!(!validate_artifact(ENDPOINT, version, &url));
         }

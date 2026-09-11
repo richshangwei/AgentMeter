@@ -7,7 +7,7 @@ import { createManifest } from './create-update-manifest.mjs';
 
 function fixture(fn) {
   const directory = mkdtempSync(join(tmpdir(), 'agentmeter-manifest-test-'));
-  const installer = join(directory, 'AgentMeter P0_0.2.0_x64-setup.exe');
+  const installer = join(directory, 'AgentMeter-P0_0.2.0_x64-setup.exe');
   const signature = `${installer}.sig`;
   // Shape-only synthetic fixture, not a cryptographic signature or signing key.
   const encoded = Buffer.from(`untrusted comment: test\n${Buffer.alloc(74).toString('base64')}\ntrusted comment: test\n${Buffer.alloc(64).toString('base64')}\n`).toString('base64');
@@ -21,7 +21,8 @@ test('creates static Tauri Windows x64 manifest with exact signature and pinned 
   const manifest = createManifest(input);
   assert.equal(manifest.version, '0.2.0');
   assert.equal(manifest.pub_date, '2026-09-11T00:00:00.000Z');
-  assert.equal(manifest.platforms['windows-x86_64'].url, 'https://github.com/richshangwei/AgentMeter/releases/download/v0.2.0/AgentMeter%20P0_0.2.0_x64-setup.exe');
+  assert.equal(manifest.platforms['windows-x86_64'].url, 'https://github.com/richshangwei/AgentMeter/releases/download/v0.2.0/AgentMeter-P0_0.2.0_x64-setup.exe');
+  assert.doesNotMatch(manifest.platforms['windows-x86_64'].url, /%20|\s/);
   assert.equal(Object.keys(manifest.platforms).length, 1);
 }));
 test('rejects malformed and nonstable versions', () => fixture(input => {

@@ -8,7 +8,7 @@ const base64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$
 
 export function createManifest({ version, installer, signature, publicKey, url, notes = '', now = new Date() }) {
   if (!stableVersion.test(version)) throw new Error('Version must be an explicit stable x.y.z version.');
-  const expectedName = `AgentMeter P0_${version}_x64-setup.exe`;
+  const expectedName = `AgentMeter-P0_${version}_x64-setup.exe`;
   if (!installer || basename(installer) !== expectedName || !statSync(installer).isFile() || statSync(installer).size === 0) {
     throw new Error('Expected a nonempty AgentMeter x64 NSIS installer matching the version.');
   }
