@@ -190,7 +190,13 @@ pub fn view(result: &Value) -> Result<Value, String> {
             .ok_or("quota_invalid")?;
         let bucket = item["bucket"].as_str().unwrap_or("");
         let window = item["window"].as_str().unwrap_or("");
-        if bucket.len() > 100 || window.len() > 100 {
+        let limit_id = item["limit_id"].as_str().unwrap_or("");
+        let limit_name = item["limit_name"].as_str().filter(|s| s.len() <= 100);
+        let plan_type = item["plan_type"].as_str().filter(|s| s.len() <= 50);
+        let window_duration_mins = item["window_duration_mins"]
+            .as_f64()
+            .filter(|n| n.is_finite() && (0.0..=525_600.0).contains(n));
+        if bucket.len() > 100 || window.len() > 100 || limit_id.len() > 100 {
             return Err("quota_invalid".into());
         }
         let reset_display = item["reset_display"].as_str().filter(|s| s.len() < 150);
@@ -200,6 +206,7 @@ pub fn view(result: &Value) -> Result<Value, String> {
             item.get("resets_at").cloned().unwrap_or(Value::Null)
         };
         windows.push(json!({"bucket_key":format!("{bucket}:{window}"),"label":format!("{bucket} {window}").trim(),
+            "limit_id":limit_id,"limit_name":limit_name,"plan_type":plan_type,"window":window,"window_duration_mins":window_duration_mins,
             "remaining_percent":remaining,"unit":"percent","resets_at":resets_at,"reset_display":reset_display,
             "entitlement":item["entitlement"].as_f64(),"used":item["used"].as_f64()}));
     }
@@ -359,6 +366,16 @@ mod tests {
             bad["quota"][0]["remaining_percent"] = invalid;
             assert!(view(&bad).is_err());
         }
+    }
+    #[test]
+    fn codex_projection_preserves_period_metadata_for_product_facing_labels() {
+        let input = json!({"provider":"codex","status":"PASS","quota":[{"bucket":"codex_bengalfox","limit_id":"codex_bengalfox","limit_name":"GPT-5.3-Codex-Spark","plan_type":"prolite","window":"primary","window_duration_mins":300,"remaining_percent":100} ]});
+        let projected = view(&input).unwrap();
+        let quota = &projected["quota_windows"][0];
+        assert_eq!(quota["limit_id"], "codex_bengalfox");
+        assert_eq!(quota["limit_name"], "GPT-5.3-Codex-Spark");
+        assert_eq!(quota["plan_type"], "prolite");
+        assert_eq!(quota["window_duration_mins"], 300.0);
     }
     #[test]
     fn failed_refresh_retains_previous_quota_but_marks_it_stale() {

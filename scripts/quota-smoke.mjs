@@ -84,7 +84,11 @@ export function codexWindows(result) {
   return buckets.flatMap(([bucket,value]) => ['primary','secondary'].flatMap(window => {
     const q = value?.[window];
     return typeof q?.usedPercent === 'number' && Number.isFinite(q.usedPercent) && q.usedPercent >= 0
-      ? [{bucket,window,remaining_percent:Math.max(0,100-q.usedPercent),resets_at:q.resetsAt ?? null}] : [];
+      ? [{bucket,limit_id:typeof value?.limitId === 'string' ? value.limitId : bucket,
+          limit_name:typeof value?.limitName === 'string' ? value.limitName : null,
+          plan_type:typeof value?.planType === 'string' ? value.planType : null,
+          window,window_duration_mins:typeof q.windowDurationMins === 'number' && Number.isFinite(q.windowDurationMins) ? q.windowDurationMins : null,
+          remaining_percent:Math.max(0,100-q.usedPercent),resets_at:q.resetsAt ?? null}] : [];
   }));
 }
 export function copilotWindows(result) {

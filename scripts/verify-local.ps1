@@ -10,6 +10,8 @@ try {
         'scripts\test-four-quota.ps1',
         'scripts\test-refresh-console.ps1',
         'scripts\prepare-desktop-quota.ps1',
+        'scripts\build-signed-update.ps1',
+        'scripts\local-signing-build.ps1',
         'desktop-p0\tests\instance-probe.ps1'
     )) {
         Write-Host "Checking: PowerShell syntax ($powerShellRelativePath)"
@@ -33,6 +35,9 @@ $checks = @(
         @{Name='Desktop layout rules'; Tool='node'; Args=@('--test','tests/desktop_layout.test.cjs')},
         @{Name='Responsive browser verifier syntax'; Tool='node'; Args=@('--check','scripts/verify-desktop-responsive.cjs')},
         @{Name='Packaged updater startup config'; Tool='node'; Args=@('--test','tests/updater_boot_config.test.cjs')},
+        @{Name='Application updater controller'; Tool='node'; Args=@('--test','tests/app_updater.test.cjs')},
+        @{Name='Signed update manifest'; Tool='node'; Args=@('--test','scripts/create-update-manifest.test.mjs')},
+        @{Name='Application updater UI syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/app-updater-ui.js')},
         @{Name='Root formatting'; Tool='cargo'; Args=@('fmt','--all','--','--check')},
         @{Name='Desktop formatting'; Tool='cargo'; Args=@('fmt','--manifest-path','desktop-p0/Cargo.toml','--all','--','--check')},
         @{Name='Root tests'; Tool='cargo'; Args=@('test','--offline','--locked','--quiet')},

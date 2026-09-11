@@ -1,5 +1,39 @@
 # 2026-09-10 Continue Claude desktop handoff
 
+## 2026-09-11 Publish 0.2.1 automatic update
+- [x] Audit the complete pending product diff and exclude screenshots, generated previews and signing keys from Git; keep the reusable ciphertext-only signing helper without embedded key material.
+- [x] Set desktop version 0.2.1, run full verification and build with the existing trusted updater key.
+- [x] Verify installer identity, signature, tamper rejection and `latest.json` URLs.
+- [ ] Commit in detailed Traditional Chinese, push `master`, create and push signed release tag `v0.2.1`.
+- [ ] Publish GitHub Release with only installer, updater signature and `latest.json`; verify latest endpoint and asset downloads.
+- [ ] Confirm an installed 0.2.0 can discover 0.2.1 without triggering an automatic install.
+- Acceptance: release assets are public and immutable at exact expected URLs; 0.2.0 reports 0.2.1 available and verifies it before install; no secret or screenshot is committed/uploaded.
+- Risk: high, public executable release and permanent update trust. Rollback before install by removing Latest exposure; after install publish a higher fixed version, never replace an existing tag asset.
+- Build evidence: draft `desktop-p0/target/update-drafts/0.2.1-9e235b558b5f4e828e11b6122ba13747`; installer 73,590,196 bytes; SHA256 `F03CADE3C22603B118800F6195C36D3187FADD5FC1E2FD2FF24D3FDEBDC149F3`; embedded version 0.2.1. Tauri signature and trusted comment verified; in-memory single-byte tamper rejected. Windows Authenticode remains NotSigned.
+- Verification: full verify-local.ps1 passed serially; updater/manifest/lifecycle 17 tests passed; settings updater UI passed 1080x640, 640x520 and 375x844; desktop dashboard passed all 18 responsive matrices.
+
+## 2026-09-11 Local signing bootstrap
+- [x] Generate private key only in memory and store only Windows CurrentUser DPAPI ciphertext outside Git; never log secret material.
+- [x] Build signed 0.2.0 local draft using existing release tooling and verify artifact/signature metadata.
+- [x] Record artifact hashes and trust/backup limitations; no release publication, installation, or running-app replacement.
+- Risk: signing trust root; refuse to overwrite existing keys. No plaintext private-key file is created. DPAPI recovery requires this Windows account; portable encrypted backup remains a release gate. ACL modification was denied by the execution environment; switched to in-memory generation and ciphertext-only storage rather than relying on filesystem ACL confidentiality.
+- Results: draft `desktop-p0/target/update-drafts/0.2.0-89e12ca03ffb4fd6aecce3c867cd0e81`, installer 73,567,979 bytes, SHA256 `8FD0A8220855C9137F9FB429037648ADA3EF5F113AF0AFDA8B5F7C6E1561CA46`. NSIS embedded version 0.2.0. Tauri updater signature verified with public key; trusted comment verified; single-byte tampering rejected in memory. Authenticode remains NotSigned.
+- Verification: full verify-local.ps1 with RUST_TEST_THREADS=1 passed (tests, formatting, Clippy); signature verifier passed; no installer or application launched. Updated bundle test to compare actual desktop Cargo package version rather than separately versioned core library.
+
+## 2026-09-11 Signed application automatic updates
+- [x] Inspect existing updater, release configuration, lifecycle boundaries and tests.
+- [x] Implement serialized check/download/verified-ready/install states with progress and retry safety.
+- [x] Implement persistent automatic-check and optional automatic-download preferences, recurring checks and clear Traditional Chinese settings feedback.
+- [x] Add local signed-release/manifest tooling and publishing instructions; never publish or upload a private key implicitly.
+- [x] Add state, concurrency, frontend and manifest regression tests; run full local checks and browser/settings verification.
+- [x] Record outcomes and remaining signing/release enablement requirements.
+- Acceptance: checking and downloading never stop quota collection; installer launches only after explicit confirmation and verified download; unsigned/unconfigured builds cannot install arbitrary packages; retries cannot race installs; startup and recurring checks avoid duplicate work.
+- Risk: high (trusted executable updates). Existing updater signature verification remains mandatory. Rollback: revert focused updater/UI/tooling changes; do not alter signing trust or release artifacts. No account data/schema changes.
+- Environment: Tauri 2 / updater 2.10.1, Windows x64 NSIS, offline Cargo lockfiles, GitHub origin richshangwei/AgentMeter. Signing-key creation approval is pending; release publishing is not authorized.
+- Results: updater controller has 9 deterministic tests (including late progress and busy timer races), manifest has 6 tests, lifecycle contracts have 2 tests, Rust updater has 5 tests. Edge updater interaction checks pass at 1080x640, 640x520 and 375x844; existing dashboard passes all 18 viewport matrices.
+- Verification caveat: initial parallel full run failed two existing tablet_http tests (pairing 401 and revision not yet advanced after a fixed 50ms sleep). Isolated serial tablet_http run passes all 22; full scripts/verify-local.ps1 with RUST_TEST_THREADS=1 passes, including formatting, Rust/Node tests and both all-target Clippy checks. Do not claim the default concurrent suite is reliable; follow up on timing-sensitive tests separately.
+- Activation gate: no signing key generated, no release uploaded, and no installer executed. Existing unconfigured previews require a manual enabled build once. Real signed update/invalid-signature/installer lifecycle acceptance in isolated Windows remains required before release. SDK cannot recover after Windows installer handoff; only pre-shutdown preparation failures are retryable.
+
 ## 2026-09-11 Repackage current fit-to-viewport build on Windows
 - [x] Verify current source/staged Antigravity updater-disable flag matches.
 - [x] Run Windows full local verifier (exit 0), targeted UI/layout tests (13 passed), and Edge responsive verifier (18 viewport matrices passed).
@@ -305,3 +339,38 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Added honest catalog-only Cursor and Kiro rows. They cannot create cards, quota refreshes, or fabricated installation status until a backend collector publishes support.
 - Targeted UI contracts passed 16/16. Adaptive browser verification passed 5 desktop and 7 tablet/phone viewports with all four count states, 12-monitor pagination, zero add tiles, zero document scroll, and contained card/dialog content.
 - `scripts/verify-local.ps1`, locked offline desktop build, and `git diff --check` passed. Physical tablet, authenticated providers, clean-VM installation, and signed production packaging remain external acceptance boundaries.
+
+## 2026-09-11 Codex quota period labels
+
+### Goal & acceptance criteria
+- [x] Preserve Codex limit name, plan type, and actual `windowDurationMins` through the desktop collection pipeline.
+- [x] Label 300-minute windows as `5 小時用量限制` and 10080-minute windows as `每週使用上限`; never expose `primary` / `secondary` as user terminology.
+- [x] Show understandable group names for regular, Spark, and reserve-model limits on desktop and tablet.
+- [x] Let the API shape determine whether an account shows five-hour, weekly, or both windows; do not infer windows from Plus/Pro names.
+
+### Plan
+- [x] Checkpoint A: reproduce the misleading labels and trace metadata loss from App Server to both UIs.
+- [x] Checkpoint B: add failing collection/projection/UI regression tests.
+- [x] Checkpoint B: preserve metadata and implement duration-based labels in the smallest shared seams.
+- [x] Checkpoint C: run targeted Node/Rust tests, responsive browser verification, full local verification, and diff checks.
+- [x] Checkpoint D: record results and any external verification gap.
+
+### Risk & rollback
+- Risk: low. Affected components: Codex quota metadata projection and display copy only.
+- Rollback: revert this task's helper, projection, UI formatter, and test changes; no stored observations or credentials are mutated.
+- Signals: exact Plus/Pro-shaped fixtures, no `primary`/`secondary` in rendered Codex labels, desktop/tablet parity, responsive containment.
+
+### Dependencies & environment
+- Existing Codex App Server response and vanilla JS/Rust pipeline; no new dependency.
+- Live account evidence is read-only. Offline fixtures remain the deterministic regression source.
+
+### Working notes
+- `primary` / `secondary` are transport field positions, not product-facing period names.
+- The authoritative period is `windowDurationMins`: current Pro-like live data reports regular weekly only, while Spark reports both five-hour and weekly windows.
+
+### Results
+- Codex collector output and Rust projection now retain limit ID/name, plan type, window identity, and duration without changing credentials or stored schema.
+- Desktop and tablet render `常規使用額度 · 每週使用上限`, `GPT-5.3-Codex-Spark · 5 小時用量限制`, `GPT-5.3-Codex-Spark · 每週使用上限`, and `備用模型額度 · 每週使用上限` from authoritative metadata.
+- Plus-shaped 300/10080 and Pro-shaped weekly-only fixtures pass; absent rows remain absent, so the UI never fabricates a plan window.
+- Verification: 29 focused Node tests passed, 4 desktop auto-quota Rust tests passed, 18 Windows Edge viewport matrices passed, and `scripts/verify-local.ps1` completed with all tests, formatting, and Clippy checks passing.
+- External boundary: no installer was rebuilt and no credential or account state was changed. Current official documentation describes plan-dependent five-hour/weekly limits but does not guarantee one fixed shape for every Plus or Pro account.

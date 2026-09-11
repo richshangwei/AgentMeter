@@ -9,11 +9,14 @@ test('monitoring stops only after a verified update is ready to launch', () => {
   assert.match(source,/\.on_before_exit\(move \|\|/);
   const installCommand = source.slice(source.indexOf('pub async fn install_update'));
   assert.doesNotMatch(installCommand,/\.stop_and_wait\(\)/);
-  assert.match(installCommand,/update\.download/);
-  assert.match(installCommand,/update\.install\(bytes\)/);
+  assert.doesNotMatch(installCommand,/\.download\(/);
+  assert.match(installCommand,/\.install\(bytes\.as_slice\(\)\)/);
+  assert.match(source.slice(source.indexOf('pub async fn download_update'), source.indexOf('pub async fn install_update')), /\.download\(/);
 });
 
 test('transient download or extraction failures retain the checked update for retry', () => {
   const installCommand = source.slice(source.indexOf('pub async fn install_update'));
-  assert.ok((installCommand.match(/\*pending = Some\(update\);/g) || []).length >= 2);
+  assert.match(installCommand,/data\.bytes\.clone\(\)/);
+  assert.doesNotMatch(installCommand,/\.take\(\)/);
+  assert.match(source,/failure_retains_verified_bytes/);
 });

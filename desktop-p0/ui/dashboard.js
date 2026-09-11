@@ -278,17 +278,6 @@ function quotaErrorMessage(provider, code) {
 }
 let localRefreshing = false;
 let syncingSnapshot = false;
-function quotaLabel(item) {
-  return (item.label || item.bucket_key || '額度')
-    .replace('base_model_inference','基本模型').replace('premium_interactions','Premium interactions')
-    .replace('codex primary','Codex 主視窗').replace('codex secondary','Codex 次視窗')
-    .replace('five_hour','5 小時').replace('seven_day','每週')
-    .replace('Gemini Models','Gemini').replace('Claude and GPT models','Claude / GPT')
-    .replace('Weekly Limit Remaining','每週').replace('Five Hour Limit Remaining','5 小時')
-    .replace(/^(?:default|codex) (primary|secondary)$/,(_,w)=>'Codex '+(w==='primary'?'主視窗':'次視窗'))
-    .replace(/^codex_(\S+) (primary|secondary)$/,(_,model,w)=>model+' · '+(w==='primary'?'主視窗':'次視窗'))
-    .replace(/([^·]) (?=(?:主視窗|次視窗|每週|5 小時)$)/,'$1 · ');
-}
 const shortTime = value => value == null ? '尚無資料' : new Date(Number(value)).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
 function displayPercent(value) {
   return String(Math.round(value * 10) / 10);
@@ -420,18 +409,6 @@ pollQuota();
 setInterval(pollTabletActivity, 2000);
 setInterval(pollQuota,2000);
 
-function updateMessage(result) {
-  get('install-update').hidden = !result.available;
-  if (!result.configured) return '此預覽版尚未綁定 GitHub Release 與更新公開金鑰。';
-  return result.available ? `發現新版 ${result.version}；目前版本 ${result.current_version}。` : `目前已是最新版 ${result.current_version}。`;
-}
-async function checkAppUpdate() {
-  get('check-update').disabled = true;
-  get('update-status').textContent = '正在安全檢查 GitHub Release…';
-  try { get('update-status').textContent = updateMessage(await tabletCommand('check_update')); }
-  catch { get('install-update').hidden = true; get('update-status').textContent = '目前無法檢查更新；監控功能不受影響，請稍後重試。'; }
-  finally { get('check-update').disabled = false; }
-}
 get('app-settings').addEventListener('click',()=>{renderDesktopOptions();get('app-settings-dialog').showModal();});
 get('app-settings-close').addEventListener('click',()=>get('app-settings-dialog').close());
 get('desktop-empty-settings').addEventListener('click',()=>{renderDesktopOptions();get('app-settings-dialog').showModal();});
@@ -442,15 +419,7 @@ get('desktop-options-next').addEventListener('click',()=>{desktopOptionPage++;de
 get('desktop-guide-close').addEventListener('click',()=>get('desktop-guide-dialog').close());
 get('tablet-settings-open').addEventListener('click',()=>{const note=get('pair-safety-note');note.hidden=false;get('tablet-settings-dialog').append(note);get('tablet-settings-dialog').showModal();});
 get('tablet-settings-close').addEventListener('click',()=>get('tablet-settings-dialog').close());
-get('check-update').addEventListener('click',checkAppUpdate);
-get('install-update').addEventListener('click',async()=>{
-  if (!window.confirm('更新檔驗證成功後，AgentMeter 會關閉並開始安裝。要繼續嗎？')) return;
-  get('install-update').disabled = true; get('update-status').textContent = '正在下載並驗證更新簽章…';
-  try { await tabletCommand('install_update'); }
-  catch { get('update-status').textContent = '更新下載、簽章驗證或安裝失敗；目前版本保持不變。'; get('install-update').disabled = false; }
-});
 if(get('desktop-monitor-options').parentElement)get('desktop-monitor-options').parentElement.append(get('desktop-options-pager'));
-checkAppUpdate();
 loadDesktopSelection();renderDesktopOptions();applyDesktopLayout();
 if (window.addEventListener) window.addEventListener('resize',scheduleDesktopLayout);
 if (typeof ResizeObserver === 'function') {

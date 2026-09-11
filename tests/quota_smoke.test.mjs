@@ -28,6 +28,19 @@ test('Codex accepts numeric zero but not missing or string quota',() => {
   assert.deepEqual(codexWindows({rateLimits:{primary:{usedPercent:null}}}),[]);
   assert.deepEqual(codexWindows({rateLimits:{primary:{usedPercent:'10'}}}),[]);
 });
+test('Codex preserves authoritative limit and period metadata for Plus and Pro-shaped responses',() => {
+  const plus = codexWindows({rateLimits:{limitId:'codex',planType:'plus',primary:{usedPercent:10,windowDurationMins:300},secondary:{usedPercent:20,windowDurationMins:10080}}});
+  assert.deepEqual(plus.map(({limit_id,plan_type,window_duration_mins})=>({limit_id,plan_type,window_duration_mins})),[
+    {limit_id:'codex',plan_type:'plus',window_duration_mins:300},
+    {limit_id:'codex',plan_type:'plus',window_duration_mins:10080}
+  ]);
+  const pro = codexWindows({rateLimitsByLimitId:{codex:{limitId:'codex',planType:'prolite',primary:{usedPercent:19,windowDurationMins:10080}},codex_bengalfox:{limitId:'codex_bengalfox',limitName:'GPT-5.3-Codex-Spark',primary:{usedPercent:0,windowDurationMins:300},secondary:{usedPercent:0,windowDurationMins:10080}}}});
+  assert.deepEqual(pro.map(({limit_id,limit_name,window_duration_mins})=>({limit_id,limit_name,window_duration_mins})),[
+    {limit_id:'codex',limit_name:null,window_duration_mins:10080},
+    {limit_id:'codex_bengalfox',limit_name:'GPT-5.3-Codex-Spark',window_duration_mins:300},
+    {limit_id:'codex_bengalfox',limit_name:'GPT-5.3-Codex-Spark',window_duration_mins:10080}
+  ]);
+});
 test('Copilot ignores zero-entitlement placeholders and never infers quota from tokens',() => {
   assert.deepEqual(copilotWindows({quotaSnapshots:{chat:{remainingPercentage:100,entitlementRequests:0}}}),[]);
   assert.deepEqual(copilotWindows({usage:{tokens:100}}),[]);

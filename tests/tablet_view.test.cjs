@@ -55,6 +55,12 @@ test('primary metric preserves unknown and zero rather than inventing quota', ()
   assert.equal(context.primaryMetric({quota_windows:[],source_usage:[]}).value,null);
 });
 
+test('tablet uses the same duration-based Codex quota labels as desktop', () => {
+  assert.equal(context.quotaLabel({limit_id:'codex',window_duration_mins:10080}),'常規使用額度 · 每週使用上限');
+  assert.equal(context.quotaLabel({limit_id:'codex_bengalfox',limit_name:'GPT-5.3-Codex-Spark',window_duration_mins:300}),'GPT-5.3-Codex-Spark · 5 小時用量限制');
+  assert.equal(context.quotaLabel({limit_id:'base_model_inference',limit_name:'gpt-reserve',window_duration_mins:10080}),'備用模型額度 · 每週使用上限');
+});
+
 test('provider setup guides are stable, numbered, and only use official https links', () => {
   for (const provider of ['codex','claude','copilot','antigravity']) {
     const guide = context.setupGuide(provider,'cli_not_found');

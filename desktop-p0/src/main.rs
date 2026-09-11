@@ -140,7 +140,7 @@ fn main() {
         .manage(dashboard::Dashboard::default())
         .manage(setup::SetupState::default())
         .manage(tablet_bridge::TabletBridge::default())
-        .manage(updater::PendingUpdate(std::sync::Mutex::new(None)))
+        .manage(updater::PendingUpdate::default())
         .invoke_handler(tauri::generate_handler![
             dashboard::snapshot,
             auto_quota::refresh_quota,
@@ -168,6 +168,7 @@ fn main() {
             tablet_bridge::tablet_usb_open,
             updater::update_status,
             updater::check_update,
+            updater::download_update,
             updater::install_update
         ])
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {

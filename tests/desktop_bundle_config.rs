@@ -34,7 +34,18 @@ fn package_identity_version_and_frontend_are_explicit_and_consistent() {
     let config = config();
     assert_eq!(config["identifier"], "com.agentmeter.p0");
     assert_eq!(config["productName"], "AgentMeter P0");
-    assert_eq!(config["version"], env!("CARGO_PKG_VERSION"));
+    let desktop_manifest = include_str!("../desktop-p0/Cargo.toml");
+    let desktop_version = desktop_manifest
+        .split("[build-dependencies]")
+        .next()
+        .unwrap()
+        .lines()
+        .find_map(|line| {
+            line.strip_prefix("version = \"")
+                .and_then(|v| v.strip_suffix('"'))
+        })
+        .expect("desktop package version");
+    assert_eq!(config["version"], desktop_version);
     assert_eq!(config["build"]["frontendDist"], "ui");
     assert!(std::path::Path::new("desktop-p0/ui").is_dir());
 }

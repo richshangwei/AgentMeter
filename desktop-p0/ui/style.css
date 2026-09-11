@@ -294,6 +294,16 @@ dialog p { font-size: 11px; color: var(--muted); }
 .catalog-dot { width: 20px; height: 20px; border: 1px dashed #7296ad; border-radius: 50%; }
 .catalog-badge { flex: 0 0 auto; padding: 5px 8px; border: 1px solid #6f91a8; border-radius: 999px; color: #9db6c6; font-size: 9px; }
 .update-panel { margin-top: 15px; padding-top: 13px; border-top: 1px solid rgba(78, 158, 203, .28); }
+.update-option { display: flex; align-items: center; gap: 12px; min-height: 52px; margin: 8px 0; padding: 8px 12px; border: 1px solid var(--line-soft); border-radius: 12px; font-size: 14px; cursor: pointer; }
+.update-option input { flex: none; width: 20px; height: 20px; accent-color: var(--mint); }
+.update-option small { display: block; margin-top: 4px; color: #a7c8df; font-size: 12px; line-height: 1.4; }
+.update-panel .button-row { gap: 8px; margin-block: 12px; }
+.update-panel button { min-height: 44px; }
+#update-status { min-height: 36px; color: #d8eefa; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+#update-progress { display: block; width: 100%; height: 10px; margin-block: 12px; accent-color: var(--mint); }
+#update-preference-warning { color: var(--warning); }
+#app-settings { position: relative; }
+#app-settings.update-available::after { content: ""; position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); }
 .tablet-control { display: grid; grid-template-columns: minmax(210px, .8fr) minmax(350px, 1.2fr); gap: 18px; }
 .connection-panel { padding: 15px; border: 1px solid rgba(79, 176, 224, .28); border-radius: 16px; background: rgba(3, 23, 42, .62); }
 .tablet-control output { display: block; font: 800 27px ui-monospace, Consolas, monospace; letter-spacing: 6px; color: var(--mint); margin: 10px 0; }

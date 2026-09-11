@@ -17,18 +17,14 @@ The desktop and tablet share observations and refresh handling. Failed refreshes
 
 ### Signed GitHub updates
 
-The desktop checks for a signed GitHub release at startup without blocking monitoring; installation always requires an explicit confirmation. A release build must provide the exact latest manifest URL and Tauri public key at compile time, then enable updater artifacts with the overlay config:
+The desktop checks for signed GitHub releases at startup and every six hours without blocking monitoring. Settings persist separate automatic-check (default on) and automatic-download (default off) preferences. Downloads report progress and must pass signature verification before becoming ready; installation always requires explicit confirmation. Failed checks retry after 30 minutes. Verified downloads are held in memory and must be downloaded again after exiting.
 
 ```powershell
-$env:AGENTMETER_UPDATE_ENDPOINT = 'https://github.com/OWNER/REPOSITORY/releases/latest/download/latest.json'
-$env:AGENTMETER_UPDATE_PUBLIC_KEY = '<Tauri updater public key>'
-$env:TAURI_SIGNING_PRIVATE_KEY = '<private key or path>'
-Push-Location desktop-p0
-cargo tauri build --config tauri.updater.conf.json
-Pop-Location
+# After supplying signing environment securely and updating release metadata:
+powershell -ExecutionPolicy Bypass -File scripts/build-signed-update.ps1 -Version 0.2.0
 ```
 
-Publish the generated installer, signature and `latest.json` from that build to the GitHub release. Normal local builds remain unsigned when those release-only values are absent. Tauri's updater verifies the signed artifact before installation; see the [official updater guide](https://v2.tauri.app/plugin/updater/) and [GitHub Releases API documentation](https://docs.github.com/en/rest/releases/releases).
+See [Windows signed-update release instructions](docs/signed-updates.md) for the pinned repository, required keys, local draft generation and authorized publication. The script never publishes or installs. Builds without the compile-time public key and endpoint cannot update; existing unconfigured previews require one manual installation of an enabled build. Download/signature and pre-shutdown installation-preparation failures remain retryable; the SDK cannot recover this process after handing off to the Windows installer. Real signed-update installation in an isolated Windows environment remains a release gate.
 
 Build-time preparation (developers only; the packaged app includes its runtime):
 

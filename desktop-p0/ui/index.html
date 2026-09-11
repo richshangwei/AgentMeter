@@ -8,7 +8,9 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="style-overrides.css">
   <script src="layout.js" defer></script>
+  <script src="app-updater.js" defer></script>
   <script src="dashboard.js" defer></script>
+  <script src="app-updater-ui.js" defer></script>
 </head>
 <body>
   <main class="app-shell">
@@ -42,7 +44,21 @@
     <footer><span>0.1.0 · 使用已登入的官方工具 · 失敗時保留舊資料</span><nav id="desktop-pager" class="pager" aria-label="監控分頁" hidden><button id="desktop-prev" class="ghost">上一頁</button><span id="desktop-page">1 / 1</span><button id="desktop-next" class="ghost">下一頁</button></nav></footer>
   </main>
 
-  <dialog id="app-settings-dialog"><div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div><section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section><section class="update-panel"><p class="eyebrow">APP UPDATE</p><h3>版本更新</h3><p id="update-status" role="status" aria-live="polite">正在檢查更新…</p><div class="button-row"><button id="check-update">檢查更新</button><button id="install-update" hidden>下載、驗證並安裝</button></div><p class="hint">開啟 AgentMeter 時會自動檢查；只有通過公開金鑰驗證的版本才能安裝。</p></section></dialog>
+  <dialog id="app-settings-dialog">
+    <div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div>
+    <section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section>
+    <section class="update-panel" aria-labelledby="app-update-title">
+      <p class="eyebrow">APP UPDATE</p><h3 id="app-update-title">程式版本更新</h3>
+      <p id="update-version">目前版本讀取中…</p>
+      <label class="update-option"><input id="auto-app-check" type="checkbox" checked><span>自動檢查新版<small>啟動時及每 6 小時檢查，不影響額度監控。</small></span></label>
+      <label class="update-option"><input id="auto-app-download" type="checkbox"><span>自動下載新版<small>下載完成會驗證簽章；安裝前仍需你的確認。</small></span></label>
+      <p id="update-preference-warning" role="status" hidden>偏好無法儲存，目前僅套用於本次執行。</p>
+      <p id="update-status" role="status" aria-live="polite">正在讀取更新狀態…</p>
+      <progress id="update-progress" max="100" aria-label="更新下載進度" hidden></progress>
+      <div class="button-row"><button id="check-update" class="ghost">檢查更新</button><button id="download-update" hidden>下載並驗證</button><button id="install-update" hidden>重新啟動並更新</button></div>
+      <p class="hint">僅安裝通過簽章驗證的版本。待安裝檔案保留至程式關閉；重開後需重新下載。</p>
+    </section>
+  </dialog>
 
   <dialog id="tablet-settings-dialog"><div class="dialog-title"><div><p class="eyebrow">TABLET / SECURE VIEW</p><h2>平板連線</h2></div><button id="tablet-settings-close" class="icon-button" aria-label="關閉平板設定">×</button></div><section class="tablet-control" aria-labelledby="tablet-title"><div class="connection-panel"><h3 id="tablet-title">連線狀態</h3><p id="tablet-status" role="status" aria-live="polite">讀取平板服務狀態…</p><p id="tablet-origin" class="hint">尚未啟動。</p><p id="tablet-usb-status" class="hint">USB 尚未設定。</p><output id="tablet-code" aria-live="polite">••••••••</output><p class="hint">配對碼只顯示在桌面，不會加入網址。</p></div><div class="tablet-actions"><div class="tablet-buttons"><button id="tablet-start">啟動服務</button><button id="tablet-stop" disabled>停止服務</button><button id="tablet-pair" disabled>產生配對碼</button><button id="tablet-clear" disabled>清除配對</button></div><div class="usb-fields"><label for="adb-path">ADB 完整路徑</label><input id="adb-path" placeholder="C:\…\platform-tools\adb.exe"><label for="device-serial">裝置 serial</label><input id="device-serial" autocomplete="off"><label for="device-port">裝置連接埠</label><input id="device-port" type="number" min="1" max="65535" value="8317"></div><div class="tablet-buttons"><button id="tablet-usb-connect" disabled>建立 USB</button><button id="tablet-usb-open" disabled>在平板開啟</button><button id="tablet-usb-recover" disabled>復原連線</button><button id="tablet-usb-disconnect" disabled>中斷 USB</button></div></div></section></dialog>
 

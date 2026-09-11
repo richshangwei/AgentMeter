@@ -45,10 +45,45 @@ function moveMonitor(selected, provider, direction) {
   return values;
 }
 
+function quotaPeriodLabel(item) {
+  const minutes=Number(item?.window_duration_mins);
+  if(Number.isFinite(minutes)&&minutes>0){
+    if(minutes===10080)return '每週使用上限';
+    if(minutes===300)return '5 小時用量限制';
+    return Number.isInteger(minutes/60)?`${minutes/60} 小時用量限制`:`${minutes} 分鐘用量限制`;
+  }
+  if(item?.window==='five_hour')return '5 小時用量限制';
+  if(item?.window==='seven_day')return '每週使用上限';
+  return '用量限制';
+}
+
+function quotaLimitLabel(item) {
+  const id=item?.limit_id||'';
+  const name=typeof item?.limit_name==='string'?item.limit_name.trim():'';
+  if(id==='codex'||id==='default')return '常規使用額度';
+  if(id==='base_model_inference'||name.toLowerCase()==='gpt-reserve')return '備用模型額度';
+  if(name)return name;
+  if(id==='codex_bengalfox')return 'GPT-5.3-Codex-Spark';
+  if(id.startsWith('codex_'))return '模型使用額度';
+  return '';
+}
+
+function quotaLabel(item) {
+  const group=quotaLimitLabel(item);
+  if(group)return `${group} · ${quotaPeriodLabel(item)}`;
+  return (item?.label||item?.bucket_key||'可用額度')
+    .replace('premium_interactions','Premium interactions')
+    .replace('five_hour','5 小時').replace('seven_day','每週')
+    .replace('Gemini Models','Gemini').replace('Claude and GPT models','Claude / GPT')
+    .replace('Weekly Limit Remaining','每週').replace('Five Hour Limit Remaining','5 小時')
+    .replace(/([^·]) (?=(?:每週|5 小時)$)/,'$1 · ')
+    .replace(/\b(?:primary|secondary)\b/gi,'用量限制').trim();
+}
+
 function primaryMetric(provider) {
   const quota = (provider?.quota_windows || [])[0];
   if (quota) return {
-    label:quota.label || quota.bucket_key || '可用額度',
+    label:quotaLabel(quota),
     value:typeof quota.remaining_percent === 'number' && Number.isFinite(quota.remaining_percent) ? quota.remaining_percent : null,
     unit:'%', reset:quota.resets_at ?? quota.reset_display ?? null, kind:'quota'
   };

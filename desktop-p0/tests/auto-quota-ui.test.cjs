@@ -103,12 +103,12 @@ test('quota tiles carry the full detail in a tooltip and a level for the gauge c
   const {context,element}=harness();
   context.render({provider_states:[{provider:'antigravity',collection_state:'ready',quota_windows:[
     {label:'Gemini Models Weekly Limit Remaining',remaining_percent:8,reset_display:'Monday'},
-    {label:'codex_bengalfox secondary',remaining_percent:66.66,entitlement:10,used:3}]}]});
+    {limit_id:'codex_bengalfox',limit_name:'GPT-5.3-Codex-Spark',window:'secondary',window_duration_mins:10080,remaining_percent:66.66,entitlement:10,used:3}]}]});
   const [first,second]=element('antigravity-quota').children;
   assert.equal(first.dataset.level,'low');
   assert.match(first.title,/Gemini · 每週/);
   assert.match(first.title,/重設：Monday/);
   assert.match(text(second),/66.7%/);
-  assert.match(second.title,/bengalfox · 次視窗/);
+  assert.match(second.title,/GPT-5.3-Codex-Spark · 每週使用上限/);
   assert.match(second.title,/已用 3 \/ 10/);
 });

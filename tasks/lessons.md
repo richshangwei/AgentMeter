@@ -1,5 +1,15 @@
 # Lessons
 
+## 2026-09-11 Quota transport fields are not product terminology
+- Classification: misunderstood domain data / missing metadata propagation.
+- Signal: Codex `primary` and `secondary` were rendered as 「主視窗／次視窗」 and an internal `base_model_inference` ID became 「基本模型」, although the API supplied actual window durations and a displayable limit name.
+- Prevention: preserve `limitId`, `limitName`, `planType`, and `windowDurationMins` end to end; derive user-facing periods from duration and let the returned rows decide whether five-hour, weekly, or both limits exist.
+- Tripwire: Plus- and Pro-shaped quota parser fixtures plus desktop/tablet label tests must reject `primary` / `secondary` in product-facing copy.
+
+## 2026-09-11 Signing bootstrap under Windows execution policies
+- Signal: redirected native stderr with PowerShell Stop treated a warning as failure; rewriting existing directory ACLs required unavailable security privileges.
+- Prevention: capture sensitive CLI output via hidden ProcessStartInfo and judge exit codes. Generate private keys in memory and persist only DPAPI ciphertext, never rely on temporary plaintext file ACLs. Do not log captured output or claim portable backup from CurrentUser DPAPI.
+
 ## 2026-09-11 Check sibling relationships in quota cards
 - Failure: percentage sizing checks missed the period label sharing the same grid cell and using width-dependent percentage margins.
 - Fix: allocate separate grid columns for gauge/value and period/progress/reset information.

@@ -11,7 +11,10 @@ const shots = path.join(root, '.scratch');
 const snapshot = { provider_states: names.map((provider, index) => ({
   provider, collection_state: 'ready', freshness: 'fresh', collected_at: 1789092648000,
   quota_windows: Array.from({ length: [8, 2, 1, 4][index] }, (_, n) => ({
-    label: n ? `codex_bengalfox ${n % 2 ? 'secondary' : 'primary'}` : ['codex primary', 'five_hour', 'premium_interactions', 'Gemini Models Weekly Limit Remaining'][index],
+    ...(provider === 'codex' ? n === 0
+      ? {limit_id:'codex',window:'primary',window_duration_mins:10080}
+      : {limit_id:n > 4 ? 'base_model_inference':'codex_bengalfox',limit_name:n > 4 ? 'gpt-reserve':'GPT-5.3-Codex-Spark',window:n % 2 ? 'primary':'secondary',window_duration_mins:n % 2 ? 300:10080}
+      : {label:n ? `window ${n}`:['five_hour','premium_interactions','Gemini Models Weekly Limit Remaining'][index - 1]}),
     remaining_percent: n === 3 ? 100 : n ? 100 - n * 11.3 : [92, 77, 24.7, 54][index],
     reset_display: '2026/9/18 上午7:56:04 (Etc/GMT-8)', used: 1130, entitlement: 1500,
   })),

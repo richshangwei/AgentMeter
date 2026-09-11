@@ -74,3 +74,11 @@ test('quota tiles always fit the measured region and pick a readable variant', (
   assert.equal(context.quotaTileLayout(483,140,8).columns,4,'eight windows use two readable rows, not eight thin rows');
   assert.equal(context.quotaTileLayout(0,140,8),null);
 });
+
+test('Codex quota labels use the actual period and understandable group names', () => {
+  assert.equal(context.quotaLabel({limit_id:'codex',window:'primary',window_duration_mins:10080}),'常規使用額度 · 每週使用上限');
+  assert.equal(context.quotaLabel({limit_id:'codex',window:'primary',window_duration_mins:300}),'常規使用額度 · 5 小時用量限制');
+  assert.equal(context.quotaLabel({limit_id:'codex_bengalfox',limit_name:'GPT-5.3-Codex-Spark',window:'secondary',window_duration_mins:10080}),'GPT-5.3-Codex-Spark · 每週使用上限');
+  assert.equal(context.quotaLabel({limit_id:'base_model_inference',limit_name:'gpt-reserve',window:'primary',window_duration_mins:10080}),'備用模型額度 · 每週使用上限');
+  assert.doesNotMatch(context.quotaLabel({limit_id:'future',window:'primary'}),/主視窗|次視窗|primary|secondary/);
+});
