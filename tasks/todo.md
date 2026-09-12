@@ -3,17 +3,17 @@
 ## Goal & acceptance criteria
 - [x] 將同步頻率設定與右下角 HUD 納入 0.2.4，排除預覽圖片與所有私鑰材料。
 - [x] 完整測試、簽署建置、NSIS 檢驗、manifest URL 與簽章驗證全部通過。
-- [ ] 以詳細繁中 commit 提交並推送 master，建立不可變的 v0.2.4 tag。
-- [ ] GitHub Release 只包含安全檔名安裝檔、簽章與 latest.json，匿名下載皆為 HTTP 200。
-- [ ] Latest manifest 回報 0.2.4，且已發布 0.2.3 可發現並驗證此更新。
+- [x] 以詳細繁中 commit 提交並推送 master，建立不可變的 v0.2.4 tag。
+- [x] GitHub Release 只包含安全檔名安裝檔、簽章與 latest.json，匿名下載皆為 HTTP 200。
+- [x] Latest manifest 回報 0.2.4，且已發布 0.2.3 可發現並驗證此更新。
 
 ## Plan
 - [x] Checkpoint A: 審核工作樹、既有發布規則、遠端與金鑰邊界。
 - [x] Checkpoint B: bump 0.2.4，執行完整與瀏覽器驗證。
 - [x] Checkpoint B: 使用既有 CurrentUser DPAPI 私鑰完成簽署建置與草稿驗證。
-- [ ] Checkpoint C: 精確 stage 原始碼，排除圖片/金鑰，提交、推送與建立 tag。
-- [ ] Checkpoint C: 發布三個資產，驗證 Latest、匿名下載、SHA256 與簽章。
-- [ ] Checkpoint D: 記錄發布證據、風險、回復與未完成的真實安裝驗收。
+- [x] Checkpoint C: 精確 stage 原始碼，排除圖片/金鑰，提交、推送與建立 tag。
+- [x] Checkpoint C: 發布三個資產，驗證 Latest、匿名下載、SHA256 與簽章。
+- [x] Checkpoint D: 記錄發布證據、風險、回復與未完成的真實安裝驗收。
 
 ## Risk & rollback
 - Risk: high；公開可執行檔與不可變更新簽章。發布前可停止；發布後不能替換 v0.2.4 資產，只能撤下 Latest 或發布更高修正版。
@@ -29,6 +29,13 @@
 - Installer: 73,603,937 bytes；SHA-256 `3AF973A5F308AF873DB4DBAD9AB6791B3CF0613A701A4188AC8B3DAA8FA6E841`；內嵌 product/file version 0.2.4。
 - Tauri installer signature、trusted comment 及單位元竄改拒絕通過；Windows Authenticode 為 NotSigned。
 - `scripts/verify-local.ps1`、18 組 Edge 主畫面矩陣、HUD/設定幾何與透明度 35/48/72/95 全部通過。
+
+## Results
+- 發布提交 `24433f4` 已推送至 `master`，annotated tag `v0.2.4` 指向同一提交。
+- GitHub Release 為公開穩定版且設為 Latest；資產僅有 `AgentMeter-P0_0.2.4_x64-setup.exe`、相鄰 `.sig` 與 `latest.json`。
+- 未登入的公開 Latest endpoint 回報 0.2.4，安裝檔 URL 精確指向 `v0.2.4` 安全檔名並成功下載。
+- 遠端安裝檔大小 73,603,937 bytes、SHA-256 `3AF973A5F308AF873DB4DBAD9AB6791B3CF0613A701A4188AC8B3DAA8FA6E841`，與本機簽署草稿一致；公鑰簽章、trusted comment 與竄改拒絕再次通過。
+- 未執行使用者已安裝 0.2.3 的實際 GUI 升級與重啟；自動檢查會在啟動時或每 6 小時執行，也可從設定立即按「檢查更新」。
 
 # 2026-09-12 可設定額度同步頻率
 
@@ -487,3 +494,33 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Plus-shaped 300/10080 and Pro-shaped weekly-only fixtures pass; absent rows remain absent, so the UI never fabricates a plan window.
 - Verification: 29 focused Node tests passed, 4 desktop auto-quota Rust tests passed, 18 Windows Edge viewport matrices passed, and `scripts/verify-local.ps1` completed with all tests, formatting, and Clippy checks passing.
 - External boundary: no installer was rebuilt and no credential or account state was changed. Current official documentation describes plan-dependent five-hour/weekly limits but does not guarantee one fixed shape for every Plus or Pro account.
+# 2026-09-12 AgentMeter 網站設計架構與功能規格書
+
+## Goal & acceptance criteria
+- [ ] 以實際網站走查與原始碼為雙重證據，完整盤點所有可見頁面、狀態、互動與錯誤/空資料流程。
+- [ ] 還原前端、桌面殼層、Rust 核心、Provider collectors、持久化、配對、USB/HTTP/SSE、更新與安裝的模組架構及資料流。
+- [ ] 定義可供後續開發直接引用的功能需求、資料契約、狀態機、非功能需求、安全限制、測試矩陣與驗收標準。
+- [ ] 對現況與規劃中功能做明確標示；未知或未能實機驗證者不得寫成已完成。
+- [ ] 產出完整 Markdown 規格書並驗證文件內的路徑、符號、路由、指令與跨章一致性。
+
+## Plan
+- [ ] Checkpoint A: 走查網站所有分頁、日期/圖表/Provider 切換、響應式與錯誤狀態，保存觀察證據。
+- [ ] Checkpoint A: 由測試、介面、ADR/需求文件與實作建立現況清單及權威來源排序。
+- [ ] Checkpoint B: 建立產品資訊架構、使用者旅程、功能矩陣、資料模型/契約與狀態機。
+- [ ] Checkpoint B: 建立深模組、介面、seam、adapter、執行緒/程序、儲存與安全架構規格。
+- [ ] Checkpoint C: 完成 UI/UX、RWD、無障礙、效能、可靠性、隱私、安全、可觀測性與更新部署規格。
+- [ ] Checkpoint C: 完成測試矩陣、驗收案例、開發優先序、風險/回滾與未決事項。
+- [ ] Checkpoint D: 用原始碼搜尋、現有測試與文件檢查交叉驗證規格書，補上 Results。
+
+## Risk & rollback
+- Risk: low；本工作只新增/更新文件與任務紀錄，不改變執行中網站、帳號、配對資料或程式行為。
+- Rollback: 移除本次新增規格文件與本節任務紀錄即可。
+- Signals: 網站實際畫面、DOM/瀏覽器狀態、Rust/JS 符號、路由與測試名稱能互相對應。
+
+## Dependencies & environment
+- 本機網站 `http://localhost:3003`、現有 Rust/Tauri/vanilla JS 原始碼、測試、ADR、README 與 v1.1 需求書。
+- 實際登入 Provider、實體平板、ADB 裝置、簽章發行與乾淨 VM 若不可用，僅列為外部驗收邊界。
+
+## Working notes
+- 以「現況已實作 / 現況受限 / 後續規格」三種標籤避免把設計目標誤寫為現況。
+- 介面需包含呼叫者必須知道的資料、順序、不變量、錯誤模式、組態與效能特性。
