@@ -1,0 +1,10 @@
+:root{color-scheme:dark;--surface-alpha:.72;font-family:"Segoe UI","Microsoft JhengHei",sans-serif}
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}
+body{padding:8px;user-select:none}
+main{height:100%;padding:6px 12px;border:1px solid rgba(83,224,255,.5);border-radius:14px;background:rgb(3 25 45 / var(--surface-alpha));box-shadow:0 10px 32px rgba(0,9,22,.35),inset 0 1px rgba(255,255,255,.08);backdrop-filter:blur(14px)}
+ul{height:100%;margin:0;padding:0;display:grid;align-content:center;list-style:none}
+li{min-width:0;min-height:44px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:16px;border-bottom:1px solid rgba(135,215,241,.15)}
+li:last-child{border-bottom:0}
+.hud-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d9efff;font-size:14px;font-weight:650}
+.hud-value{color:#fff;font-size:21px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-shadow:0 0 14px rgba(64,220,255,.24)}

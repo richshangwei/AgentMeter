@@ -1,3 +1,8 @@
 :root [hidden]{display:none!important}
 .guide-steps{list-style:none;padding:0;display:grid;gap:10px;counter-reset:guide}.guide-steps li{counter-increment:guide;display:grid;grid-template-columns:30px 1fr;gap:9px;color:#c6ddeb;font-size:12px;line-height:1.5}.guide-steps li::before{content:counter(guide);display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:#0d547c;color:#64efff;font-weight:800}.official-link{display:inline-flex;align-items:center;min-height:44px;margin-top:8px;padding:0 14px;border-radius:10px;background:#0c76bd;color:#fff;text-decoration:none;font-weight:800}
-@media(max-height:520px){dialog{padding:10px}.dialog-title{margin-bottom:5px}.dialog-title h2,dialog h3{font-size:14px;margin:2px 0}dialog p{margin:3px 0}.monitor-option{min-height:36px}.update-panel{margin-top:5px;padding-top:5px}.update-panel>.hint{display:none}.monitor-options{gap:4px}}
+@media(max-height:520px){dialog{padding:10px}.dialog-title{margin-bottom:5px}.dialog-title h2,dialog h3{font-size:14px;margin:2px 0}dialog p{margin:3px 0}.monitor-option{min-height:36px}.quota-sync-panel,.update-panel{margin-top:5px;padding-top:5px}.quota-sync-panel>.hint,.update-panel>.hint{display:none}.monitor-options{gap:4px}}
+.hud-settings{border-top:1px solid rgba(95,209,255,.2);padding-top:12px}
+.hud-opacity{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:10px;color:#d7ecfa;font-size:13px;font-weight:700}
+.hud-opacity output{min-width:3.5ch;text-align:right;color:#fff;font-variant-numeric:tabular-nums}
+#hud-opacity{width:100%;min-height:44px;margin:2px 0 0;accent-color:#31dfff}
+#hud-opacity:disabled{opacity:.48}

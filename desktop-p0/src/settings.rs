@@ -8,6 +8,105 @@ use std::{
 
 pub struct SettingsStore(pub Mutex<PathBuf>);
 
+pub const DEFAULT_SYNC_INTERVAL_SECONDS: u64 = 120;
+const SYNC_INTERVAL_SECONDS: [u64; 6] = [120, 300, 600, 900, 1800, 3600];
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct SyncPreferences {
+    pub enabled: bool,
+    pub interval_seconds: u64,
+}
+
+impl Default for SyncPreferences {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            interval_seconds: DEFAULT_SYNC_INTERVAL_SECONDS,
+        }
+    }
+}
+
+fn validate_sync_interval(interval_seconds: u64) -> Result<u64, String> {
+    SYNC_INTERVAL_SECONDS
+        .contains(&interval_seconds)
+        .then_some(interval_seconds)
+        .ok_or_else(|| "不支援的額度更新頻率".into())
+}
+
+pub fn sync_preferences(file: &Path) -> Result<SyncPreferences, String> {
+    let handle = match fs::File::open(file) {
+        Ok(handle) => handle,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            return Ok(SyncPreferences::default());
+        }
+        Err(_) => return Err("無法讀取額度同步設定".into()),
+    };
+    let mut bytes = Vec::new();
+    handle
+        .take(4097)
+        .read_to_end(&mut bytes)
+        .map_err(|_| "無法讀取額度同步設定")?;
+    if bytes.len() > 4096 {
+        return Err("額度同步設定超過大小限制".into());
+    }
+    let value: Value = serde_json::from_slice(&bytes).map_err(|_| "額度同步設定格式損毀")?;
+    if value["version"] != 1 {
+        return Err("不支援此額度同步設定版本".into());
+    }
+    Ok(SyncPreferences {
+        enabled: value["enabled"]
+            .as_bool()
+            .ok_or("額度同步設定缺少啟用狀態")?,
+        interval_seconds: validate_sync_interval(
+            value["interval_seconds"]
+                .as_u64()
+                .ok_or("額度同步設定缺少更新頻率")?,
+        )?,
+    })
+}
+
+pub fn save_sync_preferences(
+    file: &Path,
+    enabled: bool,
+    interval_seconds: u64,
+) -> Result<SyncPreferences, String> {
+    let preferences = SyncPreferences {
+        enabled,
+        interval_seconds: validate_sync_interval(interval_seconds)?,
+    };
+    let bytes = serde_json::to_vec(&json!({
+        "version": 1,
+        "enabled": preferences.enabled,
+        "interval_seconds": preferences.interval_seconds
+    }))
+    .map_err(|_| "無法編碼額度同步設定")?;
+    let parent = file.parent().ok_or("無效設定位置")?;
+    fs::create_dir_all(parent).map_err(|_| "無法建立設定目錄")?;
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let temporary = parent.join(format!("quota-sync-{}-{nonce}.tmp", std::process::id()));
+    let mut handle = fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temporary)
+        .map_err(|_| "無法建立暫存設定")?;
+    let result = (|| {
+        handle
+            .write_all(&bytes)
+            .map_err(|_| "無法寫入額度同步設定")?;
+        handle.sync_all().map_err(|_| "無法同步額度同步設定")?;
+        drop(handle);
+        fs::rename(&temporary, file).map_err(|_| "無法替換額度同步設定")?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = fs::remove_file(&temporary);
+    }
+    result.map(|()| preferences)
+}
+
 fn validate_path(path: &str) -> Result<(), String> {
     if path.is_empty()
         || (path.len() <= 8192 && !path.contains('\0') && Path::new(path).is_absolute())
@@ -325,6 +424,51 @@ mod tests {
             fs::write(fixture.file(), &bytes).unwrap();
             assert!(read(&fixture.file()).is_err());
             assert_eq!(fs::read(fixture.file()).unwrap(), bytes);
+        }
+    }
+
+    #[test]
+    fn quota_sync_preferences_migrate_validate_and_persist() {
+        let fixture = Fixture::new();
+        let file = fixture.0.join("quota-sync.json");
+
+        let defaults = sync_preferences(&file).unwrap();
+        assert!(defaults.enabled);
+        assert_eq!(defaults.interval_seconds, 120);
+
+        save_sync_preferences(&file, false, 900).unwrap();
+        let saved = sync_preferences(&file).unwrap();
+        assert!(!saved.enabled);
+        assert_eq!(saved.interval_seconds, 900);
+        assert_eq!(
+            serde_json::from_slice::<Value>(&fs::read(&file).unwrap()).unwrap()["version"],
+            1
+        );
+
+        save_sync_preferences(&file, true, 300).unwrap();
+        assert_eq!(
+            sync_preferences(&file).unwrap(),
+            SyncPreferences {
+                enabled: true,
+                interval_seconds: 300
+            }
+        );
+
+        let before = fs::read(&file).unwrap();
+        for invalid in [0, 59, 60, 121, 86_400] {
+            assert!(save_sync_preferences(&file, true, invalid).is_err());
+            assert_eq!(fs::read(&file).unwrap(), before);
+        }
+
+        for bytes in [
+            b"broken".to_vec(),
+            br#"{"version":2,"enabled":true,"interval_seconds":300}"#.to_vec(),
+            br#"{"version":1,"enabled":true,"interval_seconds":60}"#.to_vec(),
+            vec![b' '; 4097],
+        ] {
+            fs::write(&file, &bytes).unwrap();
+            assert!(sync_preferences(&file).is_err());
+            assert_eq!(fs::read(&file).unwrap(), bytes);
         }
     }
 }

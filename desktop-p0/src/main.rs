@@ -12,7 +12,7 @@ mod tablet_bridge;
 #[cfg(windows)]
 mod updater;
 use tauri::{
-    Manager, WindowEvent,
+    LogicalPosition, LogicalSize, Manager, WindowEvent,
     image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -37,6 +37,45 @@ fn exit_app(app: &tauri::AppHandle) {
         lifecycle.stop_and_wait();
         app.exit(0);
     });
+}
+
+#[tauri::command]
+fn configure_hud(
+    app: tauri::AppHandle,
+    enabled: bool,
+    width: f64,
+    height: f64,
+    x: f64,
+    y: f64,
+) -> Result<(), String> {
+    let window = app
+        .get_webview_window("hud")
+        .ok_or_else(|| "hud window unavailable".to_string())?;
+    if !enabled {
+        return window.hide().map_err(|error| error.to_string());
+    }
+    if ![width, height, x, y].iter().all(|value| value.is_finite()) {
+        return Err("invalid hud geometry".into());
+    }
+    window
+        .set_size(LogicalSize::new(
+            width.clamp(260.0, 420.0),
+            height.clamp(72.0, 240.0),
+        ))
+        .map_err(|error| error.to_string())?;
+    window
+        .set_position(LogicalPosition::new(
+            x.clamp(-32_768.0, 32_768.0),
+            y.clamp(-32_768.0, 32_768.0),
+        ))
+        .map_err(|error| error.to_string())?;
+    window
+        .set_focusable(false)
+        .map_err(|error| error.to_string())?;
+    window
+        .set_ignore_cursor_events(true)
+        .map_err(|error| error.to_string())?;
+    window.show().map_err(|error| error.to_string())
 }
 
 #[cfg(windows)]
@@ -144,7 +183,9 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             dashboard::snapshot,
             auto_quota::refresh_quota,
+            auto_quota::auto_quota_settings,
             auto_quota::set_auto_quota,
+            auto_quota::set_auto_quota_settings,
             setup::inspect_setup,
             setup::preview_claude_setup,
             setup::apply_claude_setup,
@@ -169,7 +210,8 @@ fn main() {
             updater::update_status,
             updater::check_update,
             updater::download_update,
-            updater::install_update
+            updater::install_update,
+            configure_hud
         ])
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if argv.iter().any(|arg| arg == "--probe-ready") {
@@ -189,11 +231,20 @@ fn main() {
             } else {
                 std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/quota-helper")
             };
+            let app_config_dir = app.path().app_config_dir()?;
+            let sync_settings_file = app_config_dir.join("quota-sync.json");
+            let sync_preferences =
+                settings::sync_preferences(&sync_settings_file).unwrap_or_default();
             app.manage(auto_quota::AutoQuota {
                 runtime,
                 workdir: app.path().app_local_data_dir()?.join("quota-workspace"),
-                enabled: std::sync::atomic::AtomicBool::new(true),
+                settings_file: sync_settings_file,
+                enabled: std::sync::atomic::AtomicBool::new(sync_preferences.enabled),
+                interval_seconds: std::sync::atomic::AtomicU64::new(
+                    sync_preferences.interval_seconds,
+                ),
                 queue: std::sync::Mutex::new(()),
+                settings_queue: std::sync::Mutex::new(()),
             });
             let polling_app = app.handle().clone();
             std::thread::spawn(move || {
@@ -201,7 +252,7 @@ fn main() {
                     sync::atomic::Ordering,
                     time::{Duration, Instant},
                 };
-                let mut next = Instant::now();
+                let mut last_completed: Option<Instant> = None;
                 loop {
                     if polling_app
                         .state::<dashboard::Dashboard>()
@@ -211,21 +262,19 @@ fn main() {
                     {
                         break;
                     }
-                    if Instant::now() >= next {
-                        if polling_app
-                            .state::<auto_quota::AutoQuota>()
-                            .enabled
-                            .load(Ordering::Acquire)
-                        {
-                            let _ = auto_quota::collect(&polling_app, "all", false);
-                        }
-                        next = Instant::now() + Duration::from_secs(60);
+                    let quota = polling_app.state::<auto_quota::AutoQuota>();
+                    let interval =
+                        Duration::from_secs(quota.interval_seconds.load(Ordering::Acquire));
+                    let due = auto_quota::polling_due(last_completed, interval.as_secs());
+                    if quota.enabled.load(Ordering::Acquire) && due {
+                        let _ = auto_quota::collect(&polling_app, "all", false);
+                        last_completed = Some(Instant::now());
                     }
                     std::thread::sleep(Duration::from_millis(250));
                 }
             });
             app.manage(settings::SettingsStore(std::sync::Mutex::new(
-                app.path().app_config_dir()?.join("sources.json"),
+                app_config_dir.join("sources.json"),
             )));
             let show = MenuItem::with_id(app, "show", "顯示 AgentMeter", true, None::<&str>)?;
             let exit = MenuItem::with_id(app, "exit", "結束 AgentMeter", true, None::<&str>)?;

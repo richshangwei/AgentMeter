@@ -173,6 +173,40 @@ function loadDesktopSelection() {
 }
 function saveDesktopSelection() {
   try { window.localStorage?.setItem(desktopMonitorKey,JSON.stringify(desktopSelection)); } catch {}
+  applyHudPreference();
+}
+
+let lastHudPreference='';
+function loadHudPreference() {
+  let enabled=false,opacity=hudDefaultOpacity;
+  try {
+    enabled=window.localStorage?.getItem(hudEnabledKey)==='true';
+    opacity=normalizeHudOpacity(window.localStorage?.getItem(hudOpacityKey));
+  } catch {}
+  get('hud-enabled').checked=enabled;
+  get('hud-opacity').value=String(opacity);
+  get('hud-opacity-value').textContent=opacity+'%';
+  get('hud-opacity').disabled=!enabled;
+}
+function applyHudPreference() {
+  if(!get('hud-enabled')||!get('hud-opacity'))return;
+  const enabled=get('hud-enabled').checked,opacity=normalizeHudOpacity(get('hud-opacity').value);
+  get('hud-opacity').value=String(opacity);
+  get('hud-opacity-value').textContent=opacity+'%';
+  get('hud-opacity').disabled=!enabled;
+  try {
+    window.localStorage?.setItem(hudEnabledKey,String(enabled));
+    window.localStorage?.setItem(hudOpacityKey,String(opacity));
+  } catch {}
+  const selection=desktopSelection||[];
+  const width=Math.max(260,Math.min(360,(Number(screen.availWidth)||360)-32));
+  const height=hudHeight(selection.length);
+  const x=(Number(screen.availLeft)||0)+(Number(screen.availWidth)||width)-width-16;
+  const y=(Number(screen.availTop)||0)+(Number(screen.availHeight)||height)-height-16;
+  const active=enabled&&selection.length>0,signature=JSON.stringify([active,width,height,x,y,opacity]);
+  if(signature===lastHudPreference)return;
+  lastHudPreference=signature;
+  tabletCommand('configure_hud',{enabled:active,width,height,x,y}).catch(()=>{});
 }
 function ensureDesktopCard(provider) {
   if (document.getElementById(provider+'-card')) return;
@@ -372,7 +406,12 @@ function render(snapshot) {
     if (name === 'claude') get('claude-enable').hidden = provider.failure_code !== 'workspace_trust_required';
   }
   get('message').textContent = busy ? '正在讀取額度…' : ready+'/'+states.length+' 個服務已取得資料';
-  const syncClock=get('sync-clock');if(syncClock)syncClock.textContent=new Date().toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+  const syncClock=get('sync-clock');
+  if(syncClock){
+    const lastSync=states.reduce((latest,provider)=>Math.max(latest,Number(provider.checked_at??provider.collected_at)||0),0);
+    syncClock.textContent=lastSync?new Date(lastSync).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'尚未同步';
+    syncClock.title=lastSync?'最近一次資料同步：'+new Date(lastSync).toLocaleString('zh-TW'):'尚未完成資料同步';
+  }
   applyDesktopLayout();renderDesktopOptions();
 }
 async function refreshQuota(provider = 'all', enableClaude = false) {
@@ -400,12 +439,38 @@ for (const button of document.querySelectorAll('[data-provider]')) {
 get('claude-enable').addEventListener('click',() => {
   if (window.confirm('允許 Claude 信任 AgentMeter 專用的隔離工作目錄，以讀取額度？只需同意一次；不變更其他專案的權限，不開放模型工具。')) refreshQuota('claude',true);
 });
-get('auto-quota').addEventListener('change',async event => {
-  try { await tabletCommand('set_auto_quota',{enabled:event.target.checked}); }
-  catch { event.target.checked = !event.target.checked; }
-});
+const quotaInterval=get('quota-refresh-interval');
+const quotaSyncStatus=get('quota-sync-status');
+function syncIntervalLabel(seconds){return seconds<3600?`${seconds/60} 分鐘`:`${seconds/3600} 小時`;}
+async function loadAutoQuotaSettings(){
+  try {
+    const value=await tabletCommand('auto_quota_settings');
+    if(typeof value?.enabled!=='boolean'||!Number.isInteger(value?.interval_seconds))return;
+    get('auto-quota').checked=value.enabled;
+    quotaInterval.value=String(value.interval_seconds);
+    quotaSyncStatus.textContent=`目前每 ${syncIntervalLabel(value.interval_seconds)}自動更新`;
+  } catch { quotaSyncStatus.textContent='無法讀取同步設定，仍可手動更新。'; }
+}
+async function saveAutoQuotaSettings(){
+  const enabled=get('auto-quota').checked,intervalSeconds=Number(quotaInterval.value);
+  quotaInterval.disabled=true;
+  try {
+    const value=await tabletCommand('set_auto_quota_settings',{enabled,intervalSeconds});
+    get('auto-quota').checked=value.enabled;
+    quotaInterval.value=String(value.interval_seconds);
+    quotaSyncStatus.textContent=`已儲存：每 ${syncIntervalLabel(value.interval_seconds)}自動更新`;
+  } catch {
+    quotaSyncStatus.textContent='同步設定未儲存，已還原先前設定。';
+    await loadAutoQuotaSettings();
+  } finally { quotaInterval.disabled=false; }
+}
+get('auto-quota').addEventListener('change',saveAutoQuotaSettings);
+quotaInterval.addEventListener('change',saveAutoQuotaSettings);
+get('hud-enabled').addEventListener('change',applyHudPreference);
+get('hud-opacity').addEventListener('input',applyHudPreference);
 restoreTabletStatus();
 pollQuota();
+loadAutoQuotaSettings();
 setInterval(pollTabletActivity, 2000);
 setInterval(pollQuota,2000);
 
@@ -420,7 +485,7 @@ get('desktop-guide-close').addEventListener('click',()=>get('desktop-guide-dialo
 get('tablet-settings-open').addEventListener('click',()=>{const note=get('pair-safety-note');note.hidden=false;get('tablet-settings-dialog').append(note);get('tablet-settings-dialog').showModal();});
 get('tablet-settings-close').addEventListener('click',()=>get('tablet-settings-dialog').close());
 if(get('desktop-monitor-options').parentElement)get('desktop-monitor-options').parentElement.append(get('desktop-options-pager'));
-loadDesktopSelection();renderDesktopOptions();applyDesktopLayout();
+loadDesktopSelection();loadHudPreference();renderDesktopOptions();applyDesktopLayout();applyHudPreference();
 if (window.addEventListener) window.addEventListener('resize',scheduleDesktopLayout);
 if (typeof ResizeObserver === 'function') {
   new ResizeObserver(scheduleDesktopLayout).observe(get('desktop-cards'));

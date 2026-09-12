@@ -5,7 +5,7 @@ use std::{
     io::Read,
     path::{Path, PathBuf},
     process::{Command, Stdio},
-    sync::atomic::{AtomicBool, Ordering},
+    sync::atomic::{AtomicBool, AtomicU64, Ordering},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 use tauri::Manager;
@@ -13,8 +13,17 @@ use tauri::Manager;
 pub struct AutoQuota {
     pub runtime: PathBuf,
     pub workdir: PathBuf,
+    pub settings_file: PathBuf,
     pub enabled: AtomicBool,
+    pub interval_seconds: AtomicU64,
     pub queue: std::sync::Mutex<()>,
+    pub settings_queue: std::sync::Mutex<()>,
+}
+
+pub fn polling_due(last_completed: Option<Instant>, interval_seconds: u64) -> bool {
+    last_completed
+        .map(|completed| completed.elapsed() >= Duration::from_secs(interval_seconds))
+        .unwrap_or(true)
 }
 
 fn node_compatible_path(path: &Path) -> PathBuf {
@@ -334,10 +343,55 @@ pub async fn refresh_quota(
 }
 
 #[tauri::command]
-pub fn set_auto_quota(app: tauri::AppHandle, enabled: bool) {
-    app.state::<AutoQuota>()
-        .enabled
-        .store(enabled, Ordering::Release);
+pub fn auto_quota_settings(app: tauri::AppHandle) -> Result<Value, String> {
+    let state = app.state::<AutoQuota>();
+    let _guard = state.settings_queue.lock().map_err(|_| "設定忙碌")?;
+    Ok(json!({
+        "enabled": state.enabled.load(Ordering::Acquire),
+        "interval_seconds": state.interval_seconds.load(Ordering::Acquire)
+    }))
+}
+
+fn persist_settings(
+    state: &AutoQuota,
+    enabled: bool,
+    interval_seconds: u64,
+) -> Result<Value, String> {
+    let _guard = state.settings_queue.lock().map_err(|_| "設定忙碌")?;
+    let saved =
+        crate::settings::save_sync_preferences(&state.settings_file, enabled, interval_seconds)?;
+    if !saved.enabled {
+        state.enabled.store(false, Ordering::Release);
+    }
+    state
+        .interval_seconds
+        .store(saved.interval_seconds, Ordering::Release);
+    if saved.enabled {
+        state.enabled.store(true, Ordering::Release);
+    }
+    Ok(json!({
+        "enabled": saved.enabled,
+        "interval_seconds": saved.interval_seconds
+    }))
+}
+
+#[tauri::command]
+pub fn set_auto_quota(app: tauri::AppHandle, enabled: bool) -> Result<Value, String> {
+    let state = app.state::<AutoQuota>();
+    persist_settings(
+        &state,
+        enabled,
+        state.interval_seconds.load(Ordering::Acquire),
+    )
+}
+
+#[tauri::command]
+pub fn set_auto_quota_settings(
+    app: tauri::AppHandle,
+    enabled: bool,
+    interval_seconds: u64,
+) -> Result<Value, String> {
+    persist_settings(&app.state::<AutoQuota>(), enabled, interval_seconds)
 }
 
 #[cfg(test)]
@@ -392,5 +446,12 @@ mod tests {
         assert_eq!(failed["quota_windows"][0]["remaining_percent"], 70.0);
         assert_eq!(failed["freshness"], "stale");
         assert_eq!(failed["availability"], "needs_login");
+    }
+    #[test]
+    fn polling_is_immediate_at_start_and_uses_the_latest_interval() {
+        assert!(polling_due(None, 3600));
+        let completed = Instant::now() - Duration::from_secs(301);
+        assert!(polling_due(Some(completed), 300));
+        assert!(!polling_due(Some(completed), 600));
     }
 }

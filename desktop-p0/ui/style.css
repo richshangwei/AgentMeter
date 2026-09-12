@@ -297,6 +297,9 @@ dialog p { font-size: 11px; color: var(--muted); }
 .update-option { display: flex; align-items: center; gap: 12px; min-height: 52px; margin: 8px 0; padding: 8px 12px; border: 1px solid var(--line-soft); border-radius: 12px; font-size: 14px; cursor: pointer; }
 .update-option input { flex: none; width: 20px; height: 20px; accent-color: var(--mint); }
 .update-option small { display: block; margin-top: 4px; color: #a7c8df; font-size: 12px; line-height: 1.4; }
+.quota-sync-panel { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.setting-field { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 8px 0; font-size: 14px; }
+.setting-field select { min-width: 150px; padding: 8px 34px 8px 10px; border: 1px solid var(--line-soft); border-radius: 9px; background: #102a40; color: #e9f8ff; font: inherit; }
 .update-panel .button-row { gap: 8px; margin-block: 12px; }
 .update-panel button { min-height: 44px; }
 #update-status { min-height: 36px; color: #d8eefa; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }

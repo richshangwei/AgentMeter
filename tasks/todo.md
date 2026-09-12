@@ -1,3 +1,102 @@
+# 2026-09-12 發布 0.2.4 自動更新
+
+## Goal & acceptance criteria
+- [x] 將同步頻率設定與右下角 HUD 納入 0.2.4，排除預覽圖片與所有私鑰材料。
+- [x] 完整測試、簽署建置、NSIS 檢驗、manifest URL 與簽章驗證全部通過。
+- [ ] 以詳細繁中 commit 提交並推送 master，建立不可變的 v0.2.4 tag。
+- [ ] GitHub Release 只包含安全檔名安裝檔、簽章與 latest.json，匿名下載皆為 HTTP 200。
+- [ ] Latest manifest 回報 0.2.4，且已發布 0.2.3 可發現並驗證此更新。
+
+## Plan
+- [x] Checkpoint A: 審核工作樹、既有發布規則、遠端與金鑰邊界。
+- [x] Checkpoint B: bump 0.2.4，執行完整與瀏覽器驗證。
+- [x] Checkpoint B: 使用既有 CurrentUser DPAPI 私鑰完成簽署建置與草稿驗證。
+- [ ] Checkpoint C: 精確 stage 原始碼，排除圖片/金鑰，提交、推送與建立 tag。
+- [ ] Checkpoint C: 發布三個資產，驗證 Latest、匿名下載、SHA256 與簽章。
+- [ ] Checkpoint D: 記錄發布證據、風險、回復與未完成的真實安裝驗收。
+
+## Risk & rollback
+- Risk: high；公開可執行檔與不可變更新簽章。發布前可停止；發布後不能替換 v0.2.4 資產，只能撤下 Latest 或發布更高修正版。
+- Rollback: 發布前刪除草稿；發布後把 v0.2.4 改為非 Latest／草稿以停止新下載，已安裝者需用更高版本修復。
+- Security: 不讀出、不記錄、不提交 `updater.key.dpapi` 或任何私鑰內容；Release 僅允許 installer、`.sig`、`latest.json`。
+
+## Dependencies & environment
+- Windows、既有 Tauri/Rust/Node/NSIS 工具鏈、GitHub CLI 與目前 Windows 使用者可解密的 DPAPI 金鑰。
+- 網路寫入僅限 `richshangwei/AgentMeter` 的 master、v0.2.4 tag 與對應 GitHub Release。
+
+## Working notes
+- Draft: `desktop-p0/target/update-drafts/0.2.4-583fa835c5b045a1ae58c188ff73c6da`。
+- Installer: 73,603,937 bytes；SHA-256 `3AF973A5F308AF873DB4DBAD9AB6791B3CF0613A701A4188AC8B3DAA8FA6E841`；內嵌 product/file version 0.2.4。
+- Tauri installer signature、trusted comment 及單位元竄改拒絕通過；Windows Authenticode 為 NotSigned。
+- `scripts/verify-local.ps1`、18 組 Edge 主畫面矩陣、HUD/設定幾何與透明度 35/48/72/95 全部通過。
+
+# 2026-09-12 可設定額度同步頻率
+
+## Goal & acceptance criteria
+- [x] 後台設定可選擇額度自動更新頻率，重啟後仍保留。
+- [x] 背景排程即時採用新頻率，關閉視窗至通知區後仍生效。
+- [x] 頁首「同步時間」顯示實際資料同步時間，不隨 2 秒畫面輪詢虛假更新。
+- [x] 手動更新、自動更新開關、平板監看與 Provider 收集行為維持相容。
+
+## Plan
+- [x] Checkpoint A: 定位固定排程、設定儲存、桌面設定 UI 與現有測試。
+- [x] Checkpoint B: 先加入頻率驗證、持久化、排程與 UI 的回歸測試。
+- [x] Checkpoint B: 實作最小後端設定與桌面設定介面。
+- [x] Checkpoint C: 執行 targeted tests、Rust format/Clippy/build 與桌面 UI 驗證。
+- [x] Checkpoint D: 記錄結果、風險與回復方式。
+
+## Risk & rollback
+- Risk: medium；影響背景額度收集排程與本機偏好設定，不改 Provider、帳號、配對或資料格式。
+- Rollback: 還原本任務的 auto_quota、main、desktop UI 與測試變更；刪除獨立的 `quota-sync.json` 即恢復預設值，不影響來源設定。
+- Signals: 頻率 allowlist、連續儲存/重載、排程讀取原子值、同步時間不因 snapshot polling 改變。
+
+## Dependencies & environment
+- Windows / Tauri 2 / Rust / vanilla JS；不新增依賴。
+- 預設依 `AgentMeter-Requirements-v1.1.md` 統一為 120 秒，允許的頻率以固定選項限制，避免過度呼叫官方工具。
+
+## Working notes
+- `setInterval(pollQuota, 2000)` 只負責 UI snapshot，不是 Provider 收集頻率。
+- 真正收集排程位於 `desktop-p0/src/main.rs`；原本固定 60 秒，現由後端原子狀態讀取已驗證的設定值。
+
+## Results
+- 設定視窗新增 2、5、10、15、30、60 分鐘選項；後端嚴格 allowlist，預設 120 秒，並將開關與頻率保存到獨立 `quota-sync.json`。
+- 排程以最近一次收集完成時間計算下一次執行；變更頻率或重新啟用後會在 250ms 檢查週期內採用新設定，collector mutex 繼續防止重疊。
+- 頁首同步時間改取 Provider 的 `checked_at`／`collected_at`，2 秒 snapshot polling 不再製造假同步時間。
+- Verification: `scripts/verify-local.ps1` 全數通過；9 個 quota UI 測試、27 個 desktop Rust 測試、root/desktop fmt、Clippy 與 locked offline build 通過；`git diff --check` 通過。
+- Visual caveat: 獨立 Playwright responsive runner 在目前 shell 缺少 `playwright` 套件，瀏覽器亦依安全政策禁止 `file://` 本機頁面；已完成 HTML/CSS contract、語法與完整專案 verifier，未宣稱額外的實際瀏覽器截圖驗證。
+
+# 2026-09-12 右下角精簡數據模式
+
+## Goal & acceptance criteria
+- [x] 設定可開啟或關閉獨立右下角 HUD，重啟後保留。
+- [x] HUD 只顯示已選監控的 Provider 名稱與主要數據，無按鈕、圖示或多餘狀態。
+- [x] HUD 固定於可用桌面右下角、置頂、不取得焦點且可穿透點擊。
+- [x] 設定可調整面板背景透明度，文字保持清晰可讀。
+- [x] 資料未取得時顯示 `—`，不把未知假裝成 0。
+
+## Plan
+- [x] Checkpoint A: 確認 Tauri 視窗、snapshot 資料形狀、顯示選擇儲存與設定 UI。
+- [x] Checkpoint B: 先新增 HUD 投影、透明度邊界與視窗合約測試。
+- [x] Checkpoint B: 實作獨立 HUD 視窗、設定、持久化、定位與即時資料。
+- [x] Checkpoint C: 執行 targeted tests、Rust format/Clippy/build、主畫面 RWD 與 HUD 實際幾何/可讀性驗證。
+- [x] Checkpoint D: 記錄結果、風險與回復方式。
+
+## Risk & rollback
+- Risk: medium；新增第二個置頂視窗與本機 UI 偏好，不變更 Provider 收集、帳號、配對或資料格式。
+- Rollback: 移除 HUD 視窗設定、後端視窗命令與 HUD 靜態檔；舊版會安全忽略 localStorage 偏好。
+- Signals: 視窗必須 transparent/decorations=false/alwaysOnTop/skipTaskbar/visible=false；高度隨 0–4 列可控且不越出可用畫面。
+
+## Dependencies & environment
+- Windows / Tauri 2 / vanilla HTML/CSS/JS；不新增套件。
+- HUD 與主視窗使用相同本機 origin 偏好與 dashboard snapshot。
+
+## Results
+- 新增獨立透明 HUD 視窗；預設關閉，開啟後固定於目前可用桌面右下角，保持置頂、略過工作列、不搶焦點且滑鼠可穿透。
+- 設定新增開關與 35–95% 面板透明度；只改玻璃背景 alpha，14px 名稱與 21px tabular 數值保持不透明。
+- HUD 依主畫面監控順序顯示最多四個 Provider 的主要額度；有 quota 顯示剩餘百分比，僅有 source usage 時顯示用量／上限，未知顯示 `—`。
+- Verification: HUD model 5/5、desktop layout 7/7、desktop bundle 10/10；Edge 實際 HUD 360×204 與設定 640×520 驗證無重疊、溢位或控制項污染，透明度 35/48/72/95 均正確；18 個主畫面 RWD viewport 全數通過。
+- `scripts/verify-local.ps1`、locked offline Rust build/Clippy、JS syntax 與 `git diff --check` 通過。未重新打包安裝程式；真實桌面透明／置頂行為需下一次打包後在 Windows 安裝版驗收。
+
 # 2026-09-10 Continue Claude desktop handoff
 
 ## 2026-09-11 Publish 0.2.1 automatic update

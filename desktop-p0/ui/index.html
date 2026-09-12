@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="style-overrides.css">
   <script src="layout.js" defer></script>
+  <script src="hud-model.js" defer></script>
   <script src="app-updater.js" defer></script>
   <script src="dashboard.js" defer></script>
   <script src="app-updater-ui.js" defer></script>
@@ -27,7 +28,7 @@
         <span class="sync-label">同步時間</span>
         <time id="sync-clock">--:--</time>
       </div>
-      <label class="auto-toggle" title="每次完成後 60 秒再次讀取，視窗關閉到通知區後仍持續"><input id="auto-quota" type="checkbox" checked><span>自動更新</span></label>
+      <label class="auto-toggle" title="依設定頻率自動讀取，視窗關閉到通知區後仍持續"><input id="auto-quota" type="checkbox" checked><span>自動更新</span></label>
       <nav class="top-actions" aria-label="主要操作"><button id="tablet-settings-open" class="ghost">平板連線</button><button id="app-settings" class="ghost">設定</button><button id="refresh">全部更新</button></nav>
     </header>
 
@@ -47,6 +48,19 @@
   <dialog id="app-settings-dialog">
     <div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div>
     <section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section>
+    <section class="hud-settings" aria-labelledby="hud-settings-title">
+      <h3 id="hud-settings-title">右下角數據模式</h3>
+      <label class="update-option"><input id="hud-enabled" type="checkbox"><span>顯示精簡數據<small>固定在桌面右下角，只顯示名稱與主要數據。</small></span></label>
+      <label class="hud-opacity" for="hud-opacity"><span>面板透明度</span><output id="hud-opacity-value" for="hud-opacity">72%</output></label>
+      <input id="hud-opacity" type="range" min="35" max="95" step="1" value="72" aria-describedby="hud-opacity-note">
+      <p id="hud-opacity-note" class="hint">只調整背景透明度，名稱與數字會保持清晰。</p>
+    </section>
+    <section class="quota-sync-panel" aria-labelledby="quota-sync-title">
+      <p class="eyebrow">QUOTA SYNC</p><h3 id="quota-sync-title">額度同步</h3>
+      <label class="setting-field" for="quota-refresh-interval"><span>自動更新頻率</span><select id="quota-refresh-interval"><option value="120">每 2 分鐘</option><option value="300">每 5 分鐘</option><option value="600">每 10 分鐘</option><option value="900">每 15 分鐘</option><option value="1800">每 30 分鐘</option><option value="3600">每 60 分鐘</option></select></label>
+      <p id="quota-sync-status" class="hint" role="status" aria-live="polite">正在讀取同步設定…</p>
+      <p class="hint">自動更新開啟時生效；關閉視窗至通知區後仍會依此頻率同步。</p>
+    </section>
     <section class="update-panel" aria-labelledby="app-update-title">
       <p class="eyebrow">APP UPDATE</p><h3 id="app-update-title">程式版本更新</h3>
       <p id="update-version">目前版本讀取中…</p>

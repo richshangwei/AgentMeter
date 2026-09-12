@@ -51,6 +51,28 @@ fn package_identity_version_and_frontend_are_explicit_and_consistent() {
 }
 
 #[test]
+fn compact_hud_is_a_passive_hidden_secondary_window() {
+    let config = config();
+    let windows = config["app"]["windows"].as_array().unwrap();
+    let hud = windows
+        .iter()
+        .find(|window| window["label"] == "hud")
+        .expect("hud window");
+    assert_eq!(hud["url"], "hud.html");
+    assert_eq!(hud["visible"], false);
+    assert_eq!(hud["transparent"], true);
+    assert_eq!(hud["decorations"], false);
+    assert_eq!(hud["alwaysOnTop"], true);
+    assert_eq!(hud["skipTaskbar"], true);
+    assert_eq!(hud["resizable"], false);
+
+    let main = include_str!("../desktop-p0/src/main.rs");
+    assert!(main.contains("configure_hud"));
+    assert!(main.contains("set_ignore_cursor_events(true)"));
+    assert!(main.contains("set_focusable(false)"));
+}
+
+#[test]
 fn desktop_brand_assets_drive_header_window_bundle_and_tray_icons() {
     let config = config();
     assert_eq!(config["bundle"]["icon"][0], "icons/icon.ico");
@@ -128,7 +150,9 @@ fn desktop_tablet_controls_keep_pair_codes_ephemeral_and_out_of_navigation() {
     assert!(!script.contains("clipboard"));
     for line in script.lines().filter(|line| line.contains("localStorage")) {
         assert!(
-            line.contains("desktopMonitorKey"),
+            line.contains("desktopMonitorKey")
+                || line.contains("hudEnabledKey")
+                || line.contains("hudOpacityKey"),
             "localStorage may persist display preferences only, never pairing material"
         );
     }

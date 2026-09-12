@@ -16,13 +16,21 @@ function harness() {
   let serial=0;
   const context={document:{getElementById:element,createElement:()=>element('new'+serial++),
     querySelectorAll:selector=>selector==='[data-provider]'?buttons:[...buttons,element('refresh'),element('claude-enable')]},
-    setTimeout(){},clearTimeout(){},setInterval(){},Date,Number,String,
-    window:{innerWidth:1080,innerHeight:900,confirm:()=>true,__TAURI__:{core:{invoke:async(command,args)=>{calls.push({command,args});return command==='snapshot'||command==='refresh_quota'?{provider_states:[],refreshing:false}:{running:false};}}}}};
+    setTimeout(){},clearTimeout(){},setInterval(){},Date,Number,String,screen:{availWidth:1080,availHeight:900,availLeft:0,availTop:0},
+    window:{innerWidth:1080,innerHeight:900,confirm:()=>true,localStorage:{getItem:()=>null,setItem(){}},__TAURI__:{core:{invoke:async(command,args)=>{calls.push({command,args});return command==='snapshot'||command==='refresh_quota'?{provider_states:[],refreshing:false}:{running:false};}}}}};
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../ui/layout.js'),'utf8'),context);
+  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../ui/hud-model.js'),'utf8'),context);
   vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../ui/dashboard.js'),'utf8'),context);
   return {context,element,calls};
 }
 const text = e => e.textContent+e.children.map(text).join(' ');
+test('settings expose only backend-approved quota refresh intervals',()=>{
+  const html=fs.readFileSync(path.join(__dirname,'../ui/index.html'),'utf8');
+  assert.match(html,/id="quota-refresh-interval"/);
+  const values=[...html.matchAll(/<option value="(\d+)">/g)].map(match=>Number(match[1]));
+  assert.deepEqual(values,[120,300,600,900,1800,3600]);
+  assert.doesNotMatch(html,/完成後 60 秒/);
+});
 test('renders four real quota cards, reset caveats and stale data without source forms',()=>{
   const {context,element}=harness();
   context.render({provider_states:['codex','claude','copilot','antigravity'].map(provider=>({provider,
@@ -60,6 +68,29 @@ test('one refresh command has no source paths and explicit Claude trust only',as
   const refresh=calls.find(c=>c.command==='refresh_quota');
   assert.equal(JSON.stringify(refresh.args),JSON.stringify({provider:'all',enableClaude:false}));
   assert.ok(!calls.some(c=>['load_claude','refresh_copilot','source_settings'].includes(c.command)));
+});
+
+test('backend sync settings populate controls, save an allowed interval and use actual provider time',async()=>{
+  const {context,element,calls}=harness();
+  context.window.__TAURI__.core.invoke=async(command,args)=>{
+    calls.push({command,args});
+    if(command==='auto_quota_settings')return {enabled:false,interval_seconds:900};
+    if(command==='set_auto_quota_settings')return {enabled:args.enabled,interval_seconds:args.intervalSeconds};
+    return command==='snapshot'||command==='refresh_quota'?{provider_states:[],refreshing:false}:{running:false};
+  };
+  await context.loadAutoQuotaSettings();
+  assert.equal(element('auto-quota').checked,false);
+  assert.equal(element('quota-refresh-interval').value,'900');
+  element('quota-refresh-interval').value='300';
+  await context.saveAutoQuotaSettings();
+  assert.equal(JSON.stringify(calls.at(-1)),JSON.stringify({command:'set_auto_quota_settings',args:{enabled:false,intervalSeconds:300}}));
+
+  const collectedAt=Date.UTC(2026,8,12,3,4);
+  context.render({provider_states:[{provider:'codex',collection_state:'ready',collected_at:collectedAt,quota_windows:[]}]});
+  const first=element('sync-clock').textContent;
+  context.render({provider_states:[{provider:'codex',collection_state:'ready',collected_at:collectedAt,quota_windows:[]}]});
+  assert.equal(element('sync-clock').textContent,first);
+  assert.notEqual(first,'尚未同步');
 });
 
 test('future providers cannot collide with reserved DOM ids and disappearing providers leave the selector',()=>{

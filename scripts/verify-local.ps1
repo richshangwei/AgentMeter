@@ -33,7 +33,9 @@ $checks = @(
         @{Name='Quota desktop entry syntax'; Tool='node'; Args=@('--check','scripts/quota-desktop.mjs')},
         @{Name='Automatic quota UI'; Tool='node'; Args=@('--test','desktop-p0/tests/auto-quota-ui.test.cjs')},
         @{Name='Desktop layout rules'; Tool='node'; Args=@('--test','tests/desktop_layout.test.cjs')},
+        @{Name='Compact HUD model'; Tool='node'; Args=@('--test','tests/hud.test.cjs')},
         @{Name='Responsive browser verifier syntax'; Tool='node'; Args=@('--check','scripts/verify-desktop-responsive.cjs')},
+        @{Name='Compact HUD browser verifier syntax'; Tool='node'; Args=@('--check','scripts/verify-hud.cjs')},
         @{Name='Packaged updater startup config'; Tool='node'; Args=@('--test','tests/updater_boot_config.test.cjs')},
         @{Name='Application updater controller'; Tool='node'; Args=@('--test','tests/app_updater.test.cjs')},
         @{Name='Signed update manifest'; Tool='node'; Args=@('--test','scripts/create-update-manifest.test.mjs')},
@@ -45,6 +47,7 @@ $checks = @(
         @{Name='Browser logic tests'; Tool='node'; Args=@('--test','tests/tablet_protocol.test.cjs','tests/tablet_recovery.test.cjs','tests/tablet_view.test.cjs','tests/background_window_contract.test.cjs','tests/updater_contract.test.cjs','desktop-p0/tests/source-watch.test.cjs','desktop-p0/tests/setup.test.cjs')},
         @{Name='Tablet client syntax'; Tool='node'; Args=@('--check','tablet-ui/client.js')},
         @{Name='Desktop client syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/dashboard.js')},
+        @{Name='Compact HUD client syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/hud.js')},
         @{Name='Setup client syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/setup.js')},
         @{Name='Root Clippy'; Tool='cargo'; Args=@('clippy','--offline','--locked','--all-targets','--','-D','warnings')},
         @{Name='Desktop Clippy'; Tool='cargo'; Args=@('clippy','--manifest-path','desktop-p0/Cargo.toml','--offline','--locked','--all-targets','--','-D','warnings')}
