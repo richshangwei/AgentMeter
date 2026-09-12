@@ -1,5 +1,11 @@
 # Lessons
 
+## 2026-09-12 Shared audit files can change between release commits
+- Classification: unsafe change scope / shared-workspace race.
+- Signal: a release-evidence commit staged all of `tasks/todo.md` after another task appended an unrelated specification plan.
+- Prevention: immediately before every commit, compare the staged file tail and name-status against the task baseline; for shared audit files, stage only the intended hunk or isolate a task-specific evidence file.
+- Tripwire: `git show --stat --oneline HEAD` plus `git show --format= -- tasks/todo.md` must contain only the current release section before pushing.
+
 ## 2026-09-11 Verify release-host filename normalization before freezing an updater allowlist
 - Failure: the updater and manifest pinned Tauri's default NSIS filename containing a space, but GitHub normalized that space to a period on upload; the immutable 0.2.0 client therefore requested a 404 URL.
 - Detection: publish as a non-Latest prerelease first and compare the exact manifest URL against the actual asset URL using unauthenticated HTTP requests.
