@@ -51,7 +51,7 @@ fn package_identity_version_and_frontend_are_explicit_and_consistent() {
 }
 
 #[test]
-fn compact_hud_is_a_passive_hidden_secondary_window() {
+fn compact_hud_is_a_nonfocusable_hoverable_hidden_secondary_window() {
     let config = config();
     let windows = config["app"]["windows"].as_array().unwrap();
     let hud = windows
@@ -65,11 +65,13 @@ fn compact_hud_is_a_passive_hidden_secondary_window() {
     assert_eq!(hud["alwaysOnTop"], true);
     assert_eq!(hud["skipTaskbar"], true);
     assert_eq!(hud["resizable"], false);
+    assert_eq!(hud["width"], 240);
+    assert_eq!(hud["height"], 132);
 
     let main = include_str!("../desktop-p0/src/main.rs");
     assert!(main.contains("configure_hud"));
-    assert!(main.contains("set_ignore_cursor_events(true)"));
     assert!(main.contains("set_focusable(false)"));
+    assert!(!main.contains("set_ignore_cursor_events(true)"));
 }
 
 #[test]

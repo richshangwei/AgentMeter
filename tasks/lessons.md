@@ -1,5 +1,11 @@
 # Lessons
 
+## 2026-09-12 Release worktrees need regenerated ignored runtimes
+- Classification: environment-dependent verification setup.
+- Signal: a clean release worktree passed source tests but the desktop build could not find `resources/quota-helper`, then the background-window contract lacked the ignored `scripts/quota-smoke-support/node_modules` dependency.
+- Prevention: before verification or packaging in a new worktree, stage the pinned CLI fixture and run `scripts/prepare-desktop-quota.ps1`; never assume ignored runtime directories follow tracked source.
+- Tripwire: the full verifier must reach both Desktop tests and the ConPTY background-window contract from the exact release worktree before signing.
+
 ## 2026-09-11 Verify release-host filename normalization before freezing an updater allowlist
 - Failure: the updater and manifest pinned Tauri's default NSIS filename containing a space, but GitHub normalized that space to a period on upload; the immutable 0.2.0 client therefore requested a 404 URL.
 - Detection: publish as a non-Latest prerelease first and compare the exact manifest URL against the actual asset URL using unauthenticated HTTP requests.

@@ -199,10 +199,10 @@ function applyHudPreference() {
     window.localStorage?.setItem(hudOpacityKey,String(opacity));
   } catch {}
   const selection=desktopSelection||[];
-  const width=Math.max(260,Math.min(360,(Number(screen.availWidth)||360)-32));
+  const width=Math.max(220,Math.min(240,(Number(screen.availWidth)||240)-24));
   const height=hudHeight(selection.length);
-  const x=(Number(screen.availLeft)||0)+(Number(screen.availWidth)||width)-width-16;
-  const y=(Number(screen.availTop)||0)+(Number(screen.availHeight)||height)-height-16;
+  const x=(Number(screen.availLeft)||0)+(Number(screen.availWidth)||width)-width-12;
+  const y=(Number(screen.availTop)||0)+(Number(screen.availHeight)||height)-height-12;
   const active=enabled&&selection.length>0,signature=JSON.stringify([active,width,height,x,y,opacity]);
   if(signature===lastHudPreference)return;
   lastHudPreference=signature;

@@ -1,3 +1,26 @@
+# 2026-09-12 發布 0.2.5 HUD 修正版
+
+## Goal & acceptance criteria
+- [x] 僅發布已驗證的 Codex HUD 額度語意、緊湊尺寸與透明 hover 修正。
+- [ ] 版本、安裝檔、簽章、manifest 與 Git tag 一致為 0.2.5。
+- [ ] GitHub Release 僅包含安全命名的安裝檔、`.sig` 與 `latest.json`，並可由 0.2.4 自動更新發現。
+
+## Plan
+- [x] 由 `origin/master` 建立隔離發布工作樹，只帶入 HUD 修正與測試。
+- [x] 執行完整本機驗證與簽署建置。
+- [ ] 審核 diff，以詳細繁中 commit 提交並推送。
+- [ ] 建立 v0.2.5 Release，驗證下載、SHA256、簽章與 Latest manifest。
+
+## Risk & rollback
+- Risk: high；這會發布可執行安裝檔及不可變更新資產。
+- Rollback: 發布前停止；發布後將 v0.2.5 改為非 Latest，並以更高修正版恢復，不覆寫既有資產。
+- Exclusions: 不包含原工作區的共享規格文件、任務紀錄或任何 `.scratch`／`Claude outputs` 圖片。
+
+## Working notes
+- 隔離工作樹需先以固定 SHA-512 的 Antigravity CLI 執行 `scripts/prepare-desktop-quota.ps1`，重建被 Git 忽略的測試依賴與打包 runtime。
+- 完整 `scripts/verify-local.ps1`、Edge HUD 幾何/hover 驗證及 Tauri 簽章/可信註解/單位元竄改拒絕皆通過。
+- 本機草稿：`desktop-p0/target/update-drafts/0.2.5-cb9e3e0b6d954a559c333da915025924`；安裝檔 73,594,573 bytes；SHA256 `5301BD1CF2BDF3E6F155B484A43B06FE96399A74ED3C393EE704FDB77CA27735`。Windows Authenticode 仍為 `NotSigned`。
+
 # 2026-09-12 發布 0.2.4 自動更新
 
 ## Goal & acceptance criteria

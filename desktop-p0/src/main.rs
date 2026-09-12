@@ -59,8 +59,8 @@ fn configure_hud(
     }
     window
         .set_size(LogicalSize::new(
-            width.clamp(260.0, 420.0),
-            height.clamp(72.0, 240.0),
+            width.clamp(220.0, 300.0),
+            height.clamp(48.0, 160.0),
         ))
         .map_err(|error| error.to_string())?;
     window
@@ -71,9 +71,6 @@ fn configure_hud(
         .map_err(|error| error.to_string())?;
     window
         .set_focusable(false)
-        .map_err(|error| error.to_string())?;
-    window
-        .set_ignore_cursor_events(true)
         .map_err(|error| error.to_string())?;
     window.show().map_err(|error| error.to_string())
 }

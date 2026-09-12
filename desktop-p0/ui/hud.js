@@ -24,10 +24,10 @@ function renderHud() {
     row.append(name,value);return row;
   }));
   document.documentElement.style.setProperty('--surface-alpha',String(hudOpacity()/100));
-  const width=Math.max(260,Math.min(360,(Number(screen.availWidth)||360)-32));
+  const width=Math.max(220,Math.min(240,(Number(screen.availWidth)||240)-24));
   const height=hudHeight(rows.length);
-  const left=(Number(screen.availLeft)||0)+(Number(screen.availWidth)||width)-width-16;
-  const top=(Number(screen.availTop)||0)+(Number(screen.availHeight)||height)-height-16;
+  const left=(Number(screen.availLeft)||0)+(Number(screen.availWidth)||width)-width-12;
+  const top=(Number(screen.availTop)||0)+(Number(screen.availHeight)||height)-height-12;
   const enabled=hudEnabled()&&rows.length>0,signature=JSON.stringify([enabled,width,height,left,top]);
   if(signature!==lastHudGeometry){
     lastHudGeometry=signature;

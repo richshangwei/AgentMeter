@@ -5,7 +5,7 @@ const hudDefaultOpacity = 72;
 function normalizeHudOpacity(value) {
   const number=Number(value);
   if(!Number.isFinite(number))return hudDefaultOpacity;
-  return Math.max(35,Math.min(95,Math.round(number)));
+  return Math.max(35,Math.min(100,Math.round(number)));
 }
 
 function normalizeHudSelection(raw, fallback = []) {
@@ -17,8 +17,15 @@ function hudNumber(value) {
   return String(Math.round(value * 10) / 10);
 }
 
+function hudPrimaryQuota(provider) {
+  const quotas=Array.isArray(provider?.quota_windows)?provider.quota_windows:[];
+  if(provider?.provider!=='codex')return quotas[0]||null;
+  const regular=quotas.filter(quota=>quota?.limit_id==='codex'||quota?.limit_id==='codex/default');
+  return regular.find(quota=>Number(quota?.window_duration_mins)===10080)||regular[0]||quotas[0]||null;
+}
+
 function hudPrimaryValue(provider) {
-  const quota=Array.isArray(provider?.quota_windows)?provider.quota_windows[0]:null;
+  const quota=hudPrimaryQuota(provider);
   const remaining=Number(quota?.remaining_percent);
   if(quota&&quota.remaining_percent!==null&&Number.isFinite(remaining))return hudNumber(Math.max(0,Math.min(100,remaining)))+'%';
   const usage=Array.isArray(provider?.source_usage)?provider.source_usage[0]:null;
@@ -38,5 +45,5 @@ function hudRows(snapshot, selection, names = {}) {
 
 function hudHeight(count) {
   const rows=Math.max(1,Math.min(4,Math.floor(Number(count)||0)));
-  return 28+rows*44;
+  return 20+rows*28;
 }
