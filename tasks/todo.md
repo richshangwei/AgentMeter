@@ -521,8 +521,13 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - [x] Base on published 0.2.5 plus release evidence; isolate HUD-only scope from unfinished analytics.
 - [x] Port backend physical positioning, persistence, native drag and settings; preserve existing hover opacity.
 - [x] Node 18 tests and Edge HUD checks including seven monitor choices, drag/reset and persistence failure.
-- [ ] Full local checks; signed installer, signature/tamper verification and NSIS inspection.
-- [ ] Commit/push release source; upload all three draft assets before publishing latest.
-- [ ] Verify public latest manifest and downloaded artifact digest.
+- [x] Full local checks; signed installer, signature/tamper verification and NSIS inspection.
+- [x] Commit/push release source; upload all three draft assets before publishing latest.
+- [x] Verify public latest manifest and downloaded artifact digest.
 - Risk: medium, native multi-monitor mixed-DPI behavior still requires physical acceptance. Rollback: set latest back to v0.2.5 and withdraw new manifest; no automatic downgrade.
 - Environment: cached pinned dependencies, existing DPAPI signing key, fixed GitHub updater endpoint; no key rotation or credential changes.
+- Release source: `6e08cf2da5299fa03b215f7e82e5e809948926d6`; public tag `v0.2.6`, published 2026-09-13T15:42:20Z.
+- Installer: `AgentMeter-P0_0.2.6_x64-setup.exe`, 73,634,971 bytes; SHA-256 `025C0F0587706C94238636A0974980828271464C235DA5E4A8134BEFD402173E`.
+- Existing public key matched 0.2.5; local signature, trusted comment and tamper rejection passed. All three GitHub uploaded asset digests and sizes matched before publishing.
+- Full `scripts/verify-local.ps1` and Edge HUD checks passed. NSIS embedded executable product/file version is 0.2.6; no Windows Authenticode signature, unchanged from previous release. Physical mixed-DPI monitor interaction remains unverified; no local installer was run.
+- Public `releases/latest/download/latest.json` returned 0.2.6; the publicly downloaded installer matched the local SHA-256 and passed signature/trusted-comment/tamper-rejection verification.
