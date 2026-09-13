@@ -111,3 +111,8 @@
 - Signal: process flags and windowsHide were correct everywhere, yet a flash was tied to AgY/Terminal and was intermittent (agy checks for updates at most every 15 minutes).
 - Prevention: for every bundled/official CLI, disable self-update and background daemons via their documented env/flags; inspect binaries (`strings`) for updater/daemon code paths. Reproduction attempts must span the tool's update TTL.
 - Tripwire: `tests/background_window_contract.test.cjs` requires `AGY_CLI_DISABLE_AUTO_UPDATE`, `DISABLE_AUTOUPDATER` and `--no-auto-update`.
+
+## 2026-09-13 Release metadata scope
+- Signal: release verifier detected unrelated lockfile packages bumped by a global version replacement.
+- Prevention: change only the application package stanza; inspect the lockfile diff before running verification or packaging. Preserve every dependency version/checksum.
+- Tripwire: `git diff -- desktop-p0/Cargo.lock` must contain only app version and explicitly required direct dependency entries.

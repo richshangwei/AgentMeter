@@ -35,7 +35,8 @@ const snapshot={provider_states:[
       window.hudCalls=[];
       window.__TAURI__={core:{invoke:async(command,args)=>{
         if(command==='snapshot')return snapshot;
-        if(command==='configure_hud')window.hudCalls.push(args);
+        window.hudCalls.push({command,...args});
+        if(command==='hud_monitors')return {monitors:Array.from({length:7},(_,i)=>({id:'monitor-'+i,label:'螢幕 '+(i+1)+' · 3840 × 2160',primary:i===0})),selectedMonitor:'monitor-0'};
         return {};
       }}};
     },{snapshot,names});
@@ -57,7 +58,7 @@ const snapshot={provider_states:[
         valueOpacity:getComputedStyle(document.querySelector('.hud-value')).opacity,
         panelAlpha:alpha(getComputedStyle(document.getElementById('hud-panel')).backgroundColor),
         controls:document.querySelectorAll('button,input,a').length,
-        call:window.hudCalls.at(-1)
+        call:window.hudCalls.filter(call=>call.command==='configure_hud').at(-1)
       };
     });
     assert.deepEqual(result.text,[['Codex','92%'],['Claude Code','77%'],['GitHub Copilot','24.7%'],['Antigravity','54%']]);
@@ -71,8 +72,15 @@ const snapshot={provider_states:[
     assert.equal(result.valueOpacity,'1');
     assert.equal(result.panelAlpha,0.72);
     assert.equal(result.call.enabled,true);
-    assert.equal(result.call.width,220);
+    assert.equal(result.call.width,240);
     assert.equal(result.call.height,132);
+    assert.equal('x' in result.call,false);
+    assert.equal('y' in result.call,false);
+    await page.locator('#hud-panel').click();
+    assert(await page.evaluate(()=>window.hudCalls.some(call=>call.command==='start_hud_drag')));
+    const configurations=await page.evaluate(()=>window.hudCalls.filter(call=>call.command==='configure_hud').length);
+    await page.evaluate(()=>pollHud());
+    assert(await page.evaluate(count=>window.hudCalls.filter(call=>call.command==='configure_hud').length>count,configurations));
     for(const opacity of [35,50,72,100]){
       const actual=await page.evaluate(value=>{localStorage.setItem('agentmeter.hud-opacity.v1',String(value));renderHud();return getComputedStyle(document.documentElement).getPropertyValue('--surface-alpha').trim();},opacity);
       assert.equal(actual,String(opacity/100));
@@ -95,12 +103,31 @@ const snapshot={provider_states:[
     assert.equal(hover.valueOpacity,'1');
     fs.mkdirSync(path.join(root,'.scratch'),{recursive:true});
     await page.screenshot({path:path.join(root,'.scratch/hud-240x132.png'),omitBackground:true});
+    const positionFailure=await page.evaluate(async()=>{
+      const invoke=window.__TAURI__.core.invoke;
+      let snapshots=0;
+      window.__TAURI__.core.invoke=async(command,args)=>{
+        if(command==='configure_hud')throw new Error('position file locked');
+        if(command==='snapshot')snapshots++;
+        return invoke(command,args);
+      };
+      await pollHud();
+      window.__TAURI__.core.invoke=invoke;
+      return {snapshots,title:document.getElementById('hud-panel').title};
+    });
+    assert.equal(positionFailure.snapshots,1);
+    assert.match(positionFailure.title,/數據仍會更新/);
     assert.deepEqual(errors,[]);
 
     await page.setViewportSize({width:640,height:520});
     await page.goto('http://hud.local/index.html');
     await page.waitForSelector('#app-settings');
     await page.click('#app-settings');
+    await page.waitForFunction(()=>document.querySelectorAll('#hud-monitor option').length===7);
+    await page.selectOption('#hud-monitor','monitor-5');
+    await page.waitForFunction(()=>window.hudCalls.some(call=>call.command==='move_hud_monitor'&&call.monitorId==='monitor-5'));
+    await page.locator('#hud-position-reset').click();
+    assert(await page.evaluate(()=>window.hudCalls.some(call=>call.command==='reset_hud_position')));
     await page.evaluate(()=>{
       localStorage.setItem('agentmeter.hud-enabled.v1','false');
       loadHudPreference();
@@ -118,7 +145,8 @@ const snapshot={provider_states:[
         sliderHeight:input.getBoundingClientRect().height,
         sliderMax:input.max,
         horizontalFit:box.left>=0&&box.right<=innerWidth,
-        call:window.hudCalls.at(-1)
+        call:window.hudCalls.filter(call=>call.command==='configure_hud').at(-1),
+        controlsFit:[...section.querySelectorAll('select,button,input')].every(node=>{const bounds=node.getBoundingClientRect();return bounds.left>=box.left&&bounds.right<=box.right;})
       };
     });
     assert.equal(settings.enabled,'true');
@@ -127,9 +155,10 @@ const snapshot={provider_states:[
     assert.equal(settings.sliderMax,'100');
     assert(settings.sliderHeight>=44);
     assert.equal(settings.horizontalFit,true);
+    assert.equal(settings.controlsFit,true);
     assert.equal(settings.call.enabled,true);
     assert.deepEqual(errors,[]);
     await page.screenshot({path:path.join(root,'.scratch/hud-settings-640x520.png')});
-    console.log('PASS HUD 240x132 · settings 640x520 · opacity 35/48/72/100 · opaque text · hover background 100% · no overlap or overflow');
+    console.log('PASS HUD 240x132 · settings 640x520 · opacity 35/48/72/100 · opaque text · hover background 100% · multi-monitor selection/drag/reset · no overlap or overflow');
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

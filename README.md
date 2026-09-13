@@ -15,6 +15,10 @@ Open AgentMeter after signing in to the official tools. It discovers them automa
 
 The desktop and tablet share observations and refresh handling. Failed refreshes preserve the previous quota with an explicit stale marker; missing values are never replaced with a fabricated zero or full allowance. The tablet can select any currently advertised Provider cards, always keeps one empty add slot, and has a fullscreen control. Legacy experiment commands below remain for historical regression coverage, not the default UI.
 
+### Floating quota window
+
+In **設定 → 流量浮動視窗**, enable the panel and choose **顯示螢幕**. Drag the panel to place it across monitors; the position is saved locally and restored on restart. **重設至螢幕右下角** restores a reachable corner, and **重新整理螢幕** reloads the connected displays. Disconnected or off-screen placement falls back to a visible work area.
+
 ### Signed GitHub updates
 
 The desktop checks for signed GitHub releases at startup and every six hours without blocking monitoring. Settings persist separate automatic-check (default on) and automatic-download (default off) preferences. Downloads report progress and must pass signature verification before becoming ready; installation always requires explicit confirmation. Failed checks retry after 30 minutes. Verified downloads are held in memory and must be downloaded again after exiting.

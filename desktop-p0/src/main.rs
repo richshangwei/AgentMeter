@@ -5,6 +5,7 @@ mod auto_quota;
 mod dashboard;
 mod diagnostics;
 mod discovery;
+mod hud;
 mod lifecycle;
 mod settings;
 mod setup;
@@ -12,7 +13,7 @@ mod tablet_bridge;
 #[cfg(windows)]
 mod updater;
 use tauri::{
-    LogicalPosition, LogicalSize, Manager, WindowEvent,
+    Manager, WindowEvent,
     image::Image,
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -37,42 +38,6 @@ fn exit_app(app: &tauri::AppHandle) {
         lifecycle.stop_and_wait();
         app.exit(0);
     });
-}
-
-#[tauri::command]
-fn configure_hud(
-    app: tauri::AppHandle,
-    enabled: bool,
-    width: f64,
-    height: f64,
-    x: f64,
-    y: f64,
-) -> Result<(), String> {
-    let window = app
-        .get_webview_window("hud")
-        .ok_or_else(|| "hud window unavailable".to_string())?;
-    if !enabled {
-        return window.hide().map_err(|error| error.to_string());
-    }
-    if ![width, height, x, y].iter().all(|value| value.is_finite()) {
-        return Err("invalid hud geometry".into());
-    }
-    window
-        .set_size(LogicalSize::new(
-            width.clamp(220.0, 300.0),
-            height.clamp(48.0, 160.0),
-        ))
-        .map_err(|error| error.to_string())?;
-    window
-        .set_position(LogicalPosition::new(
-            x.clamp(-32_768.0, 32_768.0),
-            y.clamp(-32_768.0, 32_768.0),
-        ))
-        .map_err(|error| error.to_string())?;
-    window
-        .set_focusable(false)
-        .map_err(|error| error.to_string())?;
-    window.show().map_err(|error| error.to_string())
 }
 
 #[cfg(windows)]
@@ -208,7 +173,11 @@ fn main() {
             updater::check_update,
             updater::download_update,
             updater::install_update,
-            configure_hud
+            hud::configure_hud,
+            hud::hud_monitors,
+            hud::move_hud_monitor,
+            hud::reset_hud_position,
+            hud::start_hud_drag
         ])
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             if argv.iter().any(|arg| arg == "--probe-ready") {
@@ -229,6 +198,7 @@ fn main() {
                 std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/quota-helper")
             };
             let app_config_dir = app.path().app_config_dir()?;
+            hud::initialize(app.handle(), app_config_dir.join("hud-position.json"));
             let sync_settings_file = app_config_dir.join("quota-sync.json");
             let sync_preferences =
                 settings::sync_preferences(&sync_settings_file).unwrap_or_default();
@@ -306,6 +276,11 @@ fn main() {
             Ok(())
         })
         .on_window_event(|window, event| {
+            if window.label() == "hud"
+                && let WindowEvent::Moved(position) = event
+            {
+                hud::moved(window.app_handle(), *position);
+            }
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
                 let _ = window.hide();

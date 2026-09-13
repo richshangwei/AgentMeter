@@ -143,3 +143,46 @@ test('quota tiles carry the full detail in a tooltip and a level for the gauge c
   assert.match(second.title,/GPT-5.3-Codex-Spark · 每週使用上限/);
   assert.match(second.title,/已用 3 \/ 10/);
 });
+
+test('HUD screen settings list all monitors and use backend positioning without browser coordinates',async()=>{
+  const {context,element,calls}=harness();
+  const monitors=Array.from({length:7},(_,index)=>({id:'display-'+index,label:'螢幕 '+(index+1),primary:index===0}));
+  context.window.__TAURI__.core.invoke=async(command,args)=>{
+    calls.push({command,args});
+    if(command==='hud_monitors')return {monitors,selectedMonitor:'display-5'};
+    return {};
+  };
+  await context.loadHudMonitors();
+  assert.equal(element('hud-monitor').children.length,7);
+  assert.equal(element('hud-monitor').value,'display-5');
+  assert.match(element('hud-monitor').children[0].textContent,/主要/);
+  element('hud-monitor').value='display-6';
+  await context.changeHudPosition();
+  const move=calls.find(call=>call.command==='move_hud_monitor');
+  assert.equal(JSON.stringify(move.args),JSON.stringify({monitorId:'display-6'}));
+  await context.changeHudPosition(true);
+  assert.ok(calls.some(call=>call.command==='reset_hud_position'));
+  element('hud-enabled').checked=true;
+  context.applyHudPreference();
+  const configure=calls.filter(call=>call.command==='configure_hud').at(-1);
+  assert.equal(configure.args.width,240);
+  assert.equal('x' in configure.args,false);
+  assert.equal('y' in configure.args,false);
+});
+
+test('HUD monitor errors are actionable and failed moves reload the current selection',async()=>{
+  const {context,element}=harness();
+  context.window.__TAURI__.core.invoke=async()=>{throw new Error('disconnected');};
+  await context.loadHudMonitors();
+  assert.equal(element('hud-monitor').disabled,true);
+  assert.equal(element('hud-position-reset').disabled,true);
+  assert.match(element('hud-position-status').textContent,/重新整理螢幕/);
+  context.window.__TAURI__.core.invoke=async(command)=>{
+    if(command==='hud_monitors')return {monitors:[{id:'primary',label:'Primary',primary:true}],selectedMonitor:'primary'};
+    throw new Error('disconnected');
+  };
+  await context.changeHudPosition();
+  assert.equal(element('hud-monitor').value,'primary');
+  assert.equal(element('hud-monitor').disabled,false);
+  assert.match(element('hud-position-status').textContent,/移動失敗/);
+});

@@ -199,14 +199,47 @@ function applyHudPreference() {
     window.localStorage?.setItem(hudOpacityKey,String(opacity));
   } catch {}
   const selection=desktopSelection||[];
-  const width=Math.max(220,Math.min(240,(Number(screen.availWidth)||240)-24));
+  const width=240;
   const height=hudHeight(selection.length);
-  const x=(Number(screen.availLeft)||0)+(Number(screen.availWidth)||width)-width-12;
-  const y=(Number(screen.availTop)||0)+(Number(screen.availHeight)||height)-height-12;
-  const active=enabled&&selection.length>0,signature=JSON.stringify([active,width,height,x,y,opacity]);
+  const active=enabled&&selection.length>0,signature=JSON.stringify([active,width,height,opacity]);
   if(signature===lastHudPreference)return;
   lastHudPreference=signature;
-  tabletCommand('configure_hud',{enabled:active,width,height,x,y}).catch(()=>{});
+  tabletCommand('configure_hud',{enabled:active,width,height}).catch(()=>{lastHudPreference='';get('hud-position-status').textContent='浮動視窗設定失敗，請重試或重新啟動程式。';});
+}
+let hudMonitorBusy=false;
+async function loadHudMonitors() {
+  if(hudMonitorBusy)return;
+  hudMonitorBusy=true;
+  const select=get('hud-monitor'),status=get('hud-position-status');
+  select.disabled=true;
+  try {
+    const result=await tabletCommand('hud_monitors');
+    if(!Array.isArray(result?.monitors)||!result.monitors.length)throw new Error('no monitors');
+    select.replaceChildren(...result.monitors.map(monitor=>{
+      const option=document.createElement('option');option.value=monitor.id;
+      option.textContent=monitor.label+(monitor.primary?'（主要）':'');return option;
+    }));
+    select.value=result.selectedMonitor||result.monitors[0].id;
+    status.textContent='拖曳浮動視窗即可自由擺放，位置會自動保存。';
+  } catch {
+    select.replaceChildren();
+    status.textContent='無法讀取螢幕清單，請按「重新整理螢幕」重試。';
+  } finally {
+    hudMonitorBusy=false;select.disabled=!select.children.length;
+    get('hud-position-reset').disabled=select.disabled;
+  }
+}
+async function changeHudPosition(reset=false) {
+  if(hudMonitorBusy)return;
+  hudMonitorBusy=true;
+  get('hud-monitor').disabled=true;get('hud-position-reset').disabled=true;
+  let failure=false;
+  try {
+    await tabletCommand(reset?'reset_hud_position':'move_hud_monitor',reset?{}:{monitorId:get('hud-monitor').value});
+  } catch {failure=true;}
+  finally {hudMonitorBusy=false;}
+  await loadHudMonitors();
+  if(failure)get('hud-position-status').textContent='移動失敗，螢幕可能已拔除；請重新選擇螢幕或重試。';
 }
 function ensureDesktopCard(provider) {
   if (document.getElementById(provider+'-card')) return;
@@ -468,15 +501,18 @@ get('auto-quota').addEventListener('change',saveAutoQuotaSettings);
 quotaInterval.addEventListener('change',saveAutoQuotaSettings);
 get('hud-enabled').addEventListener('change',applyHudPreference);
 get('hud-opacity').addEventListener('input',applyHudPreference);
+get('hud-monitor').addEventListener('change',()=>changeHudPosition());
+get('hud-monitor-refresh').addEventListener('click',loadHudMonitors);
+get('hud-position-reset').addEventListener('click',()=>changeHudPosition(true));
 restoreTabletStatus();
 pollQuota();
 loadAutoQuotaSettings();
 setInterval(pollTabletActivity, 2000);
 setInterval(pollQuota,2000);
 
-get('app-settings').addEventListener('click',()=>{renderDesktopOptions();get('app-settings-dialog').showModal();});
+get('app-settings').addEventListener('click',()=>{renderDesktopOptions();loadHudMonitors();get('app-settings-dialog').showModal();});
 get('app-settings-close').addEventListener('click',()=>get('app-settings-dialog').close());
-get('desktop-empty-settings').addEventListener('click',()=>{renderDesktopOptions();get('app-settings-dialog').showModal();});
+get('desktop-empty-settings').addEventListener('click',()=>{renderDesktopOptions();loadHudMonitors();get('app-settings-dialog').showModal();});
 get('desktop-prev').addEventListener('click',()=>{desktopPage--;applyDesktopLayout();});
 get('desktop-next').addEventListener('click',()=>{desktopPage++;applyDesktopLayout();});
 get('desktop-options-prev').addEventListener('click',()=>{desktopOptionPage--;desktopOptionsSignature='';renderDesktopOptions();});

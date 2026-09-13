@@ -516,3 +516,13 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Plus-shaped 300/10080 and Pro-shaped weekly-only fixtures pass; absent rows remain absent, so the UI never fabricates a plan window.
 - Verification: 29 focused Node tests passed, 4 desktop auto-quota Rust tests passed, 18 Windows Edge viewport matrices passed, and `scripts/verify-local.ps1` completed with all tests, formatting, and Clippy checks passing.
 - External boundary: no installer was rebuilt and no credential or account state was changed. Current official documentation describes plan-dependent five-hour/weekly limits but does not guarantee one fixed shape for every Plus or Pro account.
+
+## 2026-09-13 Release 0.2.6 — multi-monitor HUD
+- [x] Base on published 0.2.5 plus release evidence; isolate HUD-only scope from unfinished analytics.
+- [x] Port backend physical positioning, persistence, native drag and settings; preserve existing hover opacity.
+- [x] Node 18 tests and Edge HUD checks including seven monitor choices, drag/reset and persistence failure.
+- [ ] Full local checks; signed installer, signature/tamper verification and NSIS inspection.
+- [ ] Commit/push release source; upload all three draft assets before publishing latest.
+- [ ] Verify public latest manifest and downloaded artifact digest.
+- Risk: medium, native multi-monitor mixed-DPI behavior still requires physical acceptance. Rollback: set latest back to v0.2.5 and withdraw new manifest; no automatic downgrade.
+- Environment: cached pinned dependencies, existing DPAPI signing key, fixed GitHub updater endpoint; no key rotation or credential changes.

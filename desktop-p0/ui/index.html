@@ -49,11 +49,14 @@
     <div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div>
     <section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section>
     <section class="hud-settings" aria-labelledby="hud-settings-title">
-      <h3 id="hud-settings-title">右下角數據模式</h3>
-      <label class="update-option"><input id="hud-enabled" type="checkbox"><span>顯示精簡數據<small>固定在桌面右下角，只顯示名稱與主要數據。</small></span></label>
+      <h3 id="hud-settings-title">流量浮動視窗</h3>
+      <label class="update-option"><input id="hud-enabled" type="checkbox"><span>顯示精簡數據<small>只顯示名稱與主要數據，可拖曳至任意螢幕與位置。</small></span></label>
+      <label class="setting-field hud-monitor-field" for="hud-monitor"><span>顯示螢幕</span><select id="hud-monitor" disabled aria-describedby="hud-position-status"></select></label>
+      <div class="hud-position-actions"><button id="hud-monitor-refresh" class="ghost" type="button">重新整理螢幕</button><button id="hud-position-reset" class="ghost" type="button" disabled>重設至螢幕右下角</button></div>
+      <p id="hud-position-status" class="hint" role="status" aria-live="polite">拖曳浮動視窗即可自由擺放，位置會自動保存。</p>
       <label class="hud-opacity" for="hud-opacity"><span>面板透明度</span><output id="hud-opacity-value" for="hud-opacity">72%</output></label>
       <input id="hud-opacity" type="range" min="35" max="100" step="1" value="72" aria-describedby="hud-opacity-note">
-      <p id="hud-opacity-note" class="hint">只調整背景透明度；名稱與數字保持清晰，滑鼠移入時背景會暫時恢復 100%。</p>
+      <p id="hud-opacity-note" class="hint">只調整背景透明度，名稱與數字保持清晰；滑鼠移入時背景會暫時恢復 100%，按住面板即可拖曳。</p>
     </section>
     <section class="quota-sync-panel" aria-labelledby="quota-sync-title">
       <p class="eyebrow">QUOTA SYNC</p><h3 id="quota-sync-title">額度同步</h3>

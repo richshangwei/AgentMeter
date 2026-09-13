@@ -51,7 +51,7 @@ fn package_identity_version_and_frontend_are_explicit_and_consistent() {
 }
 
 #[test]
-fn compact_hud_is_a_nonfocusable_hoverable_hidden_secondary_window() {
+fn compact_hud_is_a_draggable_hidden_secondary_window() {
     let config = config();
     let windows = config["app"]["windows"].as_array().unwrap();
     let hud = windows
@@ -69,9 +69,16 @@ fn compact_hud_is_a_nonfocusable_hoverable_hidden_secondary_window() {
     assert_eq!(hud["height"], 132);
 
     let main = include_str!("../desktop-p0/src/main.rs");
+    let backend = include_str!("../desktop-p0/src/hud.rs");
     assert!(main.contains("configure_hud"));
-    assert!(main.contains("set_focusable(false)"));
-    assert!(!main.contains("set_ignore_cursor_events(true)"));
+    assert!(backend.contains("set_focusable(false)"));
+    assert!(backend.contains("set_ignore_cursor_events(false)"));
+    assert!(backend.contains("start_dragging()"));
+    let html = include_str!("../desktop-p0/ui/index.html");
+    let css = include_str!("../desktop-p0/ui/hud.css");
+    assert!(html.contains("顯示螢幕"));
+    assert!(html.contains("按住面板即可拖曳"));
+    assert!(css.contains("cursor:grab"));
 }
 
 #[test]

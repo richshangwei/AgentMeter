@@ -357,3 +357,7 @@ dialog p { font-size: 11px; color: var(--muted); }
 @media (prefers-reduced-motion: no-preference) {
   button, .monitor-card { transition: border-color .18s ease, filter .18s ease, transform .18s ease, background-color .18s ease; }
 }
+.hud-monitor-field { align-items: flex-start; }
+.hud-monitor-field select { flex: 1; min-width: 0; max-width: 100%; width: 100%; }
+.hud-position-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.hud-position-actions button { min-height: 44px; }

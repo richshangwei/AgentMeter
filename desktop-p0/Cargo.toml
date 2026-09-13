@@ -1,6 +1,6 @@
 [package]
 name = "agentmeter-desktop-p0"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2024"
 publish = false
 
@@ -9,13 +9,14 @@ tauri-build = { version = "=2.6.3", features = [] }
 
 [dependencies]
 agentmeter-p0 = { path = ".." }
+serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = "=1.0.151"
 tauri = { version = "=2.11.5", features = ["tray-icon"] }
 tauri-plugin-single-instance = "=2.4.3"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "=0.55.0"
-windows-sys = { version = "=0.61.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_Security"] }
+windows-sys = { version = "=0.61.2", features = ["Win32_UI_WindowsAndMessaging", "Win32_UI_Input_KeyboardAndMouse", "Win32_System_JobObjects", "Win32_System_Threading", "Win32_Security"] }
 tauri-plugin-updater = "=2.10.1"
 
 [patch.crates-io]

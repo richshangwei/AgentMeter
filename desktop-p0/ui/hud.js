@@ -1,5 +1,5 @@
 const hudNames={codex:'Codex',claude:'Claude Code',copilot:'GitHub Copilot',antigravity:'Antigravity',cursor:'Cursor',kiro:'Kiro'};
-let hudSnapshot=null,hudBusy=false,lastHudGeometry='';
+let hudSnapshot=null,hudBusy=false;
 
 function hudStorage(key,fallback) {
   try { const value=window.localStorage?.getItem(key);return value===null?fallback:value; }
@@ -24,22 +24,29 @@ function renderHud() {
     row.append(name,value);return row;
   }));
   document.documentElement.style.setProperty('--surface-alpha',String(hudOpacity()/100));
-  const width=Math.max(220,Math.min(240,(Number(screen.availWidth)||240)-24));
-  const height=hudHeight(rows.length);
-  const left=(Number(screen.availLeft)||0)+(Number(screen.availWidth)||width)-width-12;
-  const top=(Number(screen.availTop)||0)+(Number(screen.availHeight)||height)-height-12;
-  const enabled=hudEnabled()&&rows.length>0,signature=JSON.stringify([enabled,width,height,left,top]);
-  if(signature!==lastHudGeometry){
-    lastHudGeometry=signature;
-    hudInvoke('configure_hud',{enabled,width,height,x:left,y:top}).catch(()=>{});
-  }
 }
 async function pollHud() {
-  renderHud();
-  if(!hudEnabled()||hudBusy)return;
+  if(hudBusy)return;
   hudBusy=true;
-  try { hudSnapshot=await hudInvoke('snapshot');renderHud(); }
+  try {
+    renderHud();
+    const selection=hudSelection();
+    try {
+      await hudInvoke('configure_hud',{enabled:hudEnabled()&&selection.length>0,width:240,height:hudHeight(selection.length)});
+      document.getElementById('hud-panel').title='按住拖曳，可跨螢幕自由擺放';
+    } catch {
+      document.getElementById('hud-panel').title='視窗位置設定或保存失敗，將自動重試；數據仍會更新。';
+    }
+    if(hudEnabled()){hudSnapshot=await hudInvoke('snapshot');renderHud();}
+  }
+  catch { document.getElementById('hud-panel').title='更新浮動視窗失敗，將自動重試。'; }
   finally { hudBusy=false; }
 }
+document.getElementById('hud-panel').addEventListener('pointerdown',event=>{
+  if(event.button!==0||event.isPrimary===false)return;
+  hudInvoke('start_hud_drag').catch(()=>{
+    document.getElementById('hud-panel').title='拖曳失敗，請重試或在設定中切換螢幕。';
+  });
+});
 pollHud();
 setInterval(pollHud,2000);
