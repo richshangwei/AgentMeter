@@ -1,3 +1,33 @@
+# 2026-09-17 發布 0.2.7 CMD 閃現修正版
+
+## Goal & acceptance criteria
+- [x] 從公開 0.2.6 基線只移植 Antigravity updater 停用值與視窗回歸測試，不混入主工作區其他功能。
+- [ ] 應用程式、Cargo lock、安裝檔、manifest、commit 與 tag 版本一致為 0.2.7。
+- [x] 完整測試、實機 console 紅／綠控制、簽署建置、NSIS 檢驗與更新簽章全部通過。
+- [ ] GitHub Release 僅包含安全命名安裝檔、`.sig`、`latest.json`，公開 Latest 與匿名下載驗證通過。
+
+## Plan
+- [x] Checkpoint A: 審核 0.2.6 基線、發布差異、秘密與排除項目。
+- [x] Checkpoint B: 移植最小修正、更新 0.2.7 版本並執行完整驗證。
+- [x] Checkpoint C: 建立簽署草稿，驗證安裝包、manifest、簽章與竄改拒絕。
+- [ ] Checkpoint D: 提交／推送、建立 v0.2.7 Release，驗證 Latest 與公開資產。
+
+## Risk & rollback
+- Risk: high；公開可執行檔、不可變 tag／資產與自動更新 Latest 指向。
+- Rollback: 發布前停止並刪除草稿；發布後將 v0.2.7 改為非 Latest／draft，停止新下載，再以更高修正版恢復；不覆寫既有資產或自動降版。
+- Security: 私鑰只以既有 CurrentUser DPAPI 在記憶體解密；不輸出、不提交、不上傳金鑰。Release 只允許三個核准資產。
+- Exclusions: 主工作區未提交的 History／Token 分析／HUD 與文件、Logo、截圖、evidence、`.scratch`、target 不納入本次 hotfix diff 或 Release 資產；基線既有追蹤檔不在本次清理範圍。
+
+## Dependencies & environment
+- Windows、既有 Rust/Tauri/Node/NSIS/7-Zip/GitHub CLI、本機既有 DPAPI updater key。
+- 發布基線固定為 `origin/master` 的 0.2.6 發布紀錄提交；隔離工作樹為 `.release-worktrees/0.2.7`。
+
+## Working notes
+- 官方 Antigravity CLI 文件要求 `AGY_CLI_DISABLE_AUTO_UPDATE=true`；舊值 `1` 可能未停用 15 分鐘 TTL updater。
+- 完整 `scripts/verify-local.ps1`、11 個 targeted Node tests、Antigravity 三輪零視窗 fixture 與故意可見 CMD 正向控制皆通過。
+- 簽署草稿：`desktop-p0/target/update-drafts/0.2.7-70ee52da142c45f89ba41c9daf71d0e6`；installer 73,628,013 bytes；SHA-256 `093178E0973B2F8C84228F4F0C983A3329856FAEA7FFE828992E6FB5E90D8FAA`。
+- NSIS 內嵌 product/file version 均為 0.2.7；Tauri updater signature、trusted comment 與單位元竄改拒絕通過。Windows Authenticode 仍為 NotSigned。
+
 # 2026-09-12 發布 0.2.5 HUD 修正版
 
 ## Goal & acceptance criteria

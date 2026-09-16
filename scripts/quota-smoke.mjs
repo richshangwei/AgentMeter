@@ -274,10 +274,11 @@ export async function collectProviders(options = {}) {
     try {
       // agy's built-in auto-updater starts a detached background process that has no
       // console of its own; its helpers then open a new, visible console (a CMD /
-      // Windows Terminal flash). The bundled binary is checksum-pinned anyway.
+      // Windows Terminal flash). The CLI documents the exact boolean literal `true`;
+      // `1` does not reliably disable its 15-minute updater path.
       const {stdout} = await run(agy,['--print','/usage','--print-timeout','20s'],{
         cwd:workingDirectory,windowsHide:true,timeout:25_000,maxBuffer:65536,
-        env:{...process.env,AGY_CLI_DISABLE_AUTO_UPDATE:'1'}});
+        env:{...process.env,AGY_CLI_DISABLE_AUTO_UPDATE:'true'}});
       const quota = antigravityWindows(stdout);
       antigravity = {provider:'antigravity',status:quota.length ? 'PASS':'FAIL',
         reason:quota.length ? 'live_cli_quota_received':'quota_schema_unrecognized',quota,
