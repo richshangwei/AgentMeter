@@ -447,7 +447,6 @@ dialog p { font-size: 11px; color: var(--muted); }
 .hud-monitor-field select { flex: 1; min-width: 0; max-width: 100%; width: 100%; }
 .hud-position-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .hud-position-actions button { min-height: 44px; }
-<<<<<<< HEAD
 
 .resource-list { display: grid; gap: 10px; margin: 22px 0; }
 .resource-list p { display: flex; justify-content: space-between; gap: 24px; margin: 0; padding: 14px; border: 1px solid var(--line-soft); border-radius: 10px; background: rgba(5, 29, 52, .72); }
@@ -464,5 +463,3 @@ dialog p { font-size: 11px; color: var(--muted); }
 .resources-panel span { font-variant-numeric: tabular-nums; }
 @media (max-height: 760px) { .app-shell { grid-template-rows: auto 0 auto minmax(0, 1fr) auto; } }
 @media (max-width: 760px) { .resources-panel > div { font-size: 11px; padding: 5px 7px; } }
-=======
->>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940

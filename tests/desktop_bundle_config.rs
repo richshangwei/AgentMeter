@@ -78,8 +78,8 @@ fn compact_hud_is_a_draggable_hidden_secondary_window() {
     let css = include_str!("../desktop-p0/ui/hud.css");
     assert!(html.contains("顯示螢幕"));
     assert!(html.contains("按住面板即可拖曳"));
-<<<<<<< HEAD
-    assert!(!css.contains("main:hover"));
+    assert!(css.contains("main:hover"));
+    assert!(css.contains("cursor:grab"));
 }
 
 #[test]
@@ -114,9 +114,6 @@ fn provider_history_commands_are_bounded_to_the_desktop_and_accept_no_source_pat
     assert!(!client.contains("innerHTML"));
     assert!(!client.contains("localStorage"));
     assert!(!history.contains("quota_windows"));
-=======
-    assert!(css.contains("cursor:grab"));
->>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
 }
 
 #[test]

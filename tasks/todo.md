@@ -1,4 +1,14 @@
-<<<<<<< HEAD
+# 2026-11-16 修復已提交的合併衝突
+
+- [x] 找出已提交的衝突標記與原始兩側內容。
+- [x] 保留歷程、本機資源與可拖曳 HUD，合併工作紀錄。
+- [x] 驗證無衝突標記、Cargo 設定與相關測試。
+- [x] 記錄結果；修復提交待推送。
+
+結果：git grep 無衝突標記；cargo metadata 通過；scripts/verify-local.ps1 全數通過（含桌面 37 項測試及 Clippy）。node scripts/verify-hud.cjs 因缺少 Playwright 未執行瀏覽器驗證；實體多螢幕與系統匣互動亦未驗證。
+
+工作備註：HUD 目前支援拖曳並接收滑鼠事件，因此保留目前的 hover 行為及其瀏覽器驗證；歷史穿透教訓不代表現行設計。風險為中等；可回復本次修復提交。
+
 # 2026-09-17 修正用量偵測時 CMD 閃現
 
 ## Goal & acceptance criteria
@@ -65,7 +75,7 @@
 ## Working notes
 - `quota_windows` 的順序不是產品契約；Codex 必須依 `limit_id` 與 `window_duration_mins` 選擇。
 - CSS 不得把 `opacity` 套在 HUD 父層；透明度只能進入背景色 alpha。
-=======
+
 # 2026-09-17 發布 0.2.7 CMD 閃現修正版
 
 ## Goal & acceptance criteria
@@ -124,7 +134,6 @@
 - GitHub Release `v0.2.5` 已公開、非 prerelease 並設為 Latest；資產僅有安全命名安裝檔、相鄰簽章與 `latest.json`。
 - 匿名重新下載三個資產成功；遠端安裝檔為 73,594,573 bytes，SHA256 與本機草稿完全相同，公開 `latest.json` 回報 0.2.5 且安裝網址精確指向 v0.2.5 資產。
 - 0.2.4 已編入相同 Latest endpoint 與更新公鑰，可發現、下載並驗證 0.2.5；安裝仍需使用者明確確認。未在本機覆寫安裝中的 0.2.4，也未聲稱完成真實升級安裝驗收。
->>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
 
 # 2026-09-12 發布 0.2.4 自動更新
 
@@ -622,7 +631,6 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Plus-shaped 300/10080 and Pro-shaped weekly-only fixtures pass; absent rows remain absent, so the UI never fabricates a plan window.
 - Verification: 29 focused Node tests passed, 4 desktop auto-quota Rust tests passed, 18 Windows Edge viewport matrices passed, and `scripts/verify-local.ps1` completed with all tests, formatting, and Clippy checks passing.
 - External boundary: no installer was rebuilt and no credential or account state was changed. Current official documentation describes plan-dependent five-hour/weekly limits but does not guarantee one fixed shape for every Plus or Pro account.
-<<<<<<< HEAD
 # 2026-09-12 AgentMeter 網站設計架構與功能規格書
 
 ## Goal & acceptance criteria
@@ -947,7 +955,7 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 工作備註：現有已安裝版本與工作區建置版是不同執行檔；編譯不會自動取代安裝版。
 
 結果：資源列預設顯示，設定關閉會保存偏好並停止輪詢；19 項前端測試與 release 編譯通過。未進行實際視窗幾何驗證，因本環境無可用 Playwright。
-=======
+
 
 ## 2026-09-13 Release 0.2.6 — multi-monitor HUD
 - [x] Base on published 0.2.5 plus release evidence; isolate HUD-only scope from unfinished analytics.
@@ -963,4 +971,3 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Existing public key matched 0.2.5; local signature, trusted comment and tamper rejection passed. All three GitHub uploaded asset digests and sizes matched before publishing.
 - Full `scripts/verify-local.ps1` and Edge HUD checks passed. NSIS embedded executable product/file version is 0.2.6; no Windows Authenticode signature, unchanged from previous release. Physical mixed-DPI monitor interaction remains unverified; no local installer was run.
 - Public `releases/latest/download/latest.json` returned 0.2.6; the publicly downloaded installer matched the local SHA-256 and passed signature/trusted-comment/tamper-rejection verification.
->>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940

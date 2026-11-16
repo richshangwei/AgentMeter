@@ -5,14 +5,11 @@ mod auto_quota;
 mod dashboard;
 mod diagnostics;
 mod discovery;
-<<<<<<< HEAD
 mod history;
-=======
->>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
 mod hud;
 mod lifecycle;
-mod settings;
 mod resources;
+mod settings;
 mod setup;
 mod tablet_bridge;
 #[cfg(windows)]

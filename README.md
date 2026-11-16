@@ -17,11 +17,7 @@ The desktop and tablet share observations and refresh handling. Failed refreshes
 
 ### Floating quota window
 
-<<<<<<< HEAD
 In **設定 → 流量浮動視窗**, enable the compact panel and choose **顯示螢幕**. Hold and drag the panel to move it, including across monitors; its position is saved locally and restored on restart. **重設至螢幕右下角** returns it to the selected monitor's work area. Use **重新整理螢幕** after connecting or disconnecting a display. When a saved position is no longer on an available monitor, the panel returns to a visible work area. Background opacity changes leave text opaque.
-=======
-In **設定 → 流量浮動視窗**, enable the panel and choose **顯示螢幕**. Drag the panel to place it across monitors; the position is saved locally and restored on restart. **重設至螢幕右下角** restores a reachable corner, and **重新整理螢幕** reloads the connected displays. Disconnected or off-screen placement falls back to a visible work area.
->>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
 
 ### Signed GitHub updates
 
