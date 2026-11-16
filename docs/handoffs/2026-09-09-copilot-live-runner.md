@@ -30,7 +30,7 @@ The full `scripts/verify-local.ps1` suite was rerun after this runner batch and 
 
 The rebuilt desktop application remains open and responsive as PID `18956` at:
 
-`D:\WorkSpace\AgentMeter\desktop-p0\target\x86_64-pc-windows-msvc\release\agentmeter-desktop-p0.exe`
+`desktop-p0\target\x86_64-pc-windows-msvc\release\agentmeter-desktop-p0.exe`
 
 The host still has no discoverable `gh`, `agy`, or `antigravity` executable and no authenticated GitHub account evidence. No real provider request was made in this batch. The runner is ready for an operator who has already authenticated `gh` and explicitly supplies account slugs.
 
@@ -40,9 +40,9 @@ After installing/authenticating GitHub CLI, run an example such as:
 
 ```powershell
 & .\scripts\test-copilot-live.ps1 `
-  -CollectorPath 'D:\WorkSpace\AgentMeter\desktop-p0\target\x86_64-pc-windows-msvc\release\agentmeter-copilot-p0.exe' `
+  -CollectorPath 'desktop-p0\target\x86_64-pc-windows-msvc\release\agentmeter-copilot-p0.exe' `
   -GitHubCliPath 'C:\Program Files\GitHub CLI\gh.exe' `
-  -OutputPath 'D:\WorkSpace\AgentMeter\docs\evidence\copilot-live-2026-09.json' `
+  -OutputPath 'docs\evidence\copilot-live-2026-09.json' `
   -PersonalAccount 'YOUR_GITHUB_LOGIN' `
   -Year 2026 -Month 9 -AllowProviderRequests
 ```

@@ -12,20 +12,20 @@
         {
           "bucket": "base_model_inference",
           "window": "primary",
-          "remaining_percent": 95,
-          "resets_at": 1789557147
+          "remaining_percent": "[redacted]",
+          "resets_at": "[redacted]"
         },
         {
           "bucket": "codex",
           "window": "primary",
-          "remaining_percent": 48,
-          "resets_at": 1788980691
+          "remaining_percent": "[redacted]",
+          "resets_at": "[redacted]"
         },
         {
           "bucket": "codex",
           "window": "secondary",
-          "remaining_percent": 92,
-          "resets_at": 1789567491
+          "remaining_percent": "[redacted]",
+          "resets_at": "[redacted]"
         }
       ]
     },
@@ -36,10 +36,10 @@
       "quota": [
         {
           "bucket": "premium_interactions",
-          "remaining_percent": 24.7,
-          "entitlement": 1500,
-          "used": 1130,
-          "reported_reset_at": "2026-09-09T14:24:43.203Z",
+          "remaining_percent": "[redacted]",
+          "entitlement": "[redacted]",
+          "used": "[redacted]",
+          "reported_reset_at": "[redacted]",
           "reset_time_verified": false
         }
       ],
@@ -52,13 +52,13 @@
       "quota": [
         {
           "window": "five_hour",
-          "remaining_percent": 90,
-          "reset_display": "2:59am (Etc/GMT-8)"
+          "remaining_percent": "[redacted]",
+          "reset_display": "[redacted]"
         },
         {
           "window": "seven_day",
-          "remaining_percent": 8,
-          "reset_display": "Sep 10, 3pm (Etc/GMT-8)"
+          "remaining_percent": "[redacted]",
+          "reset_display": "[redacted]"
         }
       ],
       "version": "2.1.266",
@@ -75,30 +75,31 @@
         {
           "bucket": "Gemini Models",
           "window": "Weekly Limit Remaining",
-          "remaining_percent": 58,
-          "resets_at": "2026-09-11T02:36:20Z"
+          "remaining_percent": "[redacted]",
+          "resets_at": "[redacted]"
         },
         {
           "bucket": "Gemini Models",
           "window": "Five Hour Limit Remaining",
-          "remaining_percent": 100,
-          "resets_at": "2026-09-09T19:24:51Z"
+          "remaining_percent": "[redacted]",
+          "resets_at": "[redacted]"
         },
         {
           "bucket": "Claude and GPT models",
           "window": "Weekly Limit Remaining",
-          "remaining_percent": 100,
-          "resets_at": "2026-09-16T14:24:51Z"
+          "remaining_percent": "[redacted]",
+          "resets_at": "[redacted]"
         },
         {
           "bucket": "Claude and GPT models",
           "window": "Five Hour Limit Remaining",
-          "remaining_percent": 100,
-          "resets_at": "2026-09-09T19:24:51Z"
+          "remaining_percent": "[redacted]",
+          "resets_at": "[redacted]"
         }
       ],
       "transport": "official_cli_usage_tsv",
       "maturity": "experimental"
     }
-  ]
+  ],
+  "_redaction": "Personal account usage values (remaining_percent, used, entitlement, reset times) are redacted for public release. Schema, provider, status and reason are preserved as the actual evidence."
 }

@@ -25,6 +25,17 @@ const edge = { provider_states: [
   { provider: 'copilot', collection_state: 'error', failure_code: 'cli_not_found', quota_windows: [] },
   { provider: 'antigravity', collection_state: 'error', failure_code: 'authentication_required', quota_windows: [] },
 ] };
+const historySnapshot={
+  schema_version:'agentmeter.provider-history.v1',provider:'codex',status:'supported',data_quality:'local_observed',
+  files_scanned:2,files_skipped:0,duplicate_sessions:1,records_rejected:1,partial_records:1,limited:true,
+  totals:{input_tokens:'12000',cached_input_tokens:'9000',cache_write_input_tokens:null,output_tokens:'500',reasoning_output_tokens:'125',total_tokens:'12500'},
+  analysis:{schema_version:'agentmeter.token-analysis.v1',provider:'codex',pricing_basis:'current_api_equivalent',price_as_of:'2026-09-12',price_sources:['https://developers.openai.com/api/docs/models/gpt-5.3-codex'],flow:{uncached_input_tokens:'3000',cached_input_tokens:'9000',cache_write_input_tokens:'0',output_tokens:'500',unclassified_tokens:'0'},cache_reuse_percent:'75.0',output_input_percent:'4.2',cost:{state:'complete',estimated_usd_min:'0.020000',estimated_usd_max:'0.020000',priced_tokens:'12500',observed_tokens:'12500',coverage_percent:'100.0'},sessions:[{session_ref:'session-1',total_tokens:'2100',share_percent:'16.8',cost:{state:'complete',estimated_usd_min:'0.004000',estimated_usd_max:'0.004000',priced_tokens:'2100',observed_tokens:'2100',coverage_percent:'100.0'}},{session_ref:'session-2',total_tokens:'10400',share_percent:'83.2',cost:{state:'partial',estimated_usd_min:'0.016000',estimated_usd_max:'0.017000',priced_tokens:'9000',observed_tokens:'10400',coverage_percent:'86.5'}}],signals:[{kind:'input_heavy',severity:'review',title:'輸入很多、輸出較少',evidence:'輸出約為輸入的 4.2%；這只是檢查線索。',action:'檢查是否重送大型檔案。'}]},
+  sessions:[
+    {session_ref:'session-1',started_at:'2026-09-12T01:00:00Z',ended_at:'2026-09-12T01:10:00Z',duration_ms:600000,turn_count:1,totals:{input_tokens:'2000',cached_input_tokens:'1000',cache_write_input_tokens:'0',output_tokens:'100',reasoning_output_tokens:'20',total_tokens:'2100'},turns:[{turn_ref:'turn-1',started_at:'2026-09-12T01:00:00Z',ended_at:'2026-09-12T01:10:00Z',duration_ms:600000,model:'gpt-fixture-a',tokens:{input_tokens:'2000',cached_input_tokens:'1000',cache_write_input_tokens:'0',output_tokens:'100',reasoning_output_tokens:'20',total_tokens:'2100'}}]},
+    {session_ref:'session-2',started_at:'2026-09-12T02:00:00Z',ended_at:'2026-09-12T02:20:00Z',duration_ms:null,turn_count:1,totals:{input_tokens:'10000',cached_input_tokens:'8000',cache_write_input_tokens:null,output_tokens:'400',reasoning_output_tokens:'105',total_tokens:'10400'},turns:[{turn_ref:'turn-1',started_at:'2026-09-12T02:00:00Z',ended_at:'2026-09-12T02:20:00Z',duration_ms:null,model:'gpt-fixture-b',tokens:{input_tokens:'10000',cached_input_tokens:'8000',cache_write_input_tokens:null,output_tokens:'400',reasoning_output_tokens:'105',total_tokens:'10400'}}],prompt:'PRIVATE_PROMPT_SENTINEL'}
+  ]
+};
+const contentSnapshot={schema_version:'agentmeter.provider-session-content.v1',provider:'codex',session_ref:'session-2',limited:false,duplicate_prompt_count:1,prompts:[{turn_ref:'turn-1',text:'很長的本機提示 '.repeat(80)+' <img onerror=PRIVATE_XSS_SENTINEL>'}]};
 
 function inspect() {
   const errors = [], stats = { truncated: 0, variants: {}, minFont: 99 };
@@ -128,6 +139,48 @@ async function verify(page, width, height) {
   return notes.join('  ');
 }
 
+async function verifyHistory(page,width,height){
+  await page.setViewportSize({width,height});
+  await page.evaluate(()=>{window.historyContentCalls=0;});
+  await page.click('#history-open');
+  await page.waitForFunction(()=>document.getElementById('history-status').textContent.includes('已讀取'));
+  const result=await page.evaluate(()=>{
+    const dialog=document.getElementById('history-dialog'),box=dialog.getBoundingClientRect();
+    const text=dialog.textContent;
+    return {
+      open:dialog.open,
+      horizontalOverflow:dialog.scrollWidth>dialog.clientWidth+1,
+      insideViewport:box.left>=0&&box.top>=0&&box.right<=innerWidth+1&&box.bottom<=innerHeight+1,
+      summaryCount:document.querySelectorAll('#history-summary .history-metric').length,
+      kpiCount:document.querySelectorAll('#history-kpis .history-kpi').length,
+      flowParts:document.querySelectorAll('#history-flow .history-flow-part').length,
+      costShown:document.getElementById('history-kpis').textContent.includes('US$0.020000'),
+      sessionCount:document.querySelectorAll('#history-sessions .history-session').length,
+      highestImpactFirst:(document.querySelector('#history-sessions .history-session summary span')?.textContent||'').includes('10,400 Token'),
+      incomplete:document.getElementById('history-status').textContent.includes('資料有截斷或未完整解析'),
+      leaked:text.includes('PRIVATE_PROMPT_SENTINEL'),
+      visibleClose:document.getElementById('history-close').getBoundingClientRect().width>0
+    };
+  });
+  assert.deepEqual(result,{open:true,horizontalOverflow:false,insideViewport:true,summaryCount:6,kpiCount:4,flowParts:3,costShown:true,sessionCount:2,highestImpactFirst:true,incomplete:true,leaked:false,visibleClose:true},`${width}x${height} history dialog`);
+  assert.equal(await page.evaluate(()=>window.historyContentCalls),0,'history open must not pre-read prompts');
+  await page.locator('.history-content-open').first().click();
+  assert.equal(await page.evaluate(()=>window.historyContentCalls),0,'prompt consent gate must not pre-read prompts');
+  await page.check('#history-content-consent');
+  await page.click('#history-content-load');
+  await page.waitForFunction(()=>document.getElementById('history-content-status').textContent.includes('已顯示'));
+  const content=await page.evaluate(()=>{
+    const dialog=document.getElementById('history-content-dialog'),box=dialog.getBoundingClientRect();
+    return {open:dialog.open,horizontalOverflow:dialog.scrollWidth>dialog.clientWidth+1,insideViewport:box.left>=0&&box.top>=0&&box.right<=innerWidth+1&&box.bottom<=innerHeight+1,
+      calls:window.historyContentCalls,imgCount:dialog.querySelectorAll('img').length,sentinel:dialog.textContent.includes('PRIVATE_XSS_SENTINEL')};
+  });
+  assert.deepEqual(content,{open:true,horizontalOverflow:false,insideViewport:true,calls:1,imgCount:0,sentinel:true},`${width}x${height} prompt dialog`);
+  await page.click('#history-content-close');
+  assert.equal(await page.locator('#history-content-body').evaluate(node=>node.textContent.includes('PRIVATE_XSS_SENTINEL')),false,'closing prompt must clear content');
+  await page.click('#history-close');
+  assert.equal(await page.locator('#history-dialog').evaluate(dialog=>dialog.open),false);
+}
+
 (async () => {
   const channel = process.env.AGENTMETER_BROWSER_CHANNEL;
   const browser = await chromium.launch({ headless: true, ...(channel ? { channel } : {}) });
@@ -140,11 +193,12 @@ async function verify(page, width, height) {
       const type = name.endsWith('.css') ? 'text/css' : name.endsWith('.js') ? 'text/javascript' : name.endsWith('.png') ? 'image/png' : 'text/html';
       return fs.existsSync(file) ? route.fulfill({ contentType: type, body: fs.readFileSync(file) }) : route.fulfill({ status: 404 });
     });
-    await page.addInitScript(data => { window.__TAURI__ = { core: { invoke: async command => ['snapshot', 'refresh_quota'].includes(command) ? data : command === 'check_update' ? { configured: false } : {} } }; }, snapshot);
+    await page.addInitScript(({dashboard,history,content}) => { window.historyContentCalls=0;window.__TAURI__ = { core: { invoke: async command => ['snapshot', 'refresh_quota'].includes(command) ? dashboard : command === 'history_sessions' ? history : command === 'history_session_content' ? (window.historyContentCalls++,content) : command === 'check_update' ? { configured: false } : {} } }; }, {dashboard:snapshot,history:historySnapshot,content:contentSnapshot});
     await page.goto('http://responsive.local/');
     await page.waitForLoadState('networkidle');
     const sizes = [[2560,1440],[2491,1312],[2048,1190],[1993,1050],[1920,1080],[1873,1135],[1498,908],[1440,900],[1400,520],[1366,768],[1280,720],[1080,640],[952,1235],[900,560],[800,600],[762,988],[640,900],[640,520]];
     for (const [width, height] of sizes) console.log(`PASS ${width}x${height}  ${await verify(page, width, height)}`);
+    for(const [width,height] of [[1080,640],[640,520]]){await verifyHistory(page,width,height);console.log(`PASS HISTORY ${width}x${height}`);}
     if (process.env.AGENTMETER_SCREENSHOTS !== '0') {
       fs.mkdirSync(shots, { recursive: true });
       for (const [width, height, count, data] of [[1920,1080,4,snapshot],[1498,908,4,snapshot],[1080,640,4,snapshot],[1080,640,3,snapshot],[640,520,4,snapshot],[1280,720,4,edge],[2560,1440,2,snapshot]]) {

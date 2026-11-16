@@ -15,6 +15,10 @@ Open AgentMeter after signing in to the official tools. It discovers them automa
 
 The desktop and tablet share observations and refresh handling. Failed refreshes preserve the previous quota with an explicit stale marker; missing values are never replaced with a fabricated zero or full allowance. The tablet can select any currently advertised Provider cards, always keeps one empty add slot, and has a fullscreen control. Legacy experiment commands below remain for historical regression coverage, not the default UI.
 
+### Floating quota window
+
+In **設定 → 流量浮動視窗**, enable the compact panel and choose **顯示螢幕**. Hold and drag the panel to move it, including across monitors; its position is saved locally and restored on restart. **重設至螢幕右下角** returns it to the selected monitor's work area. Use **重新整理螢幕** after connecting or disconnecting a display. When a saved position is no longer on an available monitor, the panel returns to a visible work area. Background opacity changes leave text opaque.
+
 ### Signed GitHub updates
 
 The desktop checks for signed GitHub releases at startup and every six hours without blocking monitoring. Settings persist separate automatic-check (default on) and automatic-download (default off) preferences. Downloads report progress and must pass signature verification before becoming ready; installation always requires explicit confirmation. Failed checks retry after 30 minutes. Verified downloads are held in memory and must be downloaded again after exiting.
@@ -155,3 +159,32 @@ The [desktop source integration handoff](docs/handoffs/2026-09-08-desktop-source
 The [desktop Dashboard handoff](docs/handoffs/2026-09-08-desktop-dashboard.md) documents the new four-card desktop preview, actual Codex refresh integration, UI verification and remaining live-source work. This batch was completed in single-agent mode.
 
 Completed work batches have handoffs under [docs/handoffs](docs/handoffs). The latest [2026-09-09 Copilot live-evidence runner handoff](docs/handoffs/2026-09-09-copilot-live-runner.md) records the opt-in PowerShell runner, six-request matrix coverage, sanitized evidence contract, and honest 50/79 checked / 29 open boundary. The preceding [2026-09-09 persistent Copilot settings handoff](docs/handoffs/2026-09-09-desktop-copilot-settings.md) records schema-v2 save/restore/forget behavior, v1 migration, the current rebuilt NSIS identity, and direct launch. The [desktop Copilot integration handoff](docs/handoffs/2026-09-09-desktop-copilot-integration.md) records the shared collector module and functional card; its package hash is historical. The [Copilot live-contract handoff](docs/handoffs/2026-09-09-copilot-live-contract.md) records the six-endpoint process seam and Antigravity fail-closed decision. The [startup/WebView handoff](docs/handoffs/2026-09-09-startup-diagnostics-webview.md) records the two most recently closed acceptance ticks. The [2026-09-07 batch handoff](docs/handoffs/2026-09-07-p0-batch.md) retains the broader original work map. Write a new dated handoff after each subsequent batch and link its verification evidence.
+
+## Design skill
+
+[`skills/agentmeter-design/`](skills/agentmeter-design/SKILL.md) packages AgentMeter's logic rules and design decisions (domain vocabulary, collector rules, fail-closed principles, tablet security, desktop lifecycle, layout and verification) as a reusable Agent Skill, with a dependency-free Dashboard Snapshot checker. To use it, copy the folder into `~/.claude/skills/` (or a project's `.claude/skills/`). Verify the checker with `node --test skills/agentmeter-design/scripts/check-snapshot.test.mjs`.
+
+## Privacy and evidence redaction
+
+This repository is public. Evidence documents under `docs/evidence` record the
+schema, provider, status and reason of real collection runs, but personal
+account usage values (remaining percentages, used/entitlement counts, reset
+times) and machine identifiers (process IDs, local absolute paths) are redacted.
+Developer screenshots and verification logs are kept out of version control
+entirely — see `.gitignore`.
+
+Signing material is never stored in this repository. The updater private key
+lives only as Windows CurrentUser DPAPI ciphertext under
+`%USERPROFILE%\.agentmeter-signing\`, and the public key and endpoint are
+injected at build time through environment variables. See
+[docs/signed-updates.md](docs/signed-updates.md).
+
+## Third-party components
+
+The Windows installer bundles a Node.js runtime and the official Antigravity
+CLI as the quota-helper resource. These are not redistributed through Git and
+remain under their respective upstream licenses.
+
+## License
+
+[MIT](LICENSE).

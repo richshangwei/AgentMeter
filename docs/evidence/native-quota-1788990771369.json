@@ -11,20 +11,20 @@
         "quota": [
           {
             "bucket": "base_model_inference",
-            "remaining_percent": 95,
-            "resets_at": 1789557147,
+            "remaining_percent": "[redacted]",
+            "resets_at": "[redacted]",
             "window": "primary"
           },
           {
             "bucket": "codex",
-            "remaining_percent": 17,
-            "resets_at": 1789007454,
+            "remaining_percent": "[redacted]",
+            "resets_at": "[redacted]",
             "window": "primary"
           },
           {
             "bucket": "codex",
-            "remaining_percent": 71,
-            "resets_at": 1789567491,
+            "remaining_percent": "[redacted]",
+            "resets_at": "[redacted]",
             "window": "secondary"
           }
         ],
@@ -38,11 +38,11 @@
         "quota": [
           {
             "bucket": "premium_interactions",
-            "entitlement": 1500,
-            "remaining_percent": 24.7,
-            "reported_reset_at": "2026-09-09T14:52:27.591-07:00",
+            "entitlement": "[redacted]",
+            "remaining_percent": "[redacted]",
+            "reported_reset_at": "[redacted]",
             "reset_time_verified": false,
-            "used": 1130
+            "used": "[redacted]"
           }
         ],
         "reason": "live_quota_received",
@@ -56,13 +56,13 @@
         "provider": "claude",
         "quota": [
           {
-            "remaining_percent": 100,
-            "reset_display": "10:30am (Etc/GMT-8)",
+            "remaining_percent": "[redacted]",
+            "reset_display": "[redacted]",
             "window": "five_hour"
           },
           {
-            "remaining_percent": 2,
-            "reset_display": "Sep 10, 3pm (Etc/GMT-8)",
+            "remaining_percent": "[redacted]",
+            "reset_display": "[redacted]",
             "window": "seven_day"
           }
         ],
@@ -78,26 +78,26 @@
         "quota": [
           {
             "bucket": "Gemini Models",
-            "remaining_percent": 58,
-            "resets_at": "2026-09-11T02:36:20Z",
+            "remaining_percent": "[redacted]",
+            "resets_at": "[redacted]",
             "window": "Weekly Limit Remaining"
           },
           {
             "bucket": "Gemini Models",
-            "remaining_percent": 100,
-            "resets_at": "2026-09-10T02:52:49Z",
+            "remaining_percent": "[redacted]",
+            "resets_at": "[redacted]",
             "window": "Five Hour Limit Remaining"
           },
           {
             "bucket": "Claude and GPT models",
-            "remaining_percent": 100,
-            "resets_at": "2026-09-16T21:52:49Z",
+            "remaining_percent": "[redacted]",
+            "resets_at": "[redacted]",
             "window": "Weekly Limit Remaining"
           },
           {
             "bucket": "Claude and GPT models",
-            "remaining_percent": 100,
-            "resets_at": "2026-09-10T02:52:49Z",
+            "remaining_percent": "[redacted]",
+            "resets_at": "[redacted]",
             "window": "Five Hour Limit Remaining"
           }
         ],
@@ -107,5 +107,6 @@
       }
     ],
     "schema": "agentmeter.live-quota/v1"
-  }
+  },
+  "_redaction": "Personal account usage values (remaining_percent, used, entitlement, reset times) are redacted for public release. Schema, provider, status and reason are preserved as the actual evidence."
 }

@@ -8,7 +8,7 @@ verified working in the actual window.
 
 Launched the diagnostic release with `--quota-diagnostics` as the normal Windows
 user. The same startup collector and real dashboard rendering ran; no mock data.
-PID at capture: 45244. Opt-in diagnostic output is capped at 64 KiB (plus its final
+PID at capture: redacted. Opt-in diagnostic output is capped at 64 KiB (plus its final
 record), under the application's local-data logs directory. It excludes account
 identity, credentials, raw provider output, and full filesystem paths.
 

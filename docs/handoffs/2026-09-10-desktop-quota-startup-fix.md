@@ -8,11 +8,11 @@ probe alone as proof.
 
 ## Current truth
 
-- Workspace: `D:\WorkSpace\AgentMeter`
+- Workspace: `<repo-root>`
 - The user reported the actual window showed `0/4` for Codex, Claude Code,
   GitHub Copilot, and Antigravity.
 - The user then saw a startup error. The diagnostic file was:
-  `C:\Users\richs\AppData\Local\com.agentmeter.p0\logs\startup-error.log`
+  `%LOCALAPPDATA%\com.agentmeter.p0\logs\startup-error.log`
 - Its cause was:
   `failed to initialize plugin single-instance: AgentMeter is already running but its IPC window is unavailable in this Windows desktop`
 - This was a stale/duplicate process issue during testing. After ending the old
@@ -61,7 +61,7 @@ The exact diagnostic and minimized repro are documented in:
    `scripts/test-native-quota.mjs`.
 4. If it fails, run the already built-in opt-in diagnostics with
    `--quota-diagnostics` and inspect only:
-   `C:\Users\richs\AppData\Local\com.agentmeter.p0\logs\quota-diagnostic-<pid>.jsonl`.
+   `%LOCALAPPDATA%\com.agentmeter.p0\logs\quota-diagnostic-<pid>.jsonl`.
    It is designed to exclude credentials and raw Provider output.
 5. Remove the temporary `DEBUG-quota-desktop` instrumentation and its UI
    acknowledgement after the original scenario is green. Do not remove the

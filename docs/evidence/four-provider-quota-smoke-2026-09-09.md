@@ -12,7 +12,7 @@
 | Provider | 最終結果 | 取得的剩餘額度 | 實際入口 |
 | --- | --- | --- | --- |
 | Codex | PASS | 主視窗 48%，次視窗 92%；base_model_inference 95% | App Server `account/rateLimits/read` |
-| Copilot | PASS | premium_interactions 24.7%；已用 1130 / entitlement 1500 | 官方 CLI stdio RPC `account.getQuota` |
+| Copilot | PASS | premium_interactions 有實際數值回報（個人用量已遮蔽） | 官方 CLI stdio RPC `account.getQuota` |
 | Claude | PASS | 五小時 90%，週額度 8% | 官方 CLI `/usage`，ConPTY + 終端畫面解析 |
 | Antigravity | PASS | Gemini 週額度 58%、五小時 100%；Claude/GPT 兩窗 100% | 官方 CLI `--print /usage` 的四欄 TSV |
 

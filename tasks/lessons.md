@@ -1,5 +1,23 @@
 # Lessons
 
+## 2026-09-17 Boolean environment flags require the documented literal
+- Classification: incorrect integration assumption / insufficient regression control.
+- Signal: AgentMeter set `AGY_CLI_DISABLE_AUTO_UPDATE=1`, while Antigravity documents the accepted opt-out as `true`; the 15-minute updater path could therefore still launch a visible CMD even though source-regex tests passed.
+- Prevention: copy third-party environment values exactly from current first-party documentation and test both the accepted literal and rejection of the prior value.
+- Tripwire: `tests/background_window_contract.test.cjs` requires `true` and rejects `1`; `scripts/test-refresh-console.ps1 -AntigravityFixture` opens a visible updater CMD whenever the value is not exactly `true`, proving the visual observer can catch the regression.
+
+## 2026-09-12 Non-focusable HUD windows still intercept clicks
+- Classification: misunderstood Windows interaction semantics / regression from a visual affordance.
+- Signal: enabling HUD hover required removing `set_ignore_cursor_events(true)`, after which the always-on-top bottom-right WebView covered the Windows tray flyout and prevented clicking its items.
+- Prevention: a passive HUD must remain both non-focusable and native click-through; do not add hover behavior unless there is a separate deliberate interaction mode that temporarily changes the native hit-test policy.
+- Tripwire: `compact_hud_is_a_click_through_hidden_secondary_window` requires native cursor-event passthrough, rejects `main:hover`, and requires settings copy to disclose that clicks pass through.
+
+## 2026-09-12 Compact HUD values require semantic quota selection
+- Classification: incorrect data selection / incomplete interaction verification.
+- Signal: the HUD used `quota_windows[0]`, so a reordered Codex response displayed Spark or reserve-model quota instead of the account's regular allowance; container-level transparency also risked fading content.
+- Prevention: select Codex quota windows by stable `limit_id` and authoritative duration, apply transparency only to the panel background, and keep text opacity independent of the configured background alpha.
+- Tripwire: `tests/hud.test.cjs` uses adversarial quota ordering, while `scripts/verify-hud.cjs` requires 240×132 containment and text opacity 1 across the supported background-alpha range.
+
 ## 2026-09-12 Shared audit files can change between release commits
 - Classification: unsafe change scope / shared-workspace race.
 - Signal: a release-evidence commit staged all of `tasks/todo.md` after another task appended an unrelated specification plan.
@@ -111,6 +129,34 @@
 - Signal: process flags and windowsHide were correct everywhere, yet a flash was tied to AgY/Terminal and was intermittent (agy checks for updates at most every 15 minutes).
 - Prevention: for every bundled/official CLI, disable self-update and background daemons via their documented env/flags; inspect binaries (`strings`) for updater/daemon code paths. Reproduction attempts must span the tool's update TTL.
 - Tripwire: `tests/background_window_contract.test.cjs` requires `AGY_CLI_DISABLE_AUTO_UPDATE`, `DISABLE_AUTOUPDATER` and `--no-auto-update`.
+
+## 2026-09-12 Provider-wide analytics scope
+- Classification: misunderstanding requirements / provider-specific scope.
+- Signal: the first token-analysis slice hard-coded Codex even though the war room's stable domain boundary is the four-provider `PROVIDERS` set.
+- Prevention: define analytics features against the Provider capability matrix first; provider adapters may report truthful unavailable/unsupported states, but the product entry point and contract must include every supported Provider.
+- Tripwire: backend and UI tests require `codex`, `claude`, `copilot`, and `antigravity`, and reject any fallback that presents quota percentages as session/turn Token counts.
+
+## 2026-09-12 Unknown counters and contradictory aggregates must fail closed
+- Classification: incorrect assumption about provider data / missing negative verification.
+- Signal: final diff review showed that `cached_input_tokens: null` became zero and that priced turn totals above observed totals could still be labelled 100% complete.
+- Prevention: preserve `None` through provider-aware normalization; only exact observed/priced equality may be `complete`, and contradictory aggregates must hide cost and coverage instead of clamping or saturating into a plausible value.
+- Tripwire: `tests/token_analysis.rs` covers missing cache counters and `priced_tokens > observed_tokens`; both must return unavailable without low-cache signals or dollar values.
+
+## 2026-09-13 HUD native movement and polling ownership
+- Classification: concurrency / missing verification.
+- Signal: review found periodic work-area clamping could interrupt cross-monitor dragging, and queued move coordinates could be saved against a newer current monitor.
+- Prevention: serialize native placement operations, defer geometry updates during native dragging, and read the current position after debouncing; ignore startup movement before saved placement is restored.
+- Tripwire: HUD geometry tests plus native drag across monitor boundaries while the two-second polling loop is active.
+- Additional review signal: awaiting position persistence before snapshot meant a locked position file suppressed live data. Placement/configuration errors now have separate handling and a browser regression proves snapshot still runs.
+
+## 2026-09-13 Release metadata and API identifiers
+- Signal: a global application version replacement modified unrelated Cargo.lock entries; isolated verification rejected unavailable dependency versions. GitHub release creation also rejected a short commit SHA.
+- Prevention: edit only the application package stanza and inspect the lockfile diff; use the full `git rev-parse HEAD` value for release target_commitish. Preserve all dependency versions/checksums and never include signing material or build artifacts in commits.
+
+## 2026-09-14 Packaging command working directory
+- Signal: read-only resource checks used repository-relative paths with desktop-p0 as workdir and failed to find files.
+- Prevention: run repository-relative checks from the repository root; keep desktop build commands separate from resource checks.
+- Tripwire: verify workdir before batching relative file paths.
 
 ## 2026-11-16 Compiled binary is not the running installation
 - Classification: missing verification / incorrect deployment assumption.

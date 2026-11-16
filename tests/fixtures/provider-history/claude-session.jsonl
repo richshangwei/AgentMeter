@@ -1,0 +1,5 @@
+{"type":"user","userType":"external","timestamp":"2026-09-12T01:00:00Z","sessionId":"private-claude-session","message":{"role":"user","content":"Review C:\\Users\\secret\\project and use api_key=claude-secret-value"}}
+{"type":"assistant","timestamp":"2026-09-12T01:00:02Z","sessionId":"private-claude-session","message":{"role":"assistant","model":"claude-fixture","content":[{"type":"text","text":"PRIVATE_ASSISTANT_RESPONSE"}],"usage":{"input_tokens":12,"cache_read_input_tokens":3,"cache_creation_input_tokens":2,"output_tokens":5}}}
+{"type":"user","userType":"internal","timestamp":"2026-09-12T01:00:03Z","sessionId":"private-claude-session","message":{"role":"user","content":"INTERNAL_MESSAGE_MUST_NOT_APPEAR"}}
+{"type":"user","userType":"external","timestamp":"2026-09-12T01:00:04Z","sessionId":"private-claude-session","message":{"role":"user","content":[{"type":"text","text":"Second public prompt"},{"type":"tool_result","content":"PRIVATE_TOOL_RESULT"}]}}
+{"type":"assistant","timestamp":"2026-09-12T01:00:05Z","sessionId":"private-claude-session","message":{"role":"assistant","model":"claude-fixture","usage":{"input_tokens":7,"output_tokens":3}}}

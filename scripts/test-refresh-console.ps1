@@ -1,4 +1,4 @@
-param([int]$RepeatCount = 3, [switch]$InjectVisibleGrandchild,
+param([int]$RepeatCount = 3, [switch]$InjectVisibleGrandchild, [switch]$AntigravityFixture,
     [ValidateSet('codex','claude','copilot','antigravity')][string]$LiveProvider,
     [string]$LiveWorkdir, [string]$InstalledExecutable, [int]$ObserveSeconds = 0,
     [int]$ExpectedGuiProcessId = 0)
@@ -11,6 +11,7 @@ if ($RepeatCount -lt 1 -or $RepeatCount -gt 20) { throw 'RepeatCount must be 1..
 if ($ObserveSeconds -lt 0 -or $ObserveSeconds -gt 180) { throw 'ObserveSeconds must be 0..180.' }
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $runtime = Join-Path $repo 'desktop-p0/resources/quota-helper'
+$activeRuntime = $runtime
 $fixture = Join-Path ([IO.Path]::GetTempPath()) ('agentmeter-console-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path (Join-Path $fixture '.local/bin') -Force | Out-Null
 try {
@@ -38,6 +39,27 @@ public class FakeClaude {
     }
 }
 '@ -OutputAssembly (Join-Path $fixture '.local/bin/claude.exe') -OutputType ConsoleApplication
+    if ($AntigravityFixture) {
+        $activeRuntime = Join-Path $fixture 'quota-helper'
+        New-Item -ItemType Directory -Path $activeRuntime -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $runtime 'node.exe') -Destination $activeRuntime
+        Copy-Item -LiteralPath (Join-Path $runtime 'quota-desktop.mjs') -Destination $activeRuntime
+        Copy-Item -LiteralPath (Join-Path $runtime 'quota-smoke.mjs') -Destination $activeRuntime
+        Add-Type -TypeDefinition @'
+using System;
+public class FakeAgy {
+    public static void Main() {
+        if (Environment.GetEnvironmentVariable("AGY_CLI_DISABLE_AUTO_UPDATE") != "true") {
+            var start = new System.Diagnostics.ProcessStartInfo("cmd.exe", "/d /c start \"AgentMeter updater test\" /wait cmd /d /c ping -n 2 127.0.0.1");
+            start.UseShellExecute = false;
+            using (var child = System.Diagnostics.Process.Start(start)) child.WaitForExit();
+        }
+        Console.WriteLine("Gemini Models\tWeekly Limit Remaining\t70%\t2026-09-18T00:00:00Z");
+        Console.WriteLine("Claude and GPT models\tFive Hour Limit Remaining\t80%\t2026-09-17T12:00:00Z");
+    }
+}
+'@ -OutputAssembly (Join-Path $activeRuntime 'agy.exe') -OutputType ConsoleApplication
+    }
     Add-Type -TypeDefinition @'
 using System;
 using System.Collections.Generic;
@@ -142,6 +164,7 @@ public static class ConsoleWatch {
 '@
     [ConsoleWatch]::Start()
     Write-Host ("Visible baseline windows: " + [ConsoleWatch]::BaselineCount())
+    $operationError = $null
     try {
         if ($ExpectedGuiProcessId -gt 0 -and -not [ConsoleWatch]::HasVisibleProcess($ExpectedGuiProcessId)) {
             throw 'The expected GUI is not visible on this desktop; observation cannot verify it.'
@@ -152,8 +175,8 @@ public static class ConsoleWatch {
         } else {
         for ($attempt = 0; $attempt -lt $RepeatCount; $attempt++) {
             $start = New-Object Diagnostics.ProcessStartInfo
-            $start.FileName = Join-Path $runtime 'node.exe'
-            $start.Arguments = '"' + (Join-Path $runtime 'quota-desktop.mjs') + '" claude "' + $fixture + '"'
+            $start.FileName = Join-Path $activeRuntime 'node.exe'
+            $start.Arguments = '"' + (Join-Path $activeRuntime 'quota-desktop.mjs') + '" ' + $(if ($AntigravityFixture) { 'antigravity' } else { 'claude' }) + ' "' + $fixture + '"'
             if ($LiveProvider) {
                 if (-not $LiveWorkdir -or -not [IO.Path]::IsPathRooted($LiveWorkdir)) { throw 'LiveWorkdir must be explicit and absolute.' }
                 $start.Arguments = '"' + (Join-Path $runtime 'quota-desktop.mjs') + '" ' + $LiveProvider + ' "' + $LiveWorkdir + '"'
@@ -162,7 +185,7 @@ public static class ConsoleWatch {
                 $start.FileName = $InstalledExecutable
                 $start.Arguments = '--quota-collect'
             }
-            $start.WorkingDirectory = $runtime
+            $start.WorkingDirectory = $activeRuntime
             $start.UseShellExecute = $false
             $start.CreateNoWindow = $true
             $start.RedirectStandardOutput = $true
@@ -177,17 +200,20 @@ public static class ConsoleWatch {
             if ($process.ExitCode -ne 0 -or -not $report.results -or @($report.results | Where-Object { $_.status -ne 'PASS' }).Count) {
                 throw 'Refresh did not complete every requested quota path.'
             }
-            if (-not $LiveProvider -and -not $InstalledExecutable -and
+            if (-not $LiveProvider -and -not $InstalledExecutable -and -not $AntigravityFixture -and
                 ($report.results[0].quota.Count -ne 2 -or $report.results[0].quota[0].remaining_percent -ne 77)) {
                 throw 'Credential-free fixture was not the selected provider.'
             }
             $process.Dispose()
         }
         }
+    } catch {
+        $operationError = $_
     } finally { $visible = [ConsoleWatch]::Stop() }
     [ConsoleWatch]::Details() | ForEach-Object { Write-Host $_ }
     Write-Host ("Bundled collector process IDs observed: " + [ConsoleWatch]::CollectorCount())
     if ($visible -ne 0) { throw "Observed $visible new/focused window(s); inspect class/PID provenance above." }
+    if ($operationError) { throw $operationError }
     if ($ObserveSeconds -gt 0) {
         if ($ExpectedGuiProcessId -gt 0 -and [ConsoleWatch]::CollectorCount() -eq 0) {
             throw 'No bundled collector ran during the observation; refresh silence is unverified.'

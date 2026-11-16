@@ -24,7 +24,8 @@ test('Antigravity collection never starts the agy background auto-updater (conso
     const call = /run\(agy,\['--print','\/usage'[^;]+;/s.exec(source);
     assert.ok(call, file);
     assert.match(call[0],/windowsHide:\s*true/, file);
-    assert.match(call[0],/AGY_CLI_DISABLE_AUTO_UPDATE:\s*'1'/, file);
+    assert.match(call[0],/AGY_CLI_DISABLE_AUTO_UPDATE:\s*'true'/, file);
+    assert.doesNotMatch(call[0],/AGY_CLI_DISABLE_AUTO_UPDATE:\s*'1'/, file);
   }
 });
 

@@ -1,6 +1,6 @@
 {
     "schema_version":  "agentmeter.nsis-inspection/v1",
-    "installer_path":  "D:\\WorkSpace\\AgentMeter\\desktop-p0\\target\\x86_64-pc-windows-msvc\\release\\bundle\\nsis\\AgentMeter P0_0.1.0_x64-setup.exe",
+    "installer_path":  "desktop-p0\\target\\x86_64-pc-windows-msvc\\release\\bundle\\nsis\\AgentMeter P0_0.1.0_x64-setup.exe",
     "installer_bytes":  70586478,
     "installer_sha256":  "6E0E20695804212B1F86447494CE86F1AD568CE75A602D07D0303DB16B04515E",
     "installer_signature":  "NotSigned",

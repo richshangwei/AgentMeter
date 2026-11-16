@@ -34,5 +34,6 @@
       }
     ],
     "schema": "agentmeter.live-quota/v1"
-  }
+  },
+  "_redaction": "Personal account usage values (remaining_percent, used, entitlement, reset times) are redacted for public release. Schema, provider, status and reason are preserved as the actual evidence."
 }

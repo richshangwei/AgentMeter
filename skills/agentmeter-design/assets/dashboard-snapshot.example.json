@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "stream_id": "example-run-0001",
+  "revision": 42,
+  "generated_at": "2026-09-06T01:00:01Z",
+  "paused": false,
+  "providers": [
+    {
+      "provider": "codex",
+      "setup": "ready",
+      "availability": "available",
+      "collection_state": "ready",
+      "freshness": "fresh",
+      "failure_code": null,
+      "data_quality": "official",
+      "collector_maturity": "experimental",
+      "collected_at": 1788990213085,
+      "quota_windows": [
+        { "bucket_key": "codex:primary", "label": "5 小時用量限制", "unit": "percent", "used_percent": 35, "remaining_percent": 65, "resets_at": null },
+        { "bucket_key": "codex:secondary", "label": "每週使用上限", "unit": "percent", "used_percent": 10, "remaining_percent": 90, "resets_at": null }
+      ],
+      "source_usage": []
+    },
+    {
+      "provider": "claude",
+      "setup": "ready",
+      "availability": "needs_login",
+      "collection_state": "error",
+      "freshness": "stale",
+      "failure_code": "authentication_required",
+      "data_quality": "official",
+      "collector_maturity": "experimental",
+      "collected_at": 1788990213085,
+      "quota_windows": [
+        { "bucket_key": "five_hour", "label": "5 小時用量限制", "unit": "percent", "used_percent": 30, "remaining_percent": 70, "resets_at": null, "reset_display": "3am" }
+      ],
+      "source_usage": []
+    },
+    {
+      "provider": "copilot",
+      "setup": "ready",
+      "availability": "available",
+      "collection_state": "ready",
+      "freshness": "fresh",
+      "failure_code": null,
+      "data_quality": "official",
+      "collector_maturity": "experimental",
+      "collected_at": 1788990213085,
+      "quota_windows": [
+        { "bucket_key": "premium_interactions", "label": "Premium interactions", "unit": "percent", "remaining_percent": 24.7, "resets_at": null, "entitlement": 1500, "used": 1130 }
+      ],
+      "source_usage": []
+    },
+    {
+      "provider": "antigravity",
+      "setup": "required",
+      "availability": "not_installed",
+      "collection_state": "idle",
+      "freshness": "unknown",
+      "failure_code": null,
+      "data_quality": "official",
+      "collector_maturity": "experimental",
+      "collected_at": null,
+      "quota_windows": [],
+      "source_usage": []
+    }
+  ]
+}

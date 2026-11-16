@@ -25,7 +25,7 @@
 | Provider | 剩餘額度 | 結果 |
 | --- | --- | --- |
 | Codex | 主／次視窗 46% / 76%；基本模型 95% | PASS |
-| Copilot | premium_interactions 24.7%，已用 1130 / 1500 | PASS |
+| Copilot | premium_interactions 有實際數值回報（個人用量已遮蔽） | PASS |
 | Claude | 五小時 100%，週額度 2% | PASS |
 | Antigravity | Gemini 每週 58%；其他此次回報視窗 100% | PASS |
 

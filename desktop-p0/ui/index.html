@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="style-overrides.css">
   <script src="layout.js" defer></script>
   <script src="hud-model.js" defer></script>
+  <script src="history.js" defer></script>
   <script src="app-updater.js" defer></script>
   <script src="dashboard.js" defer></script>
   <script src="resources.js" defer></script>
@@ -30,7 +31,7 @@
         <time id="sync-clock">--:--</time>
       </div>
       <label class="auto-toggle" title="依設定頻率自動讀取，視窗關閉到通知區後仍持續"><input id="auto-quota" type="checkbox" checked><span>自動更新</span></label>
-      <nav class="top-actions" aria-label="主要操作"><button id="tablet-settings-open" class="ghost">平板連線</button><button id="app-settings" class="ghost">設定</button><button id="refresh">全部更新</button></nav>
+      <nav class="top-actions" aria-label="主要操作"><button id="history-open" class="ghost">對話分析</button><button id="tablet-settings-open" class="ghost">平板連線</button><button id="app-settings" class="ghost">設定</button><button id="refresh">全部更新</button></nav>
     </header>
 
     <section class="dashboard-head"><div><p class="eyebrow">LIVE AGENT OVERVIEW</p><h1>AI 工具使用狀態</h1></div><p>即時額度、週期與連線狀態集中顯示</p></section>
@@ -52,16 +53,46 @@
     <footer><span>0.1.0 · 使用已登入的官方工具 · 失敗時保留舊資料</span><nav id="desktop-pager" class="pager" aria-label="監控分頁" hidden><button id="desktop-prev" class="ghost">上一頁</button><span id="desktop-page">1 / 1</span><button id="desktop-next" class="ghost">下一頁</button></nav></footer>
   </main>
 
+  <dialog id="history-dialog" class="history-dialog" aria-labelledby="history-title">
+    <div class="dialog-title"><div><p class="eyebrow">PROVIDER CONVERSATION DRIVERS</p><h2 id="history-title">對話與 Token 分析</h2></div><button id="history-close" class="icon-button" aria-label="關閉對話分析">×</button></div>
+    <p class="history-privacy">支援四個 Provider 的本機 Session 能力檢查；只呈現來源實際回報的 Token，不會用額度百分比推算。Prompt 只在你逐次同意後按需讀取、遮罩並暫時顯示，不保存、不傳到平板，也不包含回覆、工具內容、專案名稱或完整路徑。</p>
+    <label class="history-provider-field" for="history-provider"><span>Provider</span><select id="history-provider"><option value="codex">Codex</option><option value="claude">Claude Code</option><option value="copilot">GitHub Copilot</option><option value="antigravity">Antigravity</option></select></label>
+    <div class="history-toolbar"><p id="history-status" role="status" aria-live="polite">尚未讀取。</p><button id="history-refresh" class="ghost">重新讀取</button></div>
+    <section id="history-analysis" class="history-analysis" aria-label="Token 效率與成本分析" hidden>
+      <div id="history-kpis" class="history-kpis"></div>
+      <div class="history-analysis-grid">
+        <figure class="history-panel history-flow-panel"><figcaption>Token 流向</figcaption><div id="history-flow" class="history-flow" role="img"></div><ul id="history-flow-legend" class="history-flow-legend"></ul></figure>
+        <section class="history-panel" aria-labelledby="history-signals-title"><h3 id="history-signals-title">值得檢查的訊號</h3><ul id="history-signals" class="history-signals"></ul></section>
+      </div>
+      <section class="history-panel history-top-panel" aria-labelledby="history-top-title"><h3 id="history-top-title">Token 最高的工作階段</h3><ol id="history-top-sessions" class="history-top-sessions"></ol></section>
+      <details class="history-method"><summary>這些訊號怎麼判斷？</summary><p>快取重用低、高輸入低輸出都只是值得檢查的線索，不直接等於浪費。只有在你同意讀取 Prompt 後，才會檢查同一工作階段內的完全相同 Prompt。</p></details>
+      <p id="history-price-note" class="history-price-note"></p>
+    </section>
+    <details class="history-raw"><summary>查看完整 Token 明細</summary><section id="history-summary" class="history-summary" aria-label="Provider Token 摘要"></section></details>
+    <section id="history-sessions" class="history-sessions" aria-label="Provider Session Token 明細"></section>
+  </dialog>
+
+  <dialog id="history-content-dialog" class="history-content-dialog" aria-labelledby="history-content-title" aria-describedby="history-content-warning">
+    <div class="dialog-title"><div><p class="eyebrow">LOCAL PROMPT VIEW</p><h2 id="history-content-title">檢視我送出的內容</h2><p id="history-content-session" class="hint"></p></div><button id="history-content-close" class="icon-button" aria-label="關閉 Prompt 檢視">×</button></div>
+    <p id="history-content-warning" class="history-content-warning">Prompt 可能包含程式碼、路徑、個資或秘密。系統會先做基本遮罩，但無法保證辨識所有敏感資訊；畫面仍可能被截圖或旁人看見。</p>
+    <label class="history-content-consent"><input id="history-content-consent" type="checkbox"><span>我同意這次只在本機暫時顯示此工作階段的遮罩後 Prompt</span></label>
+    <div class="history-content-actions"><p id="history-content-status" role="status" aria-live="polite">尚未讀取。</p><button id="history-content-load" disabled>這次顯示</button></div>
+    <section id="history-content-body" class="history-content-body" aria-label="遮罩後的使用者 Prompt"></section>
+  </dialog>
+
   <dialog id="app-settings-dialog">
     <div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div>
     <section><h3>本機資源</h3><label class="update-option"><input id="resources-enabled" type="checkbox" checked><span>在主畫面顯示 CPU、記憶體與系統磁碟使用量<small>開啟時每 2 秒更新。</small></span></label><p id="resources-preference-status" class="hint" role="status"></p></section>
     <section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section>
     <section class="hud-settings" aria-labelledby="hud-settings-title">
-      <h3 id="hud-settings-title">右下角數據模式</h3>
-      <label class="update-option"><input id="hud-enabled" type="checkbox"><span>顯示精簡數據<small>固定在桌面右下角，只顯示名稱與主要數據。</small></span></label>
+      <h3 id="hud-settings-title">流量浮動視窗</h3>
+      <label class="update-option"><input id="hud-enabled" type="checkbox"><span>顯示精簡數據<small>只顯示名稱與主要數據，可拖曳至任意螢幕與位置。</small></span></label>
+      <label class="setting-field hud-monitor-field" for="hud-monitor"><span>顯示螢幕</span><select id="hud-monitor" disabled aria-describedby="hud-position-status"></select></label>
+      <div class="hud-position-actions"><button id="hud-monitor-refresh" class="ghost" type="button">重新整理螢幕</button><button id="hud-position-reset" class="ghost" type="button" disabled>重設至螢幕右下角</button></div>
+      <p id="hud-position-status" class="hint" role="status" aria-live="polite">拖曳浮動視窗即可自由擺放，位置會自動保存。</p>
       <label class="hud-opacity" for="hud-opacity"><span>面板透明度</span><output id="hud-opacity-value" for="hud-opacity">72%</output></label>
-      <input id="hud-opacity" type="range" min="35" max="95" step="1" value="72" aria-describedby="hud-opacity-note">
-      <p id="hud-opacity-note" class="hint">只調整背景透明度，名稱與數字會保持清晰。</p>
+      <input id="hud-opacity" type="range" min="35" max="100" step="1" value="72" aria-describedby="hud-opacity-note">
+      <p id="hud-opacity-note" class="hint">只調整背景透明度，名稱與數字保持清晰；按住面板即可拖曳。</p>
     </section>
     <section class="quota-sync-panel" aria-labelledby="quota-sync-title">
       <p class="eyebrow">QUOTA SYNC</p><h3 id="quota-sync-title">額度同步</h3>

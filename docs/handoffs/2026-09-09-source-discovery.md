@@ -17,7 +17,7 @@ All root tests, 14 desktop tests, 11 browser tests, PowerShell and JavaScript sy
 
 Release build passed. New executable:
 
-`D:\WorkSpace\AgentMeter\desktop-p0\target\release\agentmeter-desktop-p0.exe`
+`desktop-p0\target\release\agentmeter-desktop-p0.exe`
 
 The previously running executable and the NSIS installer were not replaced. Exit the previous instance through its tray menu before launching the new executable; the single-instance guard otherwise activates the old instance.
 

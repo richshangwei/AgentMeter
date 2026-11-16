@@ -20,20 +20,20 @@ Latest correction: period labels now occupy the second grid column, with progres
 
 **Comparison target**
 
-- Source visual truth: `C:\Users\richs\AppData\Local\Temp\codex-clipboard-f275fc64-32de-4b85-8dee-590c7ef96a62.png`
-- Implementation screenshot: `D:\WorkSpace\AgentMeter\.scratch\desktop-reference-size.png`
+- Source visual truth: `<local-temp>\design-source-capture.png`
+- Implementation screenshot: `.scratch\desktop-reference-size.png`
 - Viewport: 1452 × 1086 CSS px, device scale factor 1.
 - Pixel dimensions: source 1452 × 1086; implementation 1452 × 1086. No density normalization was required.
 - State: four providers in a full 2 × 2 composition; Codex, Claude Code, and Antigravity contain synchronized quota data; GitHub Copilot shows the setup/empty state. Dashboard management tiles are intentionally absent.
-- Full-view comparison: `D:\WorkSpace\AgentMeter\.scratch\design-comparison-desktop.png`
-- Focused card comparison: `D:\WorkSpace\AgentMeter\.scratch\design-comparison-card.png`
-- Ultra-wide clipping source: `C:\Users\richs\AppData\Local\Temp\codex-clipboard-c38525b2-97dc-4229-ac49-d6061f923462.png` (2491 × 1312 physical px).
-- Corrected ultra-wide implementation: `D:\WorkSpace\AgentMeter\.scratch\desktop-ultrawide.png` (2491 × 1312 CSS px), with 1993 × 1050 also checked as the 125%-scale CSS equivalent.
-- High-DPI-equivalent capture: `D:\WorkSpace\AgentMeter\.scratch\desktop-hidpi-equivalent.png` (1993 × 1050 CSS px).
-- Ultra-wide side-by-side comparison: `D:\WorkSpace\AgentMeter\.scratch\design-comparison-ultrawide.png`.
-- Percentage-overlap source: `C:\Users\richs\AppData\Local\Temp\codex-clipboard-4814636e-b166-429a-a44b-f2cc76718a09.png` (2440 × 1288 physical px).
-- Corrected percentage implementation: `D:\WorkSpace\AgentMeter\.scratch\desktop-percentage-fixed.png`; high-DPI-equivalent capture: `D:\WorkSpace\AgentMeter\.scratch\desktop-percentage-hidpi-fixed.png`.
-- Percentage side-by-side comparison: `D:\WorkSpace\AgentMeter\.scratch\design-comparison-percentage.png`.
+- Full-view comparison: `.scratch\design-comparison-desktop.png`
+- Focused card comparison: `.scratch\design-comparison-card.png`
+- Ultra-wide clipping source: `<local-temp>\design-source-capture.png` (2491 × 1312 physical px).
+- Corrected ultra-wide implementation: `.scratch\desktop-ultrawide.png` (2491 × 1312 CSS px), with 1993 × 1050 also checked as the 125%-scale CSS equivalent.
+- High-DPI-equivalent capture: `.scratch\desktop-hidpi-equivalent.png` (1993 × 1050 CSS px).
+- Ultra-wide side-by-side comparison: `.scratch\design-comparison-ultrawide.png`.
+- Percentage-overlap source: `<local-temp>\design-source-capture.png` (2440 × 1288 physical px).
+- Corrected percentage implementation: `.scratch\desktop-percentage-fixed.png`; high-DPI-equivalent capture: `.scratch\desktop-percentage-hidpi-fixed.png`.
+- Percentage side-by-side comparison: `.scratch\design-comparison-percentage.png`.
 
 **Findings**
 
@@ -47,7 +47,7 @@ Latest correction: period labels now occupy the second grid column, with progres
 
 **Comparison history**
 
-1. Initial comparison found three actionable differences: a P1 checkerboard baked into the generated wordmark, a P2 percentage numeral overflow on narrow phones, and P2 undersized gauges in tall desktop cards. Fixes: replaced the wordmark bitmap with the transparent supplied symbol plus native text, constrained responsive numeral sizing, and added comfortable-density gauge scaling. Post-fix evidence: `D:\WorkSpace\AgentMeter\.scratch\desktop-adaptive.png` and the adaptive browser verifier.
+1. Initial comparison found three actionable differences: a P1 checkerboard baked into the generated wordmark, a P2 percentage numeral overflow on narrow phones, and P2 undersized gauges in tall desktop cards. Fixes: replaced the wordmark bitmap with the transparent supplied symbol plus native text, constrained responsive numeral sizing, and added comfortable-density gauge scaling. Post-fix evidence: `.scratch\desktop-adaptive.png` and the adaptive browser verifier.
 2. Final same-size full-view and focused-card comparisons found no remaining actionable P0/P1/P2 issue. The generated cloud/slash empty-state illustration was added in the final pass to close the remaining asset-level difference.
 3. User feedback exposed a P1 product-flow mismatch: the dashboard add tile consumed primary monitoring space and monitor management belonged in settings. It also exposed a P1 topology mismatch for odd/even card counts. The add tile was removed, add/remove/reorder moved into settings, and the exact 1/2/3/4 matrix plus four-item pagination was locked with tests.
 4. Geometry verification found P2 clipping in desktop settings at 1080 × 640 and 1440 × 900, plus a P2 three-card unknown-state overflow at 844 × 390. Adaptive settings paging and compact landscape card states resolved all three cases.
@@ -60,7 +60,7 @@ Latest correction: period labels now occupy the second grid column, with progres
 - Primary interactions tested: desktop settings add/remove/reorder, the three-card vertical composition, restoration to the four-card 2 × 2 composition, tablet connection dialog, provider refresh/setup controls, tablet dashboard, and tablet settings.
 - Browser console errors checked: none on desktop or tablet.
 - Adaptive verification: 9 desktop plus 7 tablet/phone viewports; exact 1/2/3/4 layouts; 12-monitor pagination in groups of four; zero add tiles; zero document scroll; quota windows, wide four-card ring paint, and primary percentage text fully contained.
-- Settings evidence: `D:\WorkSpace\AgentMeter\.scratch\desktop-settings.png` and `D:\WorkSpace\AgentMeter\.scratch\tablet-settings.png`.
+- Settings evidence: `.scratch\desktop-settings.png` and `.scratch\tablet-settings.png`.
 
 **Open Questions**
 

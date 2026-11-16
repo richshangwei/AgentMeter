@@ -7,7 +7,7 @@
 - Resolved the existing collapsible_if warning in the path-normalization fix without changing behavior.
 
 ## Actual desktop acceptance
-A normal-user launch of the existing path-fixed release executable completed real collection on this machine. PID35892 produced a published record with no provider failure codes and a real ui_rendered acknowledgement with ready=4 and window counts [3,2,1,4]. Sanitized records are preserved in desktop-webview-quota-2026-09-10.json. This was the real Tauri WebView, not a native CLI-only probe or mocked browser. The test instance exited normally via --request-exit before rebuild.
+A normal-user launch of the existing path-fixed release executable completed real collection on this machine. the test process produced a published record with no provider failure codes and a real ui_rendered acknowledgement with ready=4 and window counts [3,2,1,4]. Sanitized records are preserved in desktop-webview-quota-2026-09-10.json. This was the real Tauri WebView, not a native CLI-only probe or mocked browser. The test instance exited normally via --request-exit before rebuild.
 
 This live evidence precedes compact UI rebuild; the new layout was separately verified in Edge with representative data. Do not describe fixture screenshots as real account screenshots.
 

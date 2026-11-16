@@ -1,3 +1,70 @@
+# 2026-09-17 修正用量偵測時 CMD 閃現
+
+## Goal & acceptance criteria
+- [x] 重現並定位背景用量偵測期間出現可見 CMD 視窗的實際啟動路徑。
+- [x] 所有桌面背景用量收集子行程在 Windows 均不建立可見 console，且不啟動第三方自動更新器／daemon。
+- [x] 加入能在修正前失敗、修正後通過的回歸檢查，並保留實機正向控制驗證方式。
+- [x] 不改 Provider 回傳資料、排程頻率或前景手動工具行為。
+
+## Plan
+- [x] Checkpoint A: 盤點收集器啟動路徑、建立最小紅燈測試並重現。
+- [x] Checkpoint B: 依證據修正最小的 Windows 子行程啟動邊界。
+- [x] Checkpoint C: 執行 targeted tests、完整本機驗證與實機 console 監測。
+- [x] Checkpoint D: 記錄 root cause、驗證結果、風險與回復方式。
+
+## Risk & rollback
+- Risk: medium；影響背景 Provider CLI 子行程建立方式，錯誤可能造成某 Provider 無法收集，但不改資料格式或帳號設定。
+- Rollback: 回復本任務的行程啟動參數與回歸測試；無資料遷移。
+- Signals: 收集結果維持相同；可見 console 監測須先抓到正向控制，再在背景刷新期間維持零事件。
+
+## Dependencies & environment
+- Windows / Tauri / Rust；沿用既有 Provider CLI 與測試工具，不新增依賴。
+- 現有工作樹包含其他未提交變更；只修改與本問題直接相關的檔案與本段稽核紀錄。
+
+## Working notes
+- 靜態 `CREATE_NO_WINDOW` 契約不足以證明沒有閃窗；實機監測必須先通過可見 console 正向控制。
+
+## Results
+- Root cause：Antigravity 官方要求 `AGY_CLI_DISABLE_AUTO_UPDATE=true`，原實作傳入 `1`；auto-updater 的 15 分鐘 TTL 到期後仍可能啟動背景 helper，造成間歇性 CMD 閃現。
+- 開發與打包用 `quota-smoke.mjs` 均改用官方精確字串；契約測試同時拒絕舊值 `1`。
+- 視窗監測新增 Antigravity updater fixture，並修正 Provider 執行失敗時證據被例外吃掉的問題。舊值可重現 `cmd → cmd → agy → node → powershell`，新值連跑三次零視窗。
+- 驗證：正向控制成功捕捉可見 CMD；150 秒已安裝 GUI 排程觀測確實看見 2 個 collector 且零視窗；targeted 11/11、完整 `scripts/verify-local.ps1`、兩 crate fmt/test/Clippy 全部通過。
+- 現有已安裝 0.2.6 尚未被本次工作區原始碼取代；需後續建置／發布後才會取得此修正。
+
+# 2026-09-12 修正 Codex HUD 額度與透明互動
+
+## Goal & acceptance criteria
+- [x] Codex HUD 依額度語意選取「常規使用額度」；有多個常規週期時優先顯示每週用量，不能因陣列順序誤選 Spark 或備用模型額度。
+- [x] HUD 視覺面積縮小約 50%，四列名稱與數值仍完整、無重疊、無裁切。
+- [x] 透明度可設定至 100%；低於 100% 時，滑鼠移入只讓面板背景回復不透明，名稱與數字永遠保持 100% 不透明。
+- [x] HUD 保持不搶焦點，但能接收 hover；桌面主清單與其他視窗不受 HUD 透明度影響。
+
+## Plan
+- [x] Checkpoint A: 建立 Codex 反向排序額度與 HUD hover/文字不透明的失敗測試。
+- [x] Checkpoint B: 實作語意選取、緊湊尺寸、背景專用透明度與滑鼠命中。
+- [x] Checkpoint C: 執行單元、Rust 契約、瀏覽器幾何與完整本機驗證。
+- [x] Checkpoint D: 視覺檢查、記錄結果與新增防止回歸的 lesson。
+
+## Risk & rollback
+- Risk: medium；影響 HUD 顯示資料選擇、視窗大小與滑鼠命中，不改 Provider 原始資料或主儀表板額度。
+- Rollback: 回復本任務的 HUD model/JS/CSS/Tauri 設定、Rust 視窗設定與對應測試；不需資料遷移。
+- Signals: 反向排序 fixture 必須顯示常規每週額度、文字 computed opacity 必須為 1、hover 背景 alpha 必須為 1、240×132 四列不得溢出。
+
+## Results
+- Codex HUD 不再使用第一筆額度；它會先找 `codex`／`codex/default` 常規額度，有每週視窗時優先每週，否則顯示帳號實際提供的唯一常規視窗。
+- 四列 HUD 由 360×204 級距縮至 240×132，面積約減少 57%；實際 Edge 畫面確認四個名稱與數值無重疊、無裁切。
+- 透明度範圍擴為 35–100%。透明度只套用在 HUD 背景色，文字固定 opacity 1；滑鼠移入時背景以 160ms 回復 100%。
+- HUD 視窗仍為 non-focusable，但不再忽略游標事件，因此 hover 能正常觸發。主儀表板未載入 `hud.css`，其清單透明度不受影響。
+- 驗證：HUD 單元測試 7/7、Rust HUD 契約 1/1、Edge HUD 幾何/hover 驗證、完整 `scripts/verify-local.ps1` 與 Clippy 全部通過。
+
+## Dependencies & environment
+- 使用既有 vanilla JS、Tauri/Rust 與 Playwright 驗證，不新增依賴。
+- 真實帳號資料只作語意依據；固定 fixture 是可重現的回歸證據。
+
+## Working notes
+- `quota_windows` 的順序不是產品契約；Codex 必須依 `limit_id` 與 `window_duration_mins` 選擇。
+- CSS 不得把 `opacity` 套在 HUD 父層；透明度只能進入背景色 alpha。
+
 # 2026-09-12 發布 0.2.4 自動更新
 
 ## Goal & acceptance criteria
@@ -494,6 +561,306 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Plus-shaped 300/10080 and Pro-shaped weekly-only fixtures pass; absent rows remain absent, so the UI never fabricates a plan window.
 - Verification: 29 focused Node tests passed, 4 desktop auto-quota Rust tests passed, 18 Windows Edge viewport matrices passed, and `scripts/verify-local.ps1` completed with all tests, formatting, and Clippy checks passing.
 - External boundary: no installer was rebuilt and no credential or account state was changed. Current official documentation describes plan-dependent five-hour/weekly limits but does not guarantee one fixed shape for every Plus or Pro account.
+# 2026-09-12 AgentMeter 網站設計架構與功能規格書
+
+## Goal & acceptance criteria
+- [x] 以實際網站走查與原始碼為雙重證據，完整盤點所有可見頁面、狀態、互動與錯誤/空資料流程。
+- [x] 還原前端、桌面殼層、Rust 核心、Provider collectors、持久化、配對、USB/HTTP/SSE、更新與安裝的模組架構及資料流。
+- [x] 定義可供後續開發直接引用的功能需求、資料契約、狀態機、非功能需求、安全限制、測試矩陣與驗收標準。
+- [x] 對現況與規劃中功能做明確標示；未知或未能實機驗證者不得寫成已完成。
+- [x] 產出完整 Markdown 規格書並驗證文件內的路徑、符號、路由、指令與跨章一致性。
+
+## Plan
+- [x] Checkpoint A: 走查網站所有分頁、日期/圖表/Provider 切換、響應式與錯誤狀態，保存觀察證據。
+- [x] Checkpoint A: 由測試、介面、ADR/需求文件與實作建立現況清單及權威來源排序。
+- [x] Checkpoint B: 建立產品資訊架構、使用者旅程、功能矩陣、資料模型/契約與狀態機。
+- [x] Checkpoint B: 建立深模組、介面、seam、adapter、執行緒/程序、儲存與安全架構規格。
+- [x] Checkpoint C: 完成 UI/UX、RWD、無障礙、效能、可靠性、隱私、安全、可觀測性與更新部署規格。
+- [x] Checkpoint C: 完成測試矩陣、驗收案例、開發優先序、風險/回滾與未決事項。
+- [x] Checkpoint D: 用原始碼搜尋、現有測試與文件檢查交叉驗證規格書，補上 Results。
+
+## Risk & rollback
+- Risk: low；本工作只新增/更新文件與任務紀錄，不改變執行中網站、帳號、配對資料或程式行為。
+- Rollback: 移除本次新增規格文件與本節任務紀錄即可。
+- Signals: 網站實際畫面、DOM/瀏覽器狀態、Rust/JS 符號、路由與測試名稱能互相對應。
+
+## Dependencies & environment
+- 本機網站 `http://localhost:3003`、現有 Rust/Tauri/vanilla JS 原始碼、測試、ADR、README 與 v1.1 需求書。
+- 實際登入 Provider、實體平板、ADB 裝置、簽章發行與乾淨 VM 若不可用，僅列為外部驗收邊界。
+
+## Working notes
+- 以「現況已實作 / 現況受限 / 後續規格」三種標籤避免把設計目標誤寫為現況。
+- 介面需包含呼叫者必須知道的資料、順序、不變量、錯誤模式、組態與效能特性。
+
+## Results
+- 產出 `docs/AgentMeter-Token-Analytics-Spec-v1.0.md`：17 章、1,235 行，分離參考網站實測、固定上游 commit、AgentMeter 現況與 Core/optional 目標規格。
+- 實際走查 Daily/Monthly/Yearly、trend/K 線、Session drawer、搜尋/篩選、定價、設定、匯入紀錄、空資料、深淺主題與 390×844 響應式；完成 API 及 DOM 契約核對，未保存私人 Session／路徑／用量值。
+- 以 codebase-design 收斂為單一 `History` 深 Module、Provider Collector Adapter、Collector Coordinator、內部 ingestion 與 SQLite Repository Adapter，並保留 `LiveDashboard` 為即時 read model。
+- 安全審閱納入 loopback＋Bearer session、vendored runtime＋CSP、metrics-only、FactIdentityV1、Source-scoped provisional Account、counter ordering、WAL-safe backup、匯入 provenance、IANA timezone 與 bounded API。
+- Core v1 固定為四 Provider、trend、metrics-only、official cost；K 線、estimated cost、Session content 與其他 Provider 為獨立 optional profiles。
+- 文件驗證通過：12 個本機連結全數存在、30 個 code fences 成對、Markdown table 無欄位錯位、116 個 normative row ID 無重複、私人值與已知阻斷字串掃描皆為 0、`git diff --check` 無文件錯誤。
+- 本次只改文件，未執行應用程式測試／build；本機網站最後已還原為原始 Codex／Daily／2026-09-12／K 線／深色桌面狀態。
+# 2026-09-12 HUD 不攔截系統視窗與對話用量可行性
+
+## Goal & acceptance criteria
+- [x] 右下角 HUD 保持置頂與不搶焦點，但所有滑鼠操作可穿透到下方的 Windows 系統匣、通知中心與一般視窗。
+- [x] 移除與滑鼠穿透衝突的 hover 行為及說明，透明度、文字可讀性、四列緊湊尺寸維持不變。
+- [x] 以既有 Token 分析規格及實際資料來源，確認「送出的對話／Token 浪費分析」可行範圍、隱私邊界與最小落地順序。
+- [x] 通過 HUD 原生視窗契約、HUD 單元/瀏覽器驗證與完整本機驗證。
+
+## Plan
+- [x] Checkpoint A: 依使用者截圖重建症狀，定位 HUD 原生命中行為與現有回歸測試。
+- [x] Checkpoint B: 先讓滑鼠穿透契約測試失敗，再做最小原生視窗與文案/CSS 修正。
+- [x] Checkpoint C: 執行 targeted tests、HUD 瀏覽器幾何驗證、完整本機驗證與 diff 檢查。
+- [x] Checkpoint D: 整理對話用量功能的現況差距、privacy-first MVP、風險與後續實作切片。
+
+## Risk & rollback
+- Risk: low（HUD 視窗互動）／high（未來對話正文蒐集）。本次程式碼只恢復 HUD 點擊穿透，不新增對話內容蒐集或持久化。
+- Rollback: 回復本節的 HUD 原生視窗、CSS、設定文案與測試變更；不涉及資料遷移。
+- Signals: 原生視窗契約必須要求 `set_ignore_cursor_events(true)`；HUD 不含可操作控制項；瀏覽器幾何與文字透明度維持通過。
+
+## Dependencies & environment
+- Windows/Tauri/WebView2；既有 HUD 與 Playwright/Edge 驗證工具，無新增依賴。
+- 對話分析依各 Provider 本機 session/transcript 可用性；內容只能 desktop-only、明確 opt-in，且不得進 tablet、一般 diagnostics 或預設 export。
+
+## Working notes
+- 截圖顯示 HUD 疊在 Windows 系統匣展開面板上；`set_focusable(false)` 不等於滑鼠穿透。
+- 前一版為支援 hover 移除了 `set_ignore_cursor_events(true)`，直接違反原始「可穿透點擊」驗收條件。
+
+## Results
+- 恢復 Tauri HUD 的 `set_ignore_cursor_events(true)`；維持 `alwaysOnTop`、non-focusable 與 240×132 四列版面，底下的系統/應用視窗可接收點擊。
+- 移除不可能與原生滑鼠穿透並存的 hover 不透明效果，設定文案改為明確說明「滑鼠操作會直接穿透到下方視窗」。
+- 回歸測試先觀察到精確失敗，再於修正後通過；HUD model 7/7、原生視窗契約 1/1、Edge HUD/設定幾何驗證及完整 `scripts/verify-local.ps1` 全數通過，`git diff --check` 無錯誤。
+- 對話功能可行但尚未實作：現況沒有 History/Session/content 儲存，`/api/v1/history` 仍回空陣列。建議先做 Codex（再 Claude）的 metrics-only Session/turn Token 明細；「我送出的內容」採 desktop-only、逐來源 opt-in、按需讀取、預設遮罩，Copilot/Antigravity 在來源格式實證前顯示不支援。
+- 不以單一比率宣稱「浪費」；只呈現可驗證的檢視訊號，例如高 input、低 cache reuse、重複 prompt 指紋與 retry。
+
+# 2026-09-12 Codex Session／Turn Token 分析第一階段
+
+## Goal & acceptance criteria
+- [x] 戰情室提供 Codex Token 分析入口，顯示最近 Session 與 turn 的 input、cached input、cache write、output、reasoning、total Token、model、時間與 duration。
+- [x] 只讀 Codex 已存在的 `sessions`／`archived_sessions` JSONL；不修改來源、不建立來源目錄內 cursor/lock，不呼叫模型或額外消耗 Token。
+- [x] metrics-only：DTO、DOM、log、錯誤與測試輸出不得包含 prompt、response、tool payload、Session 原始 ID、完整來源路徑或 repository 名稱。
+- [x] active/archive 同 Session 去重；partial final line 不解析；unknown 與 0 分開；schema drift fail closed 並回報安全的 rejected/limited 狀態。
+- [x] 掃描有檔案數、單檔 bytes、總 turns 與回傳 Session 上限；UI 能呈現載入、空資料、部分資料與失敗狀態。
+- [x] targeted Rust/Node tests、桌面瀏覽器互動/幾何、完整本機驗證與 diff 檢查通過。
+
+## Confirmed seams
+- `CodexHistory::scan(codex_home)`：Provider JSONL Adapter 與 metrics-only History read model 的公開測試 seam；呼叫者不需知道檔案配置、事件版本、去重或 bounds。
+- Tauri `history_sessions`／desktop History dialog：桌面 Adapter 與使用者可觀察行為 seam；只接受後端 DTO，不直接解析來源檔。
+
+## Plan
+- [x] Checkpoint A: 確認第一階段範圍與兩個測試 seam，讀現有規格、ADR、Tauri/UI 模式及本機去識別 schema shape。
+- [x] Checkpoint A: 建立合成 Codex rollout fixture 與第一個失敗的 scan 行為測試。
+- [x] Checkpoint B: 實作 `CodexHistory` 深 Module 的 bounded、read-only、metrics-only 掃描與 DTO。
+- [x] Checkpoint B: 建立 Tauri command 與戰情室 Token 分析 dialog，涵蓋 loading/empty/partial/error。
+- [x] Checkpoint C: 增加 active/archive、partial line、schema drift、privacy negative 與 UI 回歸測試。
+- [x] Checkpoint C: 執行 targeted、完整本機、瀏覽器互動/幾何與 diff 驗證。
+- [x] Checkpoint D: correctness/security/privacy 複核，記錄結果、限制與第二階段 seam。
+
+## Risk & rollback
+- Risk: medium。讀取本機敏感 transcript 檔，但只以 typed deserialization 擷取 Token metadata；正文欄位被忽略且不離開 Module。無 DB migration、無來源寫入。
+- Rollback: 移除 Codex History Module、desktop command/入口/dialog/UI model 與對應 fixture/tests；不需清資料，因第一階段不持久化。
+- Signals: serialized DTO 與 DOM sentinel 掃描為 0；來源檔案 hash/mtime 不變；bounds/partial/duplicate tests；完整 path 不出現在錯誤。
+
+## Dependencies & environment
+- 既有 Rust `serde`/`serde_json`、Tauri 與 vanilla JS；不新增依賴。
+- Codex rollout 是本機觀察來源而非穩定公開 API；parser version 固定、未知 shape 拒絕並顯示部分資料提示。
+
+## Working notes
+- 現行 rollout 同時可有 `token_usage_record` 與 `event_msg.token_count`；同一檔優先使用含 turn identity 的前者，避免雙重計算。
+- `turn_token_usage` 是該 turn 的累積值；同 turn 取最後一筆。`cached_input_tokens` 是 input 的子集合，總量使用來源 `total_tokens`，不可再把 cache/reasoning 重複加總。
+- Session/turn 原始 ID 只在 Module 內去重，回傳 UI 使用掃描結果內的 opaque ordinal ref。
+- 舊版 `token_count` 以第一筆合法 `last_token_usage` 加上後續 cumulative delta 計算，重複 snapshot 為 0，不重播；modern thread/turn snapshot 優先。
+- `.jsonl.zst` 第一階段不新增解壓依賴，會明確標示 incomplete；`.tmp` 永不讀取。
+- History command 只允許 `main` webview，並以 single-flight 阻止重複重型掃描；tablet API 未暴露此 DTO。
+
+## Results
+- 新增 `CodexHistory::scan` metrics-only 深 Module：掃描 active/archive、同 identity 去重、legacy/modern usage 正規化、partial/schema drift 處理、精確 decimal-string DTO 與檔案/bytes/turn bounds。
+- 戰情室新增「Token 分析」對話框，依 Session 總 Token 排序並可展開 turn；顯示 input/cache read/cache write/output/reasoning/total、model、時間與 duration，unknown 保留為 `—`。
+- 隱私負向測試涵蓋 prompt、response、tool/path/原始 ID sentinel、惡意 timestamp/model；DOM 只用 `textContent`，來源檔 byte-for-byte 不變，命令不接受前端路徑。
+- TDD targeted：Codex History Rust 11/11、desktop command 3/3、History/既有 quota UI 11/11 通過；correctness 與 security/privacy 雙重複核的高/中風險發現已處理。
+- 完整 `scripts/verify-local.ps1` 通過全部 Rust/Node tests、format 與 Clippy；Playwright/Chromium 18 個 dashboard viewport 加 History 1080×640、640×520 通過，`git diff --check` 無錯誤。
+- 第一階段沒有 SQLite 持久化、內容正文、平板 History、成本估算或其他 Provider Session；也未建立安裝包。壓縮 archive 會顯示資料未完整，而不假裝 complete。
+
+# 2026-09-12 四 Provider 對話分析與內容檢視第二階段
+
+## Goal & acceptance criteria
+- [x] 戰情室的「對話分析」以 `codex`、`claude`、`copilot`、`antigravity` 為共用選擇範圍，不再把功能寫死為 Codex。
+- [x] 每個 Provider 都回傳一致的 capability/status；找不到來源或 schema 未受支援時明確顯示，不以 quota/剩餘百分比推算 Session Token。
+- [x] Codex、Claude、Copilot 對已知本機 JSONL shape 提供 bounded/read-only Session 與使用者 prompt 解析；Antigravity 只解析經證實的 shape，否則 fail closed。
+- [x] 第二階段正文只能在桌面主視窗、使用者逐次勾選同意後按需讀取；關閉 dialog 或切換 Provider 立即清除 DOM 與同意狀態。
+- [x] 正文不持久化、不進 tablet/diagnostics/export，不回傳 assistant/tool/system 內容、原始 Session ID、專案名稱或完整來源路徑；只用 `textContent` 呈現並做長度/數量限制及基本 redaction。
+- [x] targeted Rust/Node tests、完整本機驗證、桌面響應式互動與 diff 檢查通過。
+
+## Confirmed seams
+- `ProviderHistory::scan(provider, root)`：四 Provider 共用 metrics-only read model；adapter 封裝檔案布局、schema、bounds 與 capability 狀態。
+- `ProviderHistory::read_session_content(provider, root, session_ref, expected_started_at, expected_ended_at)`：只回傳該 Session 的 redacted user prompts；公開 ordinal ref 加雙時間戳唯一性校驗，0 或多筆匹配都 fail closed。
+- Tauri `history_sessions(provider)`／`history_session_content(provider, session_ref, expected_started_at, expected_ended_at, consent)`：只允許 main webview，來源 root 一律由 backend 決定。
+
+## Plan
+- [x] Checkpoint A: 建立四 Provider capability matrix、修正 scope lesson、確認共用 seam 與官方/本機 schema 證據。
+- [x] Checkpoint A: 先增加四 Provider 選擇、truthful status 與未同意不得讀正文的失敗測試。
+- [x] Checkpoint B: 實作共用 History dispatcher、backend root resolution 與 Provider adapter 的最小安全 slice。
+- [x] Checkpoint B: 實作按次 opt-in prompt view、redaction、bounds 與關閉/切換清除行為。
+- [x] Checkpoint C: 增加 malformed/partial/schema drift、stale ref、privacy sentinel、main-window-only 與 UI 回歸測試。
+- [x] Checkpoint C: 執行 targeted、完整本機、瀏覽器互動/幾何與 diff 驗證。
+- [x] Checkpoint D: correctness/security/privacy 複核並記錄 Results、已驗證能力與環境限制。
+
+## Risk & rollback
+- Risk: high。此階段按需讀取本機 prompt，可能包含 secret、程式碼、個資與路徑；採 explicit per-open consent、最小欄位、基本 redaction、bounded response、desktop-only 與 zero persistence 降低風險。
+- Rollback: 移除共用 Provider dispatcher、content command/view 與 adapters，保留既有 Codex metrics-only module；沒有 DB migration 或內容資料需要清除。
+- Signals: 未同意時 content command 次數為 0；關閉/切換後 DOM sentinel 為 0；序列化結果不含 assistant/tool/system/path/原始 ID；unsupported/unavailable 不產生 Token 數值。
+
+## Dependencies & environment
+- 既有 Rust `serde`/`serde_json`、Tauri、vanilla JS 與合成 fixtures；不新增 runtime dependency。
+- 本機目前未發現 Claude/Copilot/Antigravity 歷史目錄，所以 adapter 以合成官方 shape 驗證；實機來源缺席必須顯示 `source_unavailable`，不得宣稱已做真人資料驗證。
+
+## Working notes
+- Provider root：Codex 使用 `CODEX_HOME`/`%USERPROFILE%\.codex`；Claude 使用 `CLAUDE_CONFIG_DIR`/`%USERPROFILE%\.claude`；Copilot 使用 `%USERPROFILE%\.copilot\session-state`；Antigravity 使用 `%USERPROFILE%\.gemini\antigravity`。
+- Copilot billing quota 和 session Token 是不同事實；沒有 persisted usage event 時 Token 欄位保持 unknown。
+- Prompt redaction 是風險降低措施，不是秘密偵測保證，UI 必須保留警告。
+- `consent:true` 是防止意外讀取的 backend guard，逐次 checkbox 是明確 UX 同意；若 main WebView 本身遭任意程式執行，renderer 可呼叫 Tauri command，因此真正安全邊界仍是 CSP、main-window allowlist、backend root/Session 校驗與不持久化，而不是 checkbox 本身。
+
+## Results
+- 戰情室入口改為「對話分析」，新增 Codex／Claude Code／GitHub Copilot／Antigravity 共用 selector、同一份 `agentmeter.provider-history.v1` DTO 與 ready/empty/source unavailable/schema unverified 文案。
+- 新增 `ProviderHistory` 深 Module：Codex 沿用第一階段精確 Token；Claude 讀 `projects/**/*.jsonl` 的 external user/assistant usage；Copilot 讀 `session-state/*/events.jsonl` 的 `user.message`，沒有可信 persisted usage 時 Token 保持 unknown；Antigravity 因 transcript event schema 未驗證而 fail closed。
+- 第二階段新增 desktop-only `history_session_content`：backend allowlist/root resolution、main-window check、明確 consent、Session ordinal＋start/end timestamp 重掃校驗、200 turns／4,000 chars／50 files／128 MiB bounds；不接受前端 path/raw ID。
+- Prompt 只取已辨識的 user-authored text，排除 assistant/tool/system；遮罩絕對路徑、secret assignments、Bearer、CLI/JSON secret、常見 token prefix、URL credentials 與 private-key blocks。任何 Provider 的重複 timestamp 都會回 content unavailable，不猜選來源。
+- Correctness/security diff review 發現並修正 Claude cache token 漏算（總 input = uncached + cache read + cache creation）以及 Claude/Copilot 同時間戳重綁風險；同時補上 skipped/rejected/partial 計數，Token 加總 overflow 保留 unknown、不做飽和截斷。
+- UI 未同意時正文命令為 0 次；關閉 Prompt/History、切換 Provider、重新整理與晚到 response 均清除或拒絕 render。DOM 只用 `textContent`，無 browser storage、Markdown/HTML renderer、tablet route 或 persistence。
+- 驗證：Provider core 11/11、Codex regression 11/11、desktop history command 3/3、History/既有 quota UI 14/14、desktop bundle 11/11 通過；完整 `scripts/verify-local.ps1`（全部 Rust/Node tests、fmt、Clippy）通過；Playwright 18 個 dashboard viewport 與 Prompt/History 1080×640、640×520 通過；`git diff --check` 通過。
+- 環境邊界：本機沒有 Claude/Copilot/Antigravity 歷史目錄，因此三者以合成官方 shape/固定 capability 測試驗證，未宣稱真人資料實測；未建立 installer，也未把 Prompt 寫入 DB。
+
+# 2026-09-12 Token 效率圖表與 API 等值成本
+
+## Goal & acceptance criteria
+- [x] 戰情室先顯示四個可理解的 KPI：總 Token、API 等值美元、估價覆蓋率、快取重用率；原始六欄 Token 明細降為第二層。
+- [x] 以互斥 Token 流向圖呈現未快取輸入、快取輸入、快取寫入與輸出，圖表同時具備文字數值與螢幕閱讀器說明。
+- [x] 顯示可驗證的檢查訊號與 Top sessions，不產生武斷的「浪費分數」；高輸入低輸出、低快取等只能標為風險訊號並附數字與行動建議。
+- [x] 美元成本依 Provider、實際模型及 input/cache read/cache write/output 分開計算；未知模型、截斷資料、無 Token Provider 顯示 partial/unavailable，不以 quota 或訂閱價格冒充 Token 成本。
+- [x] Prompt 逐次同意後，顯示同一 Session 內「完全相同且具足夠長度」的重複 Prompt 次數；不將它誤稱為重複 context，且不保存 prompt/fingerprint。
+- [x] targeted Rust/Node tests、完整本機驗證、桌面響應式與 diff 檢查通過，重新啟動桌面程式供實測。
+
+## Confirmed seams
+- `TokenAnalysis::analyze(&ProviderHistoryReport)`：唯一負責 Provider Token 語意正規化、成本、覆蓋率與風險規則；前端不得重算費率或 Provider 差異。
+- `HistorySessionsView.analysis`：在桌面 command envelope 提供互斥 flow、cost state、signals 與 session analysis 的版本化 read model；未知資料以 `null`／明確 state 表示。
+- `ProviderSessionContent.duplicate_prompt_count`：只在使用者逐次同意的按需讀取期間，以正規化後完全相同 Prompt 計數，不回傳或保存 fingerprint。
+
+## Plan
+- [x] Checkpoint A: 以官方第一方價格頁固定可支援模型、費率、日期與「API 等值、不等於帳單」限制。
+- [x] Checkpoint A: 先新增成本、覆蓋率、Token flow、風險訊號與重複 Prompt 的失敗測試。
+- [x] Checkpoint B: 實作 `TokenAnalysis` 深 Module 與內容重複計數，保持 bounded/read-only/zero persistence。
+- [x] Checkpoint B: 實作 KPI、Token flow、signals、Top sessions、方法與成本註記的無依賴 UI。
+- [x] Checkpoint C: 驗證 complete/partial/unavailable、未知模型、overflow、截斷、Provider 語意與隱私負向案例。
+- [x] Checkpoint C: 執行 targeted、完整本機、響應式/可及性與 diff 驗證。
+- [x] Checkpoint D: correctness/security/privacy 複核、記錄 Results 並啟動桌面程式。
+
+## Risk & rollback
+- Risk: medium。價格會變動且 API 等值不一定等於訂閱實際帳單；啟發式訊號也可能把合理的長 context 標成值得檢查。
+- Rollback: 移除 `TokenAnalysis`、分析 DTO/UI 與重複 Prompt 計數欄位即可；無資料庫 migration、無來源寫入或 prompt 持久化。
+- Signals: 費率來源/日期/覆蓋率可見；未知模型不計價；UI 不出現 raw prompt（除既有逐次同意視窗）、raw ID/path；完整測試與響應式矩陣通過。
+
+## Dependencies & environment
+- 只使用既有 Rust、serde、vanilla JS/CSS 與官方定價資料；不新增 runtime dependency。
+- UI/UX 技能的本機 `search.py` 路徑指標失效，依其文件中的 dashboard、chart、a11y 原則手動落實並以現有瀏覽器驗證補強。
+
+## Working notes
+- 成本一律標為「目前公開 API 單價等值估算」，不是 ChatGPT/Claude/Copilot 訂閱信用卡帳單，也不回推歷史日期當時價格。
+- Codex cached input 是 input 的子集合；Claude cache read/cache creation 是獨立輸入類別。互斥 flow 必須由 backend 正規化。
+- 重複 Prompt 是 context 浪費的窄證據；低快取與高輸入低輸出只是檢查線索，不足以直接判定浪費。
+
+## Results
+- 新增純函式 `TokenAnalysis`：依 Codex/Claude 不同 cache 語意正規化互斥 flow，reasoning 不重複計價；以固定小數 `u128` 計算 current API equivalent，未知模型、長 context modifier、缺欄位與不一致 totals 均 fail closed。
+- OpenAI exact model rate 與 Claude exact model/alias rate 來自官方頁；Claude cache creation TTL 未知時回傳 5 分鐘至 1 小時成本範圍。Copilot 缺 persisted Token/model、Antigravity schema 未驗證，因此明確顯示無法估價。
+- 戰情室新增 4 KPI、Token flow 堆疊圖＋文字 legend/ARIA、保守效率訊號、Top 5 sessions、費率日期/帳單限制；完整原始 Token 收進第二層 details。
+- 逐次同意的 Prompt 視窗新增 exact nontrivial duplicate 計數；redacted、truncated、過短內容不參與，不保存文字指紋。
+- 最終複核發現並修正兩個 fail-closed 邊界：cache `null` 不得視為 0；priced turns 大於 observed totals 時不得顯示金額或 coverage。新增對應負向測試。
+- 驗證：TokenAnalysis 6/6、ProviderHistory 12/12、History UI 7/7；`scripts/verify-local.ps1` 全部 Rust/Node tests、fmt、Clippy 通過；Edge/Playwright 18 組 dashboard viewport 與 History 1080×640、640×520 通過；`git diff --check` 通過。
+- 桌面 debug 版已重新啟動供實測；無 DB migration、來源寫入、installer rebuild 或訂閱帳單存取。
+
+# 2026-09-13 流量浮動視窗多螢幕與拖曳
+
+## Goal & acceptance criteria
+- 設定可列出已連接螢幕並切換浮動視窗；滑鼠可直接拖曳到任意位置。
+- 記住使用者位置，更新數據、透明度、監控數量不重設位置；重啟恢復位置。
+- 支援負座標及不同 DPI，螢幕拔除後回到可见工作區；提供重設位置。
+
+## Plan
+- [x] A: 找出 HUD 前後端與既有測試，確認目前 CSS screen 座標與滑鼠穿透限制。
+- [x] B: 後端統一管理實體螢幕座標與保存；前端加入螢幕選項、重設及拖曳。
+- [x] C: 幾何邊界與 UI 行為測試、Rust/Node 驗證及瀏覽器版面檢查。
+- [x] D: 差異複核並記錄驗證及實機限制。
+
+## Risk & rollback
+- Medium：混合 DPI、螢幕拔除與移動事件；所有定位只作用 HUD。
+- 回復本次 HUD 變更即可回原功能；新增的 hud-position.json 可忽略，無 DB migration。
+
+## Dependencies & environment
+- 既有 Tauri 2、Rust、vanilla JS/CSS；不新增 dependency。
+- 工作區已有多項未提交修改，保留既有成果，只改本功能必要範圍。
+
+## Working notes
+- 舊版 dashboard 和 HUD 都會將視窗推回各自 screen 右下角；後端應成為唯一定位來源。
+- 支援直接拖曳需要關閉原本滑鼠穿透，設定文案同步調整。
+
+- HUD verification checkpoint: Node 18/18 and Edge HUD/settings browser checks passed; 18 dashboard viewport combinations and history views passed. First full verifier stopped at formatting while the backend agent was finishing its last edit; rerun only after that handoff is complete.
+
+## Results
+- 新增 `desktop-p0/src/hud.rs` 統一管理實體座標、工作區、螢幕選擇、跨 DPI 大小及 `hud-position.json`；main 只註冊命令與轉送移動事件。
+- 設定加入螢幕選單、重新整理與重設位置；面板可原生拖曳、保存位置，透明度與數據更新不固定回右下角。
+- 位置操作互斥；啟動事件不覆蓋保存位置；300 ms debounce 後讀取當前位置；拖曳期間依 Windows 主要按鍵狀態暫停重新定位（包含左右鍵交換設定）。
+- 幾何更新採先定位後設定目標 DPI 尺寸，避免原生 DPI 移動再次縮放；螢幕拔除／位置超出工作區時回到可見範圍。
+- 保存錯誤不阻斷 snapshot；位置設定與重試狀態可見。安全／正確性複核無剩餘 P1/P2 問題。
+- 驗證：`scripts/verify-local.ps1` 全部 Rust/Node tests、fmt、Clippy 通過（`.scratch/hud-verify-local.log`）。最後調整 DPI 呼叫順序後再次通過 desktop fmt、HUD 6/6 tests、all-targets Clippy；前端相關 18/18、Edge HUD/settings（含 7 螢幕及保存失敗）與 18 組 dashboard viewport 通過，`git diff --check` 通過。
+- 建置：`cargo rustc --manifest-path desktop-p0/Cargo.toml --offline --locked --bin agentmeter-desktop-p0 -- -o .scratch\agentmeter-hud-preview.exe` 成功。`-o` 產生兩條預期輸出路徑 warning；程式碼 warnings-denied Clippy 已通過。
+- 實機限制：舊開發版 PID 62412 不回應正常 `--request-exit`，沒有強制關閉；只清理由本次建立的退出 helper PID 78668。新版尚未取代執行中的舊版，也未建立 installer。使用者結束舊版後可啟動 `.scratch/agentmeter-hud-preview.exe`。
+- 尚未以實體多螢幕验证混合 DPI 拖曳、拔除與重啟位置；這些情境目前由生產共用幾何／選擇函式測試覆蓋。手動流程：設定選第二螢幕 → 拖曳跨螢幕超過 2 秒 → 調透明度／監控數量確認不跳回 → 重啟確認位置 → 拔除該螢幕確認面板仍可見。
+
+# 2026-09-13 發布 0.2.6 多螢幕浮窗
+- [x] 確認公開最新版 0.2.5，隔離分支僅移植 HUD 功能。
+- [ ] 完整測試與 UI 驗證。
+- [ ] 使用既有 DPAPI 金鑰建置簽章包，驗證簽章與 manifest。
+- [ ] 提交並推送版本碼；上傳 draft 全部資產後發布 latest。
+- [ ] 公開下載校驗與記錄結果。
+- 風險：混合 DPI 尚無實體多螢幕驗收。回復：latest 回指 v0.2.5，停用新 manifest；已升級使用者採修正版，不自動降版。
+
+## 2026-09-13 0.2.6 發布結果
+- [x] 在 `.release-worktrees/0.2.6` 從遠端 0.2.5 基線隔離 HUD 變更，保留 0.2.5 hover，未混入對話分析。
+- [x] 完整 Rust/Node、fmt、Clippy、Edge HUD、NSIS 版本/內容及簽章驗證通過。
+- [x] 推送程式碼 `6e08cf2da5299fa03b215f7e82e5e809948926d6`，上傳全部資產並設 `v0.2.6` 為 latest。
+- [x] 公開 latest 回傳 0.2.6；下載的 73,634,971-byte 安裝包 SHA-256 為 `025C0F0587706C94238636A0974980828271464C235DA5E4A8134BEFD402173E`，更新簽章／trusted comment／竄改拒絕再次通過。
+- 發布：https://github.com/richshangwei/AgentMeter/releases/tag/v0.2.6 。沿用既有金鑰，無私鑰外傳、無強制安裝或重啟。實體混合 DPI 驗收仍待確認。
+- 主工作區保持原狀，未覆蓋未提交的其他功能；release 分支上的最新記錄已推送遠端 master。
+
+# 2026-09-14 目前工作區打包安裝檔
+- 驗收：依目前工作區 0.2.4 原始碼產生 Windows x64 NSIS，檢查內嵌版本、必要資源與 SHA-256；提供檔案位置。
+- 範圍：包含目前未提交功能，保留版本號；不發布、不安裝。
+- [x] 確認版本與既有建置／檢查流程。
+- [x] 建置目前工作區 NSIS。
+- [x] 執行既有驗證與安裝包檢查。
+- [x] 記錄結果並交付。
+- 環境：既有 Rust/Tauri 2、NSIS、quota-helper；低風險，本次只產生本機建置輸出與工作記錄。
+
+## Results
+- `cargo tauri build --ci --target x86_64-pc-windows-msvc --bundles nsis -- --offline --locked` 成功（desktop-p0 工作目錄）。
+- 安裝檔：`desktop-p0/target/x86_64-pc-windows-msvc/release/bundle/nsis/AgentMeter P0_0.2.4_x64-setup.exe`；73,822,715 bytes。
+- SHA-256：`6C32F470D20C460AC1C51937FDD0C8D1DA849E6AB5B1FF800EC91ADCAD3CBE58`，旁附 `.sha256`。
+- 完整 verify-local 通過：`.scratch/package-current-verify.log`；inspect-nsis 通過：`.scratch/package-current-inspection.json`；node/agy/quota helper 資源存在，helper 腳本與來源 hash 一致。
+- 本機未簽章安裝包，保留工作區 0.2.4；若已安裝 0.2.6，防降版設定可能阻止安裝。未發布、未執行安裝；乾淨 VM、實體裝置與真實帳號驗收不在本次驗證範圍。
+
+# 2026-11-06 邏輯規則重新盤點與設計 skill 化
+- 目標：重新盤點全專案邏輯規則，將設計整理成可分享的完整 skill（`skills/agentmeter-design/`）。
+- 驗收：規則以程式與測試為準並標出與規格的偏離；附可執行的快照檢查器，含負向測試；SKILL.md 可路由到 9 份參考文件。
+- 風險：低（僅新增文件與無依賴腳本，未改產品程式）。回復：刪除 `skills/agentmeter-design/` 與本段落。
+- [x] 盤點來源：CONTEXT、需求書 v1.1、Token 分析規格、ADR 0001–0011、lessons、design-qa、`src/`、`desktop-p0/`、`scripts/`、`tablet-ui/`。
+- [x] 撰寫 SKILL.md、`references/01–09`、`scripts/check-snapshot.mjs` 及測試、`assets/dashboard-snapshot.example.json`。
+- [x] 驗證：`node --test skills/agentmeter-design/scripts/check-snapshot.test.mjs` → 13/13 通過；範例快照 `check-snapshot.mjs` 退出碼 0。
+- [x] 對照程式抽查並修正文件：HUD 現為可拖曳／接收滑鼠（舊教訓「原生穿透」已過時）。
+
+## Results / 發現
+- 規格與實作偏離（已寫入 `references/09`）：無 SQLite／migration；無任何 Collector 標 `stable`；Claude／Antigravity／Copilot 預設走 `/usage`／`getQuota` 而非 statusLine／Billing；`/api/v1/history` 為佔位；HTTP 為 `std::net` 而非 Axum。
+- 後續（未處理，避免擴大範圍）：`tasks/lessons.md` 2026-09-12「HUD 必須原生穿透」已被 09-13 可拖曳設計取代，建議補註「已被取代」；是否重新引入系統匣被遮擋問題尚無實機證據。
+- 未執行：skill 觸發率評測（description optimization）與子代理 A/B 評測；真實帳號、乾淨 VM、實體平板驗證不在範圍。
 
 # 2026-11-16 本機硬體使用量
 

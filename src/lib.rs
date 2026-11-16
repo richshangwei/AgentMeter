@@ -1,9 +1,12 @@
 pub mod claude;
 pub mod claude_setup;
 pub mod codex;
+pub mod codex_history;
 pub mod copilot;
 pub mod live_dashboard;
 pub mod model;
 pub(crate) mod pair_store;
+pub mod provider_history;
 pub mod tablet;
+pub mod token_analysis;
 pub mod usb;

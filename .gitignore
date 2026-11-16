@@ -1,7 +1,29 @@
+# Build output
 /target/
 /desktop-p0/target/
 /desktop-p0/gen/
-/.scratch/codex-app-server-schema/
-/.scratch/quota-smoke-runtime/
-/scripts/quota-smoke-support/node_modules/
+
+# Bundled third-party runtimes (not redistributed through Git)
 /desktop-p0/resources/quota-helper/
+/scripts/quota-smoke-support/node_modules/
+
+# Release worktrees: full build trees, compiled binaries and signed installers.
+# Never commit these to a public repository.
+/.release-worktrees/
+
+# Local scratch: developer screenshots, verification logs, machine-specific
+# probe scripts. These contain local absolute paths and personal usage data.
+/.scratch/
+/Claude outputs/
+
+# Signing material must never live inside the repository.
+.agentmeter-signing/
+*.dpapi
+*.key
+*.pem
+updater.key*
+
+# Local environment
+.env
+.env.*
+!.env.example

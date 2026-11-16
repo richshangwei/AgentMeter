@@ -51,7 +51,7 @@ fn package_identity_version_and_frontend_are_explicit_and_consistent() {
 }
 
 #[test]
-fn compact_hud_is_a_passive_hidden_secondary_window() {
+fn compact_hud_is_a_draggable_hidden_secondary_window() {
     let config = config();
     let windows = config["app"]["windows"].as_array().unwrap();
     let hud = windows
@@ -65,11 +65,54 @@ fn compact_hud_is_a_passive_hidden_secondary_window() {
     assert_eq!(hud["alwaysOnTop"], true);
     assert_eq!(hud["skipTaskbar"], true);
     assert_eq!(hud["resizable"], false);
+    assert_eq!(hud["width"], 240);
+    assert_eq!(hud["height"], 132);
 
     let main = include_str!("../desktop-p0/src/main.rs");
+    let backend = include_str!("../desktop-p0/src/hud.rs");
     assert!(main.contains("configure_hud"));
-    assert!(main.contains("set_ignore_cursor_events(true)"));
-    assert!(main.contains("set_focusable(false)"));
+    assert!(backend.contains("set_focusable(false)"));
+    assert!(backend.contains("set_ignore_cursor_events(false)"));
+    assert!(backend.contains("start_dragging()"));
+    let html = include_str!("../desktop-p0/ui/index.html");
+    let css = include_str!("../desktop-p0/ui/hud.css");
+    assert!(html.contains("顯示螢幕"));
+    assert!(html.contains("按住面板即可拖曳"));
+    assert!(!css.contains("main:hover"));
+}
+
+#[test]
+fn provider_history_commands_are_bounded_to_the_desktop_and_accept_no_source_path() {
+    let main = include_str!("../desktop-p0/src/main.rs");
+    let history = include_str!("../desktop-p0/src/history.rs");
+    let tablet = include_str!("../src/tablet.rs");
+    assert!(main.contains("mod history;"));
+    assert!(main.contains("history::history_sessions"));
+    assert!(history.contains("ProviderHistory::scan"));
+    assert!(history.contains("Provider::parse"));
+    assert!(history.contains("spawn_blocking"));
+    assert!(history.contains("tauri::WebviewWindow"));
+    assert!(history.contains("window.label()"));
+    assert!(history.contains("HISTORY_SCAN_ACTIVE"));
+    assert!(history.contains("var_os(\"CODEX_HOME\")"));
+    assert!(history.contains("var_os(\"USERPROFILE\")"));
+    assert!(!history.contains("path: String"));
+    assert!(!tablet.contains("ProviderHistory"));
+    assert!(!tablet.contains("history_sessions"));
+    assert!(!tablet.contains("history_session_content"));
+    let html = include_str!("../desktop-p0/ui/index.html");
+    let client = include_str!("../desktop-p0/ui/history.js");
+    assert!(html.contains("id=\"history-open\""));
+    assert!(html.contains("id=\"history-dialog\""));
+    for provider in ["codex", "claude", "copilot", "antigravity"] {
+        assert!(html.contains(&format!("<option value=\"{provider}\"")));
+    }
+    assert!(html.contains("id=\"history-content-consent\""));
+    assert!(client.contains("invoke('history_sessions', {provider})"));
+    assert!(client.contains("history_session_content"));
+    assert!(!client.contains("innerHTML"));
+    assert!(!client.contains("localStorage"));
+    assert!(!history.contains("quota_windows"));
 }
 
 #[test]
