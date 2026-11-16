@@ -85,6 +85,22 @@ const snapshot={provider_states:[
       const actual=await page.evaluate(value=>{localStorage.setItem('agentmeter.hud-opacity.v1',String(value));renderHud();return getComputedStyle(document.documentElement).getPropertyValue('--surface-alpha').trim();},opacity);
       assert.equal(actual,String(opacity/100));
     }
+    await page.evaluate(()=>localStorage.setItem('agentmeter.hud-opacity.v1','50'));
+    await page.evaluate(()=>renderHud());
+    await page.hover('#hud-panel');
+    await page.waitForTimeout(220);
+    const hover=await page.evaluate(()=>{
+      const color=getComputedStyle(document.getElementById('hud-panel')).backgroundColor;
+      const values=color.match(/[\d.]+/g).map(Number);
+      return {
+        panelAlpha:values.length===4?values[3]:1,
+        nameOpacity:getComputedStyle(document.querySelector('.hud-name')).opacity,
+        valueOpacity:getComputedStyle(document.querySelector('.hud-value')).opacity
+      };
+    });
+    assert.equal(hover.panelAlpha,1);
+    assert.equal(hover.nameOpacity,'1');
+    assert.equal(hover.valueOpacity,'1');
     fs.mkdirSync(path.join(root,'.scratch'),{recursive:true});
     await page.screenshot({path:path.join(root,'.scratch/hud-240x132.png'),omitBackground:true});
     const positionFailure=await page.evaluate(async()=>{
@@ -143,6 +159,10 @@ const snapshot={provider_states:[
     assert.equal(settings.call.enabled,true);
     assert.deepEqual(errors,[]);
     await page.screenshot({path:path.join(root,'.scratch/hud-settings-640x520.png')});
+<<<<<<< HEAD
     console.log('PASS HUD 240x132 · settings 640x520 · opacity 35/48/72/100 · opaque text · no overlap or overflow');
+=======
+    console.log('PASS HUD 240x132 · settings 640x520 · opacity 35/48/72/100 · opaque text · hover background 100% · multi-monitor selection/drag/reset · no overlap or overflow');
+>>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
   }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

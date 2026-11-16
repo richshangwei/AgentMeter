@@ -2,7 +2,12 @@
 *{box-sizing:border-box}
 html,body{width:100%;height:100%;margin:0;overflow:hidden;background:transparent}
 body{padding:4px;user-select:none}
+<<<<<<< HEAD
 main{height:100%;padding:4px 8px;border:1px solid rgba(83,224,255,.5);border-radius:10px;background:rgb(3 25 45 / var(--surface-alpha));box-shadow:0 6px 20px rgba(0,9,22,.35),inset 0 1px rgba(255,255,255,.08);backdrop-filter:blur(10px)}
+=======
+main{height:100%;padding:4px 8px;border:1px solid rgba(83,224,255,.5);border-radius:10px;background:rgb(3 25 45 / var(--surface-alpha));box-shadow:0 6px 20px rgba(0,9,22,.35),inset 0 1px rgba(255,255,255,.08);backdrop-filter:blur(10px);transition:background-color .16s ease}
+main:hover{background:rgb(3 25 45 / 1)}
+>>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
 ul{height:100%;margin:0;padding:0;display:grid;align-content:center;list-style:none}
 li{min-width:0;min-height:28px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px;border-bottom:1px solid rgba(135,215,241,.15)}
 li:last-child{border-bottom:0}

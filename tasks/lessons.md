@@ -1,5 +1,6 @@
 # Lessons
 
+<<<<<<< HEAD
 ## 2026-09-17 Boolean environment flags require the documented literal
 - Classification: incorrect integration assumption / insufficient regression control.
 - Signal: AgentMeter set `AGY_CLI_DISABLE_AUTO_UPDATE=1`, while Antigravity documents the accepted opt-out as `true`; the 15-minute updater path could therefore still launch a visible CMD even though source-regex tests passed.
@@ -23,6 +24,13 @@
 - Signal: a release-evidence commit staged all of `tasks/todo.md` after another task appended an unrelated specification plan.
 - Prevention: immediately before every commit, compare the staged file tail and name-status against the task baseline; for shared audit files, stage only the intended hunk or isolate a task-specific evidence file.
 - Tripwire: `git show --stat --oneline HEAD` plus `git show --format= -- tasks/todo.md` must contain only the current release section before pushing.
+=======
+## 2026-09-12 Release worktrees need regenerated ignored runtimes
+- Classification: environment-dependent verification setup.
+- Signal: a clean release worktree passed source tests but the desktop build could not find `resources/quota-helper`, then the background-window contract lacked the ignored `scripts/quota-smoke-support/node_modules` dependency.
+- Prevention: before verification or packaging in a new worktree, stage the pinned CLI fixture and run `scripts/prepare-desktop-quota.ps1`; never assume ignored runtime directories follow tracked source.
+- Tripwire: the full verifier must reach both Desktop tests and the ConPTY background-window contract from the exact release worktree before signing.
+>>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
 
 ## 2026-09-11 Verify release-host filename normalization before freezing an updater allowlist
 - Failure: the updater and manifest pinned Tauri's default NSIS filename containing a space, but GitHub normalized that space to a period on upload; the immutable 0.2.0 client therefore requested a 404 URL.
@@ -130,6 +138,7 @@
 - Prevention: for every bundled/official CLI, disable self-update and background daemons via their documented env/flags; inspect binaries (`strings`) for updater/daemon code paths. Reproduction attempts must span the tool's update TTL.
 - Tripwire: `tests/background_window_contract.test.cjs` requires `AGY_CLI_DISABLE_AUTO_UPDATE`, `DISABLE_AUTOUPDATER` and `--no-auto-update`.
 
+<<<<<<< HEAD
 ## 2026-09-12 Provider-wide analytics scope
 - Classification: misunderstanding requirements / provider-specific scope.
 - Signal: the first token-analysis slice hard-coded Codex even though the war room's stable domain boundary is the four-provider `PROVIDERS` set.
@@ -169,3 +178,9 @@
 - Signal: CPU, RAM and disk were put in a separate modal, preventing simultaneous viewing with provider cards; the user requested an on-screen setting.
 - Prevention: for dashboard monitoring requests, confirm whether readings must be visible together and default to an in-dashboard display with an explicit visibility preference when appropriate.
 - Tripwire: resources UI test checks that the panel is visible by default, shows all three readings, and stops polling when disabled.
+=======
+## 2026-09-13 Release metadata scope
+- Signal: release verifier detected unrelated lockfile packages bumped by a global version replacement.
+- Prevention: change only the application package stanza; inspect the lockfile diff before running verification or packaging. Preserve every dependency version/checksum.
+- Tripwire: `git diff -- desktop-p0/Cargo.lock` must contain only app version and explicitly required direct dependency entries.
+>>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940

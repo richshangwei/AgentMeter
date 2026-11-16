@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 2026-09-17 修正用量偵測時 CMD 閃現
 
 ## Goal & acceptance criteria
@@ -64,6 +65,66 @@
 ## Working notes
 - `quota_windows` 的順序不是產品契約；Codex 必須依 `limit_id` 與 `window_duration_mins` 選擇。
 - CSS 不得把 `opacity` 套在 HUD 父層；透明度只能進入背景色 alpha。
+=======
+# 2026-09-17 發布 0.2.7 CMD 閃現修正版
+
+## Goal & acceptance criteria
+- [x] 從公開 0.2.6 基線只移植 Antigravity updater 停用值與視窗回歸測試，不混入主工作區其他功能。
+- [ ] 應用程式、Cargo lock、安裝檔、manifest、commit 與 tag 版本一致為 0.2.7。
+- [x] 完整測試、實機 console 紅／綠控制、簽署建置、NSIS 檢驗與更新簽章全部通過。
+- [ ] GitHub Release 僅包含安全命名安裝檔、`.sig`、`latest.json`，公開 Latest 與匿名下載驗證通過。
+
+## Plan
+- [x] Checkpoint A: 審核 0.2.6 基線、發布差異、秘密與排除項目。
+- [x] Checkpoint B: 移植最小修正、更新 0.2.7 版本並執行完整驗證。
+- [x] Checkpoint C: 建立簽署草稿，驗證安裝包、manifest、簽章與竄改拒絕。
+- [ ] Checkpoint D: 提交／推送、建立 v0.2.7 Release，驗證 Latest 與公開資產。
+
+## Risk & rollback
+- Risk: high；公開可執行檔、不可變 tag／資產與自動更新 Latest 指向。
+- Rollback: 發布前停止並刪除草稿；發布後將 v0.2.7 改為非 Latest／draft，停止新下載，再以更高修正版恢復；不覆寫既有資產或自動降版。
+- Security: 私鑰只以既有 CurrentUser DPAPI 在記憶體解密；不輸出、不提交、不上傳金鑰。Release 只允許三個核准資產。
+- Exclusions: 主工作區未提交的 History／Token 分析／HUD 與文件、Logo、截圖、evidence、`.scratch`、target 不納入本次 hotfix diff 或 Release 資產；基線既有追蹤檔不在本次清理範圍。
+
+## Dependencies & environment
+- Windows、既有 Rust/Tauri/Node/NSIS/7-Zip/GitHub CLI、本機既有 DPAPI updater key。
+- 發布基線固定為 `origin/master` 的 0.2.6 發布紀錄提交；隔離工作樹為 `.release-worktrees/0.2.7`。
+
+## Working notes
+- 官方 Antigravity CLI 文件要求 `AGY_CLI_DISABLE_AUTO_UPDATE=true`；舊值 `1` 可能未停用 15 分鐘 TTL updater。
+- 完整 `scripts/verify-local.ps1`、11 個 targeted Node tests、Antigravity 三輪零視窗 fixture 與故意可見 CMD 正向控制皆通過。
+- 簽署草稿：`desktop-p0/target/update-drafts/0.2.7-70ee52da142c45f89ba41c9daf71d0e6`；installer 73,628,013 bytes；SHA-256 `093178E0973B2F8C84228F4F0C983A3329856FAEA7FFE828992E6FB5E90D8FAA`。
+- NSIS 內嵌 product/file version 均為 0.2.7；Tauri updater signature、trusted comment 與單位元竄改拒絕通過。Windows Authenticode 仍為 NotSigned。
+
+# 2026-09-12 發布 0.2.5 HUD 修正版
+
+## Goal & acceptance criteria
+- [x] 僅發布已驗證的 Codex HUD 額度語意、緊湊尺寸與透明 hover 修正。
+- [x] 版本、安裝檔、簽章、manifest 與 Git tag 一致為 0.2.5。
+- [x] GitHub Release 僅包含安全命名的安裝檔、`.sig` 與 `latest.json`，並可由 0.2.4 自動更新發現。
+
+## Plan
+- [x] 由 `origin/master` 建立隔離發布工作樹，只帶入 HUD 修正與測試。
+- [x] 執行完整本機驗證與簽署建置。
+- [x] 審核 diff，以詳細繁中 commit 提交並推送。
+- [x] 建立 v0.2.5 Release，驗證下載、SHA256、簽章與 Latest manifest。
+
+## Risk & rollback
+- Risk: high；這會發布可執行安裝檔及不可變更新資產。
+- Rollback: 發布前停止；發布後將 v0.2.5 改為非 Latest，並以更高修正版恢復，不覆寫既有資產。
+- Exclusions: 不包含原工作區的共享規格文件、任務紀錄或任何 `.scratch`／`Claude outputs` 圖片。
+
+## Working notes
+- 隔離工作樹需先以固定 SHA-512 的 Antigravity CLI 執行 `scripts/prepare-desktop-quota.ps1`，重建被 Git 忽略的測試依賴與打包 runtime。
+- 完整 `scripts/verify-local.ps1`、Edge HUD 幾何/hover 驗證及 Tauri 簽章/可信註解/單位元竄改拒絕皆通過。
+- 本機草稿：`desktop-p0/target/update-drafts/0.2.5-cb9e3e0b6d954a559c333da915025924`；安裝檔 73,594,573 bytes；SHA256 `5301BD1CF2BDF3E6F155B484A43B06FE96399A74ED3C393EE704FDB77CA27735`。Windows Authenticode 仍為 `NotSigned`。
+
+## Results
+- 發布 commit `92ad463a437d8c4c6885947dda4d2a2df4779561` 已推送至 `master`，同一 commit 已建立並推送不可變 tag `v0.2.5`。
+- GitHub Release `v0.2.5` 已公開、非 prerelease 並設為 Latest；資產僅有安全命名安裝檔、相鄰簽章與 `latest.json`。
+- 匿名重新下載三個資產成功；遠端安裝檔為 73,594,573 bytes，SHA256 與本機草稿完全相同，公開 `latest.json` 回報 0.2.5 且安裝網址精確指向 v0.2.5 資產。
+- 0.2.4 已編入相同 Latest endpoint 與更新公鑰，可發現、下載並驗證 0.2.5；安裝仍需使用者明確確認。未在本機覆寫安裝中的 0.2.4，也未聲稱完成真實升級安裝驗收。
+>>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
 
 # 2026-09-12 發布 0.2.4 自動更新
 
@@ -561,6 +622,7 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Plus-shaped 300/10080 and Pro-shaped weekly-only fixtures pass; absent rows remain absent, so the UI never fabricates a plan window.
 - Verification: 29 focused Node tests passed, 4 desktop auto-quota Rust tests passed, 18 Windows Edge viewport matrices passed, and `scripts/verify-local.ps1` completed with all tests, formatting, and Clippy checks passing.
 - External boundary: no installer was rebuilt and no credential or account state was changed. Current official documentation describes plan-dependent five-hour/weekly limits but does not guarantee one fixed shape for every Plus or Pro account.
+<<<<<<< HEAD
 # 2026-09-12 AgentMeter 網站設計架構與功能規格書
 
 ## Goal & acceptance criteria
@@ -885,3 +947,20 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 工作備註：現有已安裝版本與工作區建置版是不同執行檔；編譯不會自動取代安裝版。
 
 結果：資源列預設顯示，設定關閉會保存偏好並停止輪詢；19 項前端測試與 release 編譯通過。未進行實際視窗幾何驗證，因本環境無可用 Playwright。
+=======
+
+## 2026-09-13 Release 0.2.6 — multi-monitor HUD
+- [x] Base on published 0.2.5 plus release evidence; isolate HUD-only scope from unfinished analytics.
+- [x] Port backend physical positioning, persistence, native drag and settings; preserve existing hover opacity.
+- [x] Node 18 tests and Edge HUD checks including seven monitor choices, drag/reset and persistence failure.
+- [x] Full local checks; signed installer, signature/tamper verification and NSIS inspection.
+- [x] Commit/push release source; upload all three draft assets before publishing latest.
+- [x] Verify public latest manifest and downloaded artifact digest.
+- Risk: medium, native multi-monitor mixed-DPI behavior still requires physical acceptance. Rollback: set latest back to v0.2.5 and withdraw new manifest; no automatic downgrade.
+- Environment: cached pinned dependencies, existing DPAPI signing key, fixed GitHub updater endpoint; no key rotation or credential changes.
+- Release source: `6e08cf2da5299fa03b215f7e82e5e809948926d6`; public tag `v0.2.6`, published 2026-09-13T15:42:20Z.
+- Installer: `AgentMeter-P0_0.2.6_x64-setup.exe`, 73,634,971 bytes; SHA-256 `025C0F0587706C94238636A0974980828271464C235DA5E4A8134BEFD402173E`.
+- Existing public key matched 0.2.5; local signature, trusted comment and tamper rejection passed. All three GitHub uploaded asset digests and sizes matched before publishing.
+- Full `scripts/verify-local.ps1` and Edge HUD checks passed. NSIS embedded executable product/file version is 0.2.6; no Windows Authenticode signature, unchanged from previous release. Physical mixed-DPI monitor interaction remains unverified; no local installer was run.
+- Public `releases/latest/download/latest.json` returned 0.2.6; the publicly downloaded installer matched the local SHA-256 and passed signature/trusted-comment/tamper-rejection verification.
+>>>>>>> e5fc472ca0a98dc6a8a788b69df6ed97d73f8940
