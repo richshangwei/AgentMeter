@@ -494,3 +494,27 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Plus-shaped 300/10080 and Pro-shaped weekly-only fixtures pass; absent rows remain absent, so the UI never fabricates a plan window.
 - Verification: 29 focused Node tests passed, 4 desktop auto-quota Rust tests passed, 18 Windows Edge viewport matrices passed, and `scripts/verify-local.ps1` completed with all tests, formatting, and Clippy checks passing.
 - External boundary: no installer was rebuilt and no credential or account state was changed. Current official documentation describes plan-dependent five-hour/weekly limits but does not guarantee one fixed shape for every Plus or Pro account.
+
+# 2026-11-16 本機硬體使用量
+
+## 驗收與計畫
+- [x] 顯示本機 CPU 使用率、實體記憶體及 Windows 系統磁碟已用／總量，讀取失敗時明確顯示未知。
+- [x] 僅開啟本機資源視窗時定期更新，維持既有額度版面；不新增依賴。
+- [x] 執行 Rust 測試與前端檢查，記錄結果。
+
+## 工作備註
+- 範圍為 Windows 桌面版；磁碟使用量為系統磁碟，而非全部磁碟合計。
+
+## 結果
+- Windows 原生 API 取得 CPU、實體記憶體及系統磁碟使用量；本機資源視窗開啟時每 2 秒更新。
+- 使用工作區 Cargo 快取執行 CPU 測試通過；既有桌面前端測試 18 項通過，JavaScript 語法檢查通過。未進行實際桌面視窗互動驗證。
+
+# 2026-11-16 主畫面顯示本機資源
+
+- [x] 將 CPU、記憶體與系統磁碟資料放在主畫面，預設顯示並提供可保存的設定開關。
+- [x] 資訊列顯示時定期更新；隱藏時停止更新，保留錯誤狀態。
+- [x] 驗證設定、更新流程與既有桌面測試，編譯 Release。
+
+工作備註：現有已安裝版本與工作區建置版是不同執行檔；編譯不會自動取代安裝版。
+
+結果：資源列預設顯示，設定關閉會保存偏好並停止輪詢；19 項前端測試與 release 編譯通過。未進行實際視窗幾何驗證，因本環境無可用 Playwright。

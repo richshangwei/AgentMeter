@@ -6,6 +6,7 @@ mod dashboard;
 mod diagnostics;
 mod discovery;
 mod lifecycle;
+mod resources;
 mod settings;
 mod setup;
 mod tablet_bridge;
@@ -177,11 +178,13 @@ fn main() {
     let result = tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(dashboard::Dashboard::default())
+        .manage(resources::ResourceState::default())
         .manage(setup::SetupState::default())
         .manage(tablet_bridge::TabletBridge::default())
         .manage(updater::PendingUpdate::default())
         .invoke_handler(tauri::generate_handler![
             dashboard::snapshot,
+            resources::local_resources,
             auto_quota::refresh_quota,
             auto_quota::auto_quota_settings,
             auto_quota::set_auto_quota,

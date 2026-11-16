@@ -11,6 +11,7 @@
   <script src="hud-model.js" defer></script>
   <script src="app-updater.js" defer></script>
   <script src="dashboard.js" defer></script>
+  <script src="resources.js" defer></script>
   <script src="app-updater-ui.js" defer></script>
 </head>
 <body>
@@ -34,6 +35,12 @@
 
     <section class="dashboard-head"><div><p class="eyebrow">LIVE AGENT OVERVIEW</p><h1>AI 工具使用狀態</h1></div><p>即時額度、週期與連線狀態集中顯示</p></section>
 
+    <section id="resources-panel" class="resources-panel" aria-label="本機資源使用量">
+      <div><strong>CPU</strong><span id="resource-cpu">取樣中…</span></div>
+      <div><strong>記憶體</strong><span id="resource-memory">讀取中…</span></div>
+      <div><strong id="resource-disk-label">系統磁碟</strong><span id="resource-disk">讀取中…</span></div>
+      <span id="resources-status" class="sr-only" role="status"></span>
+    </section>
     <section id="desktop-cards" class="cards" aria-label="監控卡片">
       <article id="codex-card" class="monitor-card" data-provider-card="codex"><div class="heading"><div class="provider-title"><img class="provider-mark" src="assets/codex-icon.png" alt=""><div><h2>Codex</h2><p>AI 程式開發助手</p></div></div><span id="codex-status">等待讀取</span></div><div id="codex-quota" class="quota" role="region" aria-label="Codex 額度明細">—</div><div class="card-foot"><p id="codex-time" class="hint">尚無資料</p><div class="button-row"><button data-provider="codex">更新</button></div><p id="codex-message" class="hint card-message" role="status"></p></div></article>
       <article id="claude-card" class="monitor-card" data-provider-card="claude"><div class="heading"><div class="provider-title"><img class="provider-mark" src="assets/claude-icon.png" alt=""><div><h2>Claude Code</h2><p>AI 協作開發助手</p></div></div><span id="claude-status">等待讀取</span></div><div id="claude-quota" class="quota" role="region" aria-label="Claude Code 額度明細">—</div><div class="card-foot"><p id="claude-time" class="hint">尚無資料</p><div class="button-row"><button data-provider="claude">更新</button><button id="claude-enable" class="ghost" hidden>啟用讀取</button></div><p id="claude-message" class="hint card-message" role="status"></p></div></article>
@@ -47,6 +54,7 @@
 
   <dialog id="app-settings-dialog">
     <div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div>
+    <section><h3>本機資源</h3><label class="update-option"><input id="resources-enabled" type="checkbox" checked><span>在主畫面顯示 CPU、記憶體與系統磁碟使用量<small>開啟時每 2 秒更新。</small></span></label><p id="resources-preference-status" class="hint" role="status"></p></section>
     <section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section>
     <section class="hud-settings" aria-labelledby="hud-settings-title">
       <h3 id="hud-settings-title">右下角數據模式</h3>

@@ -111,3 +111,15 @@
 - Signal: process flags and windowsHide were correct everywhere, yet a flash was tied to AgY/Terminal and was intermittent (agy checks for updates at most every 15 minutes).
 - Prevention: for every bundled/official CLI, disable self-update and background daemons via their documented env/flags; inspect binaries (`strings`) for updater/daemon code paths. Reproduction attempts must span the tool's update TTL.
 - Tripwire: `tests/background_window_contract.test.cjs` requires `AGY_CLI_DISABLE_AUTO_UPDATE`, `DISABLE_AUTOUPDATER` and `--no-auto-update`.
+
+## 2026-11-16 Compiled binary is not the running installation
+- Classification: missing verification / incorrect deployment assumption.
+- Signal: the release build succeeded but the visible single-instance process still ran the older installed executable, so the new control was absent.
+- Prevention: compare the running executable path and start time against the build output, and verify the newly launched UI before claiming the feature is visible; explain that compiling does not update the installed copy.
+- Tripwire: `Get-Process agentmeter-desktop-p0 | Select-Object Path,StartTime` and inspect the application's visible resource control after a deliberate restart.
+
+## 2026-11-16 Monitoring data should remain visible together
+- Classification: misunderstanding requirements / missing user workflow verification.
+- Signal: CPU, RAM and disk were put in a separate modal, preventing simultaneous viewing with provider cards; the user requested an on-screen setting.
+- Prevention: for dashboard monitoring requests, confirm whether readings must be visible together and default to an in-dashboard display with an explicit visibility preference when appropriate.
+- Tripwire: resources UI test checks that the panel is visible by default, shows all three readings, and stops polling when disabled.
