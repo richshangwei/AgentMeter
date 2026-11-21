@@ -1,5 +1,11 @@
 # Lessons
 
+## 2026-11-17 PowerShell single-result Git queries can collapse arrays
+- Classification: incorrect environment assumption.
+- Signal: a safe remote-ref preflight rejected matching refs because a single output line became a scalar string and indexing selected a character.
+- Prevention: explicitly wrap command output in an array before count or index checks.
+- Tripwire: use `@(git ls-remote ...)` and verify both the ref name and full commit ID before creating a release.
+
 ## 2026-11-16 已提交的衝突標記不能依賴 Git 狀態發現
 - Classification: missing verification / merge integrity.
 - Signal: merge commit contained conflict markers in tracked files while `git status` was clean; Cargo could not parse the manifest.
