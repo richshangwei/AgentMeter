@@ -2,7 +2,7 @@ use serde::Serialize;
 use std::sync::Mutex;
 use windows_sys::Win32::{
     Foundation::FILETIME,
-    Storage::FileSystem::GetDiskFreeSpaceExW,
+    Storage::FileSystem::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives},
     System::{
         SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX},
         Threading::GetSystemTimes,
@@ -23,12 +23,66 @@ pub struct Capacity {
     total: u64,
 }
 #[derive(Serialize)]
+pub struct Disk {
+    path: String,
+    used: u64,
+    total: u64,
+}
+#[derive(Serialize)]
 pub struct Resources {
     cpu_error: bool,
     cpu_percent: Option<f64>,
     memory: Option<Capacity>,
     disk: Option<Capacity>,
     disk_path: String,
+    disks: Vec<Disk>,
+}
+
+const DRIVE_FIXED: u32 = 3;
+
+/// Drive roots such as `C:\` for every bit set in a `GetLogicalDrives` mask.
+fn drive_roots(mask: u32) -> Vec<String> {
+    (0..26u8)
+        .filter(|bit| mask & (1 << bit) != 0)
+        .map(|bit| format!("{}:\\", char::from(b'A' + bit)))
+        .collect()
+}
+
+fn capacity_of(root: &std::ffi::OsStr) -> Option<Capacity> {
+    use std::os::windows::ffi::OsStrExt;
+    if root.is_empty() {
+        return None;
+    }
+    let wide: Vec<u16> = root.encode_wide().chain(std::iter::once(0)).collect();
+    let mut total = 0;
+    let mut free = 0;
+    let ok =
+        unsafe { GetDiskFreeSpaceExW(wide.as_ptr(), std::ptr::null_mut(), &mut total, &mut free) }
+            != 0;
+    if !ok || total == 0 {
+        return None;
+    }
+    total.checked_sub(free).map(|used| Capacity { used, total })
+}
+
+/// Local fixed drives only: network shares and removable media can block or prompt.
+fn fixed_disks() -> Vec<Disk> {
+    let mask = unsafe { GetLogicalDrives() };
+    drive_roots(mask)
+        .into_iter()
+        .filter_map(|root| {
+            let wide: Vec<u16> = root.encode_utf16().chain(std::iter::once(0)).collect();
+            if unsafe { GetDriveTypeW(wide.as_ptr()) } != DRIVE_FIXED {
+                return None;
+            }
+            let capacity = capacity_of(std::ffi::OsStr::new(&root))?;
+            Some(Disk {
+                path: root.trim_end_matches('\\').to_owned(),
+                used: capacity.used,
+                total: capacity.total,
+            })
+        })
+        .collect()
 }
 
 fn cpu_usage(previous: CpuTimes, current: CpuTimes) -> Option<f64> {
@@ -82,20 +136,7 @@ pub fn local_resources(state: tauri::State<'_, ResourceState>) -> Resources {
         None
     };
     let root = std::env::var_os("SystemRoot").unwrap_or_default();
-    use std::os::windows::ffi::OsStrExt;
-    let wide: Vec<u16> = root.encode_wide().chain(std::iter::once(0)).collect();
-    let mut total = 0;
-    let mut free = 0;
-    let disk = if !root.is_empty()
-        && unsafe {
-            GetDiskFreeSpaceExW(wide.as_ptr(), std::ptr::null_mut(), &mut total, &mut free)
-        } != 0
-        && total > 0
-    {
-        total.checked_sub(free).map(|used| Capacity { used, total })
-    } else {
-        None
-    };
+    let disk = capacity_of(&root);
     let disk_path = std::path::Path::new(&root)
         .components()
         .next()
@@ -107,12 +148,34 @@ pub fn local_resources(state: tauri::State<'_, ResourceState>) -> Resources {
         memory,
         disk,
         disk_path,
+        disks: fixed_disks(),
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn drive_roots_follow_logical_drive_mask() {
+        assert_eq!(drive_roots(0), Vec::<String>::new());
+        assert_eq!(drive_roots(0b1100), vec!["C:\\", "D:\\"]);
+        assert_eq!(drive_roots(1 << 25), vec!["Z:\\"]);
+    }
+    #[test]
+    fn fixed_disks_include_system_drive() {
+        let system = std::env::var("SystemDrive").unwrap_or_else(|_| "C:".into());
+        let disks = fixed_disks();
+        assert!(
+            disks
+                .iter()
+                .any(|disk| disk.path.eq_ignore_ascii_case(&system))
+        );
+        assert!(
+            disks
+                .iter()
+                .all(|disk| disk.used <= disk.total && disk.total > 0)
+        );
+    }
     #[test]
     fn cpu_usage_handles_deltas_and_invalid_samples() {
         let start = CpuTimes {

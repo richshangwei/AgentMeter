@@ -1,0 +1,193 @@
+/* Alternate color themes. The default dark theme lives in style.css;
+   theme.js sets <html data-theme="light|aurora"> from the saved preference. */
+
+/* ---------- Shared bright base (light + aurora) ---------- */
+:root[data-theme="light"],
+:root[data-theme="aurora"] {
+  color-scheme: light;
+  --text: #10233a;
+  --text-soft: #4a6178;
+  --text-faint: #6f8497;
+  --surface: rgba(255, 255, 255, .86);
+  --surface-sunken: rgba(236, 244, 251, .9);
+  --border: rgba(31, 94, 145, .18);
+  --line: rgba(31, 120, 190, .4);
+  --line-soft: rgba(31, 94, 145, .16);
+  --muted: var(--text-soft);
+  --mint: #0b8f74;
+  --cyan: #0b98c9;
+  --danger: #d23a6a;
+  --warning: #c27a00;
+  --ring-track: rgba(80, 116, 150, .16);
+  --resource-value: var(--text);
+  --resource-detail: var(--text-soft);
+  color: var(--text);
+}
+:root[data-theme="light"] .monitor-card[data-provider-card="codex"],
+:root[data-theme="aurora"] .monitor-card[data-provider-card="codex"] { --accent: #0aa3d6; --accent-soft: rgba(10, 163, 214, .22); }
+:root[data-theme="light"] .monitor-card[data-provider-card="claude"],
+:root[data-theme="aurora"] .monitor-card[data-provider-card="claude"] { --accent: #ef8420; --accent-soft: rgba(239, 132, 32, .22); }
+:root[data-theme="light"] .monitor-card[data-provider-card="copilot"],
+:root[data-theme="aurora"] .monitor-card[data-provider-card="copilot"] { --accent: #1d8fd0; --accent-soft: rgba(29, 143, 208, .22); }
+:root[data-theme="light"] .monitor-card[data-provider-card="antigravity"],
+:root[data-theme="aurora"] .monitor-card[data-provider-card="antigravity"] { --accent: #8257f0; --accent-soft: rgba(130, 87, 240, .22); }
+
+:root[data-theme="light"] body::before,
+:root[data-theme="aurora"] body::before { display: none; }
+
+/* Controls */
+:root[data-theme="light"] button,
+:root[data-theme="aurora"] button { border-color: transparent; box-shadow: 0 2px 8px rgba(18, 104, 190, .22); }
+:root[data-theme="light"] .ghost,
+:root[data-theme="aurora"] .ghost { background: var(--surface); border-color: var(--border); color: var(--text); box-shadow: 0 1px 3px rgba(16, 35, 58, .08); }
+:root[data-theme="light"] .ghost:hover,
+:root[data-theme="aurora"] .ghost:hover { border-color: var(--line); }
+:root[data-theme="light"] .setting-field select,
+:root[data-theme="aurora"] .setting-field select,
+:root[data-theme="light"] .usb-fields input,
+:root[data-theme="aurora"] .usb-fields input { background: #fff; color: var(--text); border-color: var(--border); }
+
+/* Header */
+:root[data-theme="light"] .brand-icon,
+:root[data-theme="aurora"] .brand-icon { filter: none; }
+:root[data-theme="light"] .brand-divider, :root[data-theme="light"] .sync-divider,
+:root[data-theme="aurora"] .brand-divider, :root[data-theme="aurora"] .sync-divider { background: var(--border); }
+:root[data-theme="light"] :is(.brand-caption, .sync-label, .sync-summary, .auto-toggle, .pager span),
+:root[data-theme="aurora"] :is(.brand-caption, .sync-label, .sync-summary, .auto-toggle, .pager span) { color: var(--text-soft); }
+:root[data-theme="light"] .system-state::before,
+:root[data-theme="aurora"] .system-state::before { box-shadow: none; }
+:root[data-theme="light"] footer,
+:root[data-theme="aurora"] footer { color: var(--text-faint); }
+
+/* Cards and quota tiles */
+:root[data-theme="light"] .monitor-card,
+:root[data-theme="aurora"] .monitor-card { background: var(--surface); box-shadow: 0 6px 22px rgba(16, 35, 58, .08), 0 0 0 1px var(--accent-soft); }
+:root[data-theme="light"] .monitor-card::after,
+:root[data-theme="aurora"] .monitor-card::after { opacity: .5; }
+:root[data-theme="light"] .provider-mark,
+:root[data-theme="aurora"] .provider-mark { filter: none; }
+:root[data-theme="light"] .provider-title p,
+:root[data-theme="aurora"] .provider-title p { color: var(--text-soft); }
+:root[data-theme="light"] .heading > span,
+:root[data-theme="aurora"] .heading > span { background: rgba(11, 143, 116, .08); }
+:root[data-theme="light"] .heading > span::before,
+:root[data-theme="aurora"] .heading > span::before { box-shadow: none; }
+:root[data-theme="light"] .heading .status-error,
+:root[data-theme="aurora"] .heading .status-error { color: var(--danger); background: rgba(210, 58, 106, .08); }
+:root[data-theme="light"] .window,
+:root[data-theme="aurora"] .window { background: var(--surface-sunken); border-color: var(--border); }
+:root[data-theme="light"] .q-label,
+:root[data-theme="aurora"] .q-label { color: var(--text); }
+:root[data-theme="light"] .q-value,
+:root[data-theme="aurora"] .q-value { color: var(--text); }
+:root[data-theme="light"] :is(.q-reset, .q-used, .hint),
+:root[data-theme="aurora"] :is(.q-reset, .q-used, .hint) { color: var(--text-soft); }
+:root[data-theme="light"] .quota-track,
+:root[data-theme="aurora"] .quota-track { background: var(--ring-track); }
+:root[data-theme="light"] .quota-fill,
+:root[data-theme="aurora"] .quota-fill { box-shadow: none; }
+:root[data-theme="light"] .monitor-card[data-failed="true"] .card-message,
+:root[data-theme="aurora"] .monitor-card[data-failed="true"] .card-message { color: #b4441b; }
+:root[data-theme="light"] .empty-state,
+:root[data-theme="aurora"] .empty-state { color: var(--text-soft); }
+:root[data-theme="light"] :is(.empty-state strong, .dashboard-empty strong),
+:root[data-theme="aurora"] :is(.empty-state strong, .dashboard-empty strong) { color: var(--text); }
+:root[data-theme="light"] .dashboard-empty,
+:root[data-theme="aurora"] .dashboard-empty { background: var(--surface); border-color: var(--line); }
+
+/* Local resources */
+:root[data-theme="light"] .resource-tile,
+:root[data-theme="aurora"] .resource-tile { background: var(--surface); border-color: var(--border); box-shadow: 0 2px 10px rgba(16, 35, 58, .06); }
+
+/* Dialogs */
+:root[data-theme="light"] dialog,
+:root[data-theme="aurora"] dialog { background: #fbfdff; color: var(--text); border-color: var(--border); box-shadow: 0 24px 70px rgba(16, 35, 58, .28); }
+:root[data-theme="light"] dialog::backdrop,
+:root[data-theme="aurora"] dialog::backdrop { background: rgba(16, 35, 58, .35); }
+:root[data-theme="light"] :is(.monitor-option, .connection-panel, .history-privacy, .history-kpi, .history-panel, .history-metric, .history-session, .history-content-body article, .history-signal, .history-turns li),
+:root[data-theme="aurora"] :is(.monitor-option, .connection-panel, .history-privacy, .history-kpi, .history-panel, .history-metric, .history-session, .history-content-body article, .history-signal, .history-turns li) { background: var(--surface-sunken); border-color: var(--border); color: var(--text); }
+:root[data-theme="light"] .history-flow,
+:root[data-theme="aurora"] .history-flow { background: var(--ring-track); border-color: var(--border); }
+:root[data-theme="light"] .history-top-track,
+:root[data-theme="aurora"] .history-top-track { background: var(--ring-track); }
+:root[data-theme="light"] :is(.history-kpi strong, .history-panel figcaption, .history-panel h3, .history-flow-legend strong, .history-signal strong, .history-top-sessions li strong, .history-method summary, .history-metric strong, .history-session > summary strong, .history-turn-head strong, .history-content-body pre, .history-toolbar p, .history-content-actions p, .history-content-consent, #update-status, .monitor-option),
+:root[data-theme="aurora"] :is(.history-kpi strong, .history-panel figcaption, .history-panel h3, .history-flow-legend strong, .history-signal strong, .history-top-sessions li strong, .history-method summary, .history-metric strong, .history-session > summary strong, .history-turn-head strong, .history-content-body pre, .history-toolbar p, .history-content-actions p, .history-content-consent, #update-status, .monitor-option) { color: var(--text); }
+:root[data-theme="light"] :is(.history-kpi span, .history-kpi small, .history-flow-legend li, .history-signal p, .history-signal small, .history-top-sessions li > div:first-child, .history-top-sessions li small, .history-method, .history-price-note, .history-raw, .history-metric span, .history-session > summary span, .history-turn-head span, .history-content-body article > time, .history-provider-field, .update-option small, .usb-fields label, .guide-steps li, .catalog-badge),
+:root[data-theme="aurora"] :is(.history-kpi span, .history-kpi small, .history-flow-legend li, .history-signal p, .history-signal small, .history-top-sessions li > div:first-child, .history-top-sessions li small, .history-method, .history-price-note, .history-raw, .history-metric span, .history-session > summary span, .history-turn-head span, .history-content-body article > time, .history-provider-field, .update-option small, .usb-fields label, .guide-steps li, .catalog-badge) { color: var(--text-soft); }
+:root[data-theme="light"] .history-content-warning,
+:root[data-theme="aurora"] .history-content-warning { background: #fff6e5; border-color: rgba(194, 122, 0, .35); color: #7a4b00; }
+:root[data-theme="light"] .guide-steps li::before,
+:root[data-theme="aurora"] .guide-steps li::before { background: rgba(11, 152, 201, .12); color: var(--cyan); }
+:root[data-theme="light"] :is(.update-panel, .hud-settings),
+:root[data-theme="aurora"] :is(.update-panel, .hud-settings) { border-top-color: var(--border); }
+:root[data-theme="light"] .hud-opacity,
+:root[data-theme="aurora"] .hud-opacity { color: var(--text); }
+:root[data-theme="light"] .hud-opacity output,
+:root[data-theme="aurora"] .hud-opacity output { color: var(--text); }
+
+/* ---------- 明亮清爽 (light) ---------- */
+:root[data-theme="light"] {
+  background: #eef4fa;
+  --bg: #eef4fa;
+}
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(77, 170, 245, .18), transparent 38%),
+    radial-gradient(circle at 95% 100%, rgba(40, 200, 190, .14), transparent 36%),
+    #eef4fa;
+}
+:root[data-theme="light"] button { background: linear-gradient(180deg, #2b9cf0, #1677d6); }
+:root[data-theme="light"] .brand-name span { color: #0b9c86; }
+:root[data-theme="light"] .eyebrow { color: #1677d6; }
+
+/* ---------- AI 極光 (aurora) ---------- */
+:root[data-theme="aurora"] {
+  background: #f5f3ff;
+  --bg: #f5f3ff;
+  --text: #1c1745;
+  --text-soft: #565180;
+  --text-faint: #7a76a0;
+  --surface: rgba(255, 255, 255, .62);
+  --surface-sunken: rgba(255, 255, 255, .55);
+  --border: rgba(110, 86, 220, .2);
+  --line: rgba(110, 86, 220, .45);
+  --line-soft: rgba(110, 86, 220, .16);
+  --mint: #6a4cf0;
+  --cyan: #0aa3d6;
+  --ring-track: rgba(110, 86, 220, .13);
+  --ai-gradient: linear-gradient(120deg, #7b5cff 0%, #3b8bff 50%, #12c6e8 100%);
+}
+:root[data-theme="aurora"] body {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(168, 140, 255, .55), transparent 40%),
+    radial-gradient(circle at 100% 10%, rgba(110, 220, 255, .5), transparent 38%),
+    radial-gradient(circle at 70% 100%, rgba(255, 160, 220, .38), transparent 42%),
+    radial-gradient(circle at 10% 90%, rgba(120, 240, 210, .3), transparent 40%),
+    #f5f3ff;
+}
+:root[data-theme="aurora"] button { background: var(--ai-gradient); box-shadow: 0 4px 16px rgba(91, 92, 255, .3); }
+:root[data-theme="aurora"] .ghost { background: rgba(255, 255, 255, .7); }
+:root[data-theme="aurora"] :is(.brand-name span, .eyebrow, .dashboard-head h1, .resource-tile strong) {
+  background: var(--ai-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+:root[data-theme="aurora"] .monitor-card {
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, white);
+  backdrop-filter: blur(22px) saturate(160%);
+  box-shadow: 0 10px 34px rgba(91, 70, 200, .14), inset 0 1px rgba(255, 255, 255, .8);
+}
+:root[data-theme="aurora"] .monitor-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  pointer-events: none;
+}
+:root[data-theme="aurora"] .resource-tile { backdrop-filter: blur(18px) saturate(150%); box-shadow: 0 6px 20px rgba(91, 70, 200, .1), inset 0 1px rgba(255, 255, 255, .8); }
+:root[data-theme="aurora"] .resource-tile .resource-bar i { background: var(--ai-gradient); }
+:root[data-theme="aurora"] .resource-tile[data-level="warning"] .resource-bar i { background: var(--warning); }
+:root[data-theme="aurora"] .resource-tile[data-level="low"] .resource-bar i { background: var(--danger); }
+:root[data-theme="aurora"] dialog { background: rgba(252, 251, 255, .96); backdrop-filter: blur(24px); }

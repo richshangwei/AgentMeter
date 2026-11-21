@@ -7,6 +7,8 @@
   <link rel="icon" type="image/png" href="assets/agentmeter-icon.png">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="style-overrides.css">
+  <link rel="stylesheet" href="themes.css">
+  <script src="theme.js"></script>
   <script src="layout.js" defer></script>
   <script src="hud-model.js" defer></script>
   <script src="history.js" defer></script>
@@ -37,9 +39,9 @@
     <section class="dashboard-head"><div><p class="eyebrow">LIVE AGENT OVERVIEW</p><h1>AI 工具使用狀態</h1></div><p>即時額度、週期與連線狀態集中顯示</p></section>
 
     <section id="resources-panel" class="resources-panel" aria-label="本機資源使用量">
-      <div><strong>CPU</strong><span id="resource-cpu">取樣中…</span></div>
-      <div><strong>記憶體</strong><span id="resource-memory">讀取中…</span></div>
-      <div><strong id="resource-disk-label">系統磁碟</strong><span id="resource-disk">讀取中…</span></div>
+      <div id="resource-cpu-tile" class="resource-tile"><strong>CPU</strong><span id="resource-cpu" class="resource-value">取樣中…</span><span class="resource-detail">處理器使用率</span><span class="resource-bar"><i id="resource-cpu-bar"></i></span></div>
+      <div id="resource-memory-tile" class="resource-tile"><strong>記憶體</strong><span id="resource-memory" class="resource-value">讀取中…</span><span id="resource-memory-detail" class="resource-detail"></span><span class="resource-bar"><i id="resource-memory-bar"></i></span></div>
+      <div id="resource-disks" class="resource-disks"></div>
       <span id="resources-status" class="sr-only" role="status"></span>
     </section>
     <section id="desktop-cards" class="cards" aria-label="監控卡片">
@@ -82,7 +84,8 @@
 
   <dialog id="app-settings-dialog">
     <div class="dialog-title"><div><p class="eyebrow">SYSTEM SETTINGS</p><h2>AgentMeter 設定</h2></div><button id="app-settings-close" class="icon-button" aria-label="關閉設定">×</button></div>
-    <section><h3>本機資源</h3><label class="update-option"><input id="resources-enabled" type="checkbox" checked><span>在主畫面顯示 CPU、記憶體與系統磁碟使用量<small>開啟時每 2 秒更新。</small></span></label><p id="resources-preference-status" class="hint" role="status"></p></section>
+    <section aria-labelledby="theme-title"><h3 id="theme-title">外觀主題</h3><label class="setting-field" for="theme-select"><span>配色</span><select id="theme-select"><option value="dark">深色科技（預設）</option><option value="light">明亮清爽</option><option value="aurora">AI 極光</option></select></label><p id="theme-status" class="hint" role="status"></p></section>
+    <section><h3>本機資源</h3><label class="update-option"><input id="resources-enabled" type="checkbox" checked><span>在主畫面顯示 CPU、記憶體與所有本機磁碟使用量<small>開啟時每 2 秒更新。</small></span></label><p id="resources-preference-status" class="hint" role="status"></p></section>
     <section><h3>AI Agent 監控</h3><p>在這裡逐一加入、移除或調整顯示順序；資料收集不受顯示選擇影響。</p><div id="desktop-monitor-options" class="monitor-options"></div><p id="desktop-monitor-count" class="hint" role="status"></p></section>
     <section class="hud-settings" aria-labelledby="hud-settings-title">
       <h3 id="hud-settings-title">流量浮動視窗</h3>

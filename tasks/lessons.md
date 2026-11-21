@@ -193,3 +193,13 @@
 - Signal: release verifier detected unrelated lockfile packages bumped by a global version replacement.
 - Prevention: change only the application package stanza; inspect the lockfile diff before running verification or packaging. Preserve every dependency version/checksum.
 - Tripwire: `git diff -- desktop-p0/Cargo.lock` must contain only app version and explicitly required direct dependency entries.
+
+## 2026-11-21 Stale instance blocks launch; PowerShell EnumWindows callbacks swallow output
+- Classification: environment-dependent / missing verification.
+- Signal: Task Manager showed `AgentMeter P0` running (7 threads, no msedgewebview2 child) with no window or tray icon; a later launch wrote `startup-error.log` with "IPC window is unavailable". Killing the stale PID and relaunching restored main window, HUD, tray and IPC window (36 threads, WebView2 child).
+- Pitfall: a PowerShell scriptblock passed as an `EnumWindows` delegate does not emit its output to the pipeline, so it falsely reports "no windows". Enumerate inside an Add-Type C# helper that returns a list.
+- Tripwire: for "running but invisible" reports, check `startup-error.log`, thread count, and `Win32_Process` children with ParentProcessId = app PID before touching code.
+
+## 2026-11-21 Local desktop build prerequisites on this machine
+- Signal: `cargo` missing, then `link.exe` missing (VS installs lacked the C++ workload), then build.rs failed on missing `desktop-p0/resources/quota-helper`, then one transient "存取被拒 (os error 5)" on a fresh build script.
+- Prevention: rustup lives in scoop (`RUSTUP_HOME`/`CARGO_HOME` under `~/scoop/persist/rustup`; set them explicitly in shells started before install). Stage quota-helper via `scripts/prepare-desktop-quota.ps1` or copy the installed runtime; a non-bundled release exe also needs `target/release/quota-helper`. Retry once on os error 5 (antivirus scanning new executables) before diagnosing.

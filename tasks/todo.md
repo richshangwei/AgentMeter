@@ -982,3 +982,10 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - Existing public key matched 0.2.5; local signature, trusted comment and tamper rejection passed. All three GitHub uploaded asset digests and sizes matched before publishing.
 - Full `scripts/verify-local.ps1` and Edge HUD checks passed. NSIS embedded executable product/file version is 0.2.6; no Windows Authenticode signature, unchanged from previous release. Physical mixed-DPI monitor interaction remains unverified; no local installer was run.
 - Public `releases/latest/download/latest.json` returned 0.2.6; the publicly downloaded installer matched the local SHA-256 and passed signature/trusted-comment/tamper-rejection verification.
+
+## 2026-11-21 主題配色、放大本機資源、列出所有磁碟
+- [x] 設定新增「外觀主題」：深色科技（預設）/ 明亮清爽 / AI 極光；localStorage `agentmeter.theme.v1`，`ui/theme.js` 於首次繪製前套用。
+- [x] 本機資源改為大字百分比 + 容量明細 + 使用率條（≥80% 警告、≥90% 危險色）。
+- [x] 後端 `local_resources` 新增 `disks`（所有 DRIVE_FIXED 磁碟）；保留 `disk`/`disk_path` 相容舊前端，前端也相容舊後端。
+- [x] Verify: 以 scoop rustup (1.100.0) + VS 18 Build Tools C++ 工作負載：desktop `cargo fmt --check` 通過、`cargo test` 39/39、Clippy `-D warnings` 通過、`cargo build --release` 成功；啟動 target/release 版實機截圖確認 7 顆磁碟卡片與明亮主題。
+- Results: `node --test` 桌面 UI 測試 58/60 通過（2 項 background_window_contract 為既有失敗，缺未產生的 quota-helper 檔案，stash 基準相同）；Edge headless 以 mock 截圖確認三種主題與設定對話框。HUD 浮動視窗未套用主題。
