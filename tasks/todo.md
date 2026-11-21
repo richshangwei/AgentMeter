@@ -1,3 +1,13 @@
+# 2026-11-21 發布 0.2.9 簽署更新
+
+- [x] 確認版本、工作區、遠端同步及既有簽署金鑰。
+- [x] 執行 verify-local 與 manifest 測試並建置簽署安裝包。
+- [x] 驗證簽章、trusted comment、竄改拒絕。
+- [x] 建立草稿、核對資產後發布並驗證公開更新資訊。
+
+結果：verify-local 通過；安裝包內嵌版本 0.2.9，大小 73,845,008 bytes，SHA-256 FC1181EC058BC2F5AC4A8C3B10AB5194301D00F0562E28946F12E6BF8759256B。草稿三個資產大小與 SHA-256 和本機一致；公開 https://github.com/richshangwei/AgentMeter/releases/tag/v0.2.9 ，latest manifest 為 0.2.9，安裝檔 HEAD 200，tag 指向 b0cfe16。未在隔離環境實測更新安裝及重啟；NSIS 未具 Windows Authenticode 簽章。
+風險：高。回復：將 latest 指回 0.2.8 或撤下 0.2.9 更新資訊；已安裝版本不自動降版。
+
 # 2026-11-17 發布 0.2.8 簽署更新
 
 - [x] 確認版本、工作區及既有簽署金鑰。
