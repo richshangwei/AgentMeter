@@ -83,6 +83,26 @@ fn compact_hud_is_a_draggable_hidden_secondary_window() {
 }
 
 #[test]
+fn webviews_are_created_only_after_setup_registers_command_state() {
+    // Regression: config-created webviews can invoke synchronous commands while a
+    // later webview is being created, before the setup hook has managed state,
+    // which panicked with "state() called before manage() for AutoQuota".
+    let config = config();
+    for window in config["app"]["windows"].as_array().unwrap() {
+        assert_eq!(window["create"], false, "{} must be built in setup", window["label"]);
+    }
+    let main = include_str!("../desktop-p0/src/main.rs");
+    let build = main.find("WebviewWindowBuilder::from_config").expect("setup builds windows");
+    for state in [
+        "hud::initialize(",
+        "app.manage(auto_quota::AutoQuota",
+        "app.manage(settings::SettingsStore",
+    ] {
+        assert!(main.find(state).expect(state) < build, "{state} must precede window creation");
+    }
+}
+
+#[test]
 fn provider_history_commands_are_bounded_to_the_desktop_and_accept_no_source_path() {
     let main = include_str!("../desktop-p0/src/main.rs");
     let history = include_str!("../desktop-p0/src/history.rs");

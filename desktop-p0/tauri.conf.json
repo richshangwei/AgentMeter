@@ -11,6 +11,7 @@
     "windows": [
       {
         "label": "main",
+        "create": false,
         "title": "AgentMeter — AI 代理監控",
         "width": 1080,
         "height": 640,
@@ -21,6 +22,7 @@
       },
       {
         "label": "hud",
+        "create": false,
         "title": "AgentMeter 數據",
         "url": "hud.html",
         "width": 240,

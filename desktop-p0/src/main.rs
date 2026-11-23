@@ -249,6 +249,12 @@ fn main() {
             app.manage(settings::SettingsStore(std::sync::Mutex::new(
                 app_config_dir.join("sources.json"),
             )));
+            // Windows use `create: false` and are built only after every command state is
+            // managed: building a WebView2 window pumps messages, so an earlier window could
+            // otherwise invoke a synchronous command against unmanaged state and abort.
+            for window_config in app.config().app.windows.clone() {
+                tauri::WebviewWindowBuilder::from_config(app.handle(), &window_config)?.build()?;
+            }
             let show = MenuItem::with_id(app, "show", "顯示 AgentMeter", true, None::<&str>)?;
             let exit = MenuItem::with_id(app, "exit", "結束 AgentMeter", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &exit])?;

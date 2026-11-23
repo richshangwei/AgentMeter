@@ -989,3 +989,11 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - [x] 後端 `local_resources` 新增 `disks`（所有 DRIVE_FIXED 磁碟）；保留 `disk`/`disk_path` 相容舊前端，前端也相容舊後端。
 - [x] Verify: 以 scoop rustup (1.100.0) + VS 18 Build Tools C++ 工作負載：desktop `cargo fmt --check` 通過、`cargo test` 39/39、Clippy `-D warnings` 通過、`cargo build --release` 成功；啟動 target/release 版實機截圖確認 7 顆磁碟卡片與明亮主題。
 - Results: `node --test` 桌面 UI 測試 58/60 通過（2 項 background_window_contract 為既有失敗，缺未產生的 quota-helper 檔案，stash 基準相同）；Edge headless 以 mock 截圖確認三種主題與設定對話框。HUD 浮動視窗未套用主題。
+
+## 2026-11-23 修復啟動閃退並打包 0.2.9
+- [x] 重現：已安裝 0.2.8 每次啟動 0xc0000409；stderr 顯示 `state() called before manage() for AutoQuota`。
+- [x] 修正：視窗改 `create: false`，於 setup 末端（所有 state manage 後）以 `WebviewWindowBuilder::from_config` 建立。
+- [x] 回歸測試 `webviews_are_created_only_after_setup_registers_command_state` 先紅後綠。
+- [x] Verify：根目錄 desktop_bundle_config 12/12、desktop-p0 `cargo test` 39/39、release 實機啟動 3 次正常、NSIS 內嵌版本 0.2.9。
+- Results：`desktop-p0/target/x86_64-pc-windows-msvc/release/bundle/nsis/AgentMeter P0_0.2.9_x64-setup.exe`，73,724,698 bytes，SHA-256 `860DFC392C18A721ED0A60826627191F630C42C6584742D58D067A4F4F6D0100`；未簽章、未發布、未在本機執行安裝。
+- Risk：低；回滾為還原本 commit。

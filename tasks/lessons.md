@@ -203,3 +203,9 @@
 ## 2026-11-21 Local desktop build prerequisites on this machine
 - Signal: `cargo` missing, then `link.exe` missing (VS installs lacked the C++ workload), then build.rs failed on missing `desktop-p0/resources/quota-helper`, then one transient "存取被拒 (os error 5)" on a fresh build script.
 - Prevention: rustup lives in scoop (`RUSTUP_HOME`/`CARGO_HOME` under `~/scoop/persist/rustup`; set them explicitly in shells started before install). Stage quota-helper via `scripts/prepare-desktop-quota.ps1` or copy the installed runtime; a non-bundled release exe also needs `target/release/quota-helper`. Retry once on os error 5 (antivirus scanning new executables) before diagnosing.
+
+## 2026-11-23 Config-created webviews can call commands before setup manages state
+- Classification: incorrect assumption about framework behaviour / concurrency-timing.
+- Signal: installed 0.2.8 exited silently on every launch (WER 0xc0000409, no startup-error.log). Launching with `-RedirectStandardError` revealed `state() called before manage() for AutoQuota`: Tauri builds config windows before the setup hook, and creating the second WebView2 window pumps messages, so the main page's synchronous `auto_quota_settings` ran against unmanaged state; the panic in a WebView2 callback cannot unwind and aborts.
+- Prevention: windows use `"create": false` and are built with `WebviewWindowBuilder::from_config` at the end of setup, after every `app.manage`. For silent desktop exits, read the Application event log and capture stderr of the release exe before guessing.
+- Tripwire: `tests/desktop_bundle_config.rs::webviews_are_created_only_after_setup_registers_command_state`.
