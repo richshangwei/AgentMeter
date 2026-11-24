@@ -1031,3 +1031,9 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - [x] `local_resources.app`：以 Toolhelp 程序樹（防 PID 重用）加總主程式、WebView2、收集元件的 CPU（整機百分比）與專用工作集；資源列新增「本程式」格。
 - [x] Verify：desktop cargo test 42/42、Clippy、fmt；前端 100 通過 1 既有失敗；responsive 74 PASS、HUD gate；實機與系統效能計數器比對記憶體。
 - Risk：低；僅查詢權限 PROCESS_QUERY_LIMITED_INFORMATION，無新增相依套件（windows-sys 功能旗標）。
+
+## 2026-11-24 打包 0.3.0（本機、未簽章）
+- [x] 於 428a5f9 乾淨工作區執行 `cargo tauri build --ci --target x86_64-pc-windows-msvc --bundles nsis -- --offline --locked`。
+- [x] `inspect-nsis.ps1 -ExpectedVersion 0.3.0` 通過；解開安裝檔以內嵌執行檔（SHA-256 與檢查結果一致）與內附 quota-helper 實機啟動：4/4 服務、無當機事件。
+- Results：`desktop-p0/target/x86_64-pc-windows-msvc/release/bundle/nsis/AgentMeter P0_0.3.0_x64-setup.exe`，73,747,599 bytes，SHA-256 `FAEC18315E6027D18005D698C66249AAD7DEF8C74AF4851E6661A3F5287B73FF`；無更新簽章與 Authenticode 簽章，未發布、未執行安裝程式。
+- 限制：本機無 `.agentmeter-signing`，建置未嵌入更新公鑰與端點，程式內更新功能停用。勿在此機執行 `local-signing-build.ps1`（會產生新金鑰，既有安裝無法驗證）。
