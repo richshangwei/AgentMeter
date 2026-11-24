@@ -1,0 +1,38 @@
+/* Depletion estimate lane. Cards without a lane keep their original grid. */
+.monitor-card[data-lane="true"] { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+.cards[data-shape="wide"] .monitor-card[data-lane="true"] { grid-template-rows: minmax(0, 1fr) auto; }
+.cards[data-shape="wide"] .monitor-card[data-lane="true"] > :is(.heading, .card-foot) { grid-row: 1 / -1; }
+.cards[data-shape="wide"] .monitor-card[data-lane="true"] > .heading { grid-column: 1; }
+.cards[data-shape="wide"] .monitor-card[data-lane="true"] > .quota { grid-column: 2; grid-row: 1; }
+.cards[data-shape="wide"] .monitor-card[data-lane="true"] > .card-foot { grid-column: 3; }
+.cards[data-shape="wide"] .run-lane { grid-column: 2; grid-row: 2; }
+.run-lane { --lane-color: var(--text-soft, #b5d8ee); position: relative; z-index: 1; min-width: 0; }
+.run-lane[data-level="good"] { --lane-color: var(--mint); }
+.run-lane[data-level="warning"] { --lane-color: var(--warning, #ffc766); }
+.run-lane[data-level="danger"] { --lane-color: var(--danger, #ff8fb0); }
+.lane-track { display: none; }
+.lane-text { margin: 0; overflow: hidden; color: var(--lane-color); font-size: 12px; font-weight: 700; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.lane-text::before { content: "⏳ "; }
+.cards[data-density="tight"] .lane-text { font-size: 11px; }
+.cards[data-density="roomy"] .lane-text { font-size: 14px; }
+
+/* Bright themes: keep the coloured text at readable contrast on white surfaces. */
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .run-lane[data-level="warning"] { --lane-color: #8f5200; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .run-lane[data-level="danger"] { --lane-color: #b3203f; }
+:root:is([data-theme="light"], [data-theme="pets"], [data-theme="hamster"]) .run-lane[data-level="good"] { --lane-color: #08735d; }
+
+/* ---------- 可愛動物 ---------- */
+:root[data-theme="pets"] .run-lane { --pet-size: 60px; display: grid; grid-template-columns: minmax(84px, 1fr) minmax(0, auto); align-items: center; gap: 10px; height: 52px; }
+:root[data-theme="pets"] .cards[data-density="roomy"] .run-lane { --pet-size: 86px; height: 72px; }
+:root[data-theme="pets"] .lane-text::before { content: ""; }
+:root[data-theme="pets"] .lane-track { position: relative; display: block; align-self: stretch; min-width: 0; overflow: hidden; border-radius: 14px; background: linear-gradient(180deg, #e3f4ff 0 62%, #cdebb0 62% 100%); color: #5a3a1e; }
+/* Finish line */
+:root[data-theme="pets"] .lane-track::after { content: ""; position: absolute; inset: 0 0 0 auto; width: 8px; background: repeating-conic-gradient(#fff 0 25%, #8a5a34 0 50%) 0 0 / 8px 8px; opacity: .7; }
+/* Grass tufts scroll faster as consumption speeds up */
+:root[data-theme="pets"] .lane-track::before { content: ""; position: absolute; inset: auto 0 5px 0; height: 4px; background: repeating-linear-gradient(90deg, #8cc267 0 5px, transparent 5px 24px); }
+:root[data-theme="pets"] .lane-runner { position: absolute; bottom: 0; left: calc((100% - var(--pet-size) - 8px) * var(--used, 0) / 100); width: var(--pet-size); }
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-theme="pets"] .run-lane[data-mood="run"] .lane-track::before { animation: lane-ground var(--ground, 1s) steps(12) infinite; }
+  :root[data-theme="pets"] .lane-runner { transition: left 1.2s ease; }
+}
+@keyframes lane-ground { to { background-position-x: -24px; } }

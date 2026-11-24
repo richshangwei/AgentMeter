@@ -1,0 +1,67 @@
+/* Only the position along the yard is animated, so resizing never sends a hamster across the text. */
+@property --x { syntax: "<number>"; inherits: true; initial-value: 0; }
+/* 倉鼠樂園: shared by the dashboard lanes and the floating HUD. --wheel and --ham size the scene. */
+.habitat { --wheel: 48px; --ham: 32px; --runner: 29px; --floor: 4px; --base: 0px; --wheel-left: 2px; --yard-left: calc(var(--wheel) + 6px); --yard-width: calc(100% - var(--yard-left) - 2px); position: relative; display: block; min-width: 0; overflow: hidden; color: #5a3a1e; }
+.habitat svg { display: block; overflow: visible; }
+.wheel { position: absolute; left: var(--wheel-left); bottom: var(--base); width: var(--wheel); height: calc(var(--wheel) * 1.04); }
+.wheel-spin { transform-origin: 50px 50px; }
+.wheel-gauge { stroke: var(--level, #7cb35a); stroke-dasharray: var(--remaining, 0) 100; }
+.habitat[data-act="tired"] .wheel-gauge { stroke: transparent; }
+.ham-spot { position: absolute; bottom: var(--floor); left: calc(var(--yard-left) + (var(--yard-width) - var(--ham)) * var(--x, 0)); width: var(--ham); }
+.habitat[data-act="run"] .ham-spot { left: calc(var(--wheel-left) + (var(--wheel) - var(--runner)) / 2); bottom: calc(var(--base) + var(--wheel) * .115); width: var(--runner); }
+.ham-turn { transform-box: view-box; transform-origin: 25px 20px; }
+.habitat[data-facing="left"] .ham-turn { transform: scaleX(-1); }
+.ham-foot { transform-box: fill-box; transform-origin: 50% 50%; }
+.ham-sleep, .ham-sweat, .ham-eyes-closed, .ham-seed { display: none; }
+.habitat:is([data-act="sleep"], [data-act="tired"]) .ham-eyes-closed, .habitat[data-act="sleep"] .ham-sleep, .habitat[data-act="tired"] .ham-sweat, .habitat[data-act="eat"] .ham-seed { display: inline; }
+.habitat:is([data-act="sleep"], [data-act="tired"]) .ham-eyes-open { display: none; }
+.habitat[data-act="run"] .ham-shadow { display: none; }
+/* Asleep or worn out: a flattened ball of fur */
+.habitat:is([data-act="sleep"], [data-act="tired"]) .ham-bob { transform-box: view-box; transform-origin: 25px 39px; transform: scale(1.06, .84); }
+.habitat:is([data-act="sleep"], [data-act="tired"]) .ham-head { transform: translateY(5px); }
+.ham-house { position: absolute; right: 4px; bottom: var(--floor); height: calc(var(--ham) * 1.2); }
+.ham-bowl { position: absolute; bottom: var(--floor); left: calc(var(--yard-left) + (var(--yard-width) - var(--ham)) * .5 + var(--ham) * .84); height: calc(var(--ham) * .34); }
+/* steps() gives sprite-like motion and, unlike smooth easing, produces no frame while nothing changes. */
+@media (prefers-reduced-motion: no-preference) {
+  .habitat[data-act="stroll"] { transition: --x 10s steps(100); }
+  .habitat[data-act="run"] .wheel-spin { animation: wheel-turn calc(var(--stride, .5s) * 3) steps(20) infinite; }
+  .habitat[data-act="run"] .ham-bob { animation: ham-run calc(var(--stride, .5s) / 2) steps(1) infinite; }
+  .habitat[data-act="run"] .ham-foot-a { animation: ham-foot var(--stride, .5s) steps(1) infinite; }
+  .habitat[data-act="run"] .ham-foot-b { animation: ham-foot var(--stride, .5s) steps(1) calc(var(--stride, .5s) / -2) infinite; }
+  .habitat[data-act="stroll"] .ham-bob { animation: ham-run .45s steps(1) infinite; }
+  .habitat[data-act="stroll"] .ham-foot-a { animation: ham-foot .9s steps(2) infinite; }
+  .habitat[data-act="stroll"] .ham-foot-b { animation: ham-foot .9s steps(2) -.45s infinite; }
+  .habitat[data-act="eat"] :is(.ham-head, .ham-seed) { animation: ham-nibble .5s steps(1) infinite; }
+  .habitat[data-act="rest"] .ham-eyes-open { transform-box: fill-box; transform-origin: 50% 50%; animation: ham-blink 4s steps(1) infinite; }
+  .habitat:is([data-act="sleep"], [data-act="tired"]) .ham-bob { animation: ham-breathe 2.8s steps(6) infinite; }
+  .habitat[data-act="sleep"] .ham-z { animation: ham-z 3s steps(6) infinite; }
+  .habitat[data-act="sleep"] .ham-z1 { animation-delay: .8s; }
+}
+@keyframes wheel-turn { to { transform: rotate(360deg); } }
+@keyframes ham-run { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes ham-foot { 0%, 100% { transform: translateX(4px); } 25% { transform: translateY(0); } 50% { transform: translateX(-4px); } 75% { transform: translateY(-2.6px); } }
+@keyframes ham-nibble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(1.2px); } }
+@keyframes ham-blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes ham-breathe { 0%, 100% { transform: scale(1.06, .84); } 50% { transform: scale(1.04, .89); } }
+@keyframes ham-z { 0% { opacity: 0; transform: translateY(5px); } 40%, 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-4px); } }
+
+/* Quota gauges as playgrounds: the ring becomes the wheel, the rest of the tile its yard */
+.window > .habitat { display: none; }
+:root[data-theme="hamster"] .quota[data-playground="true"] .window:not(.usage-row) { background: linear-gradient(0deg, #ecd29c 0 calc(6px + var(--q-floor) * .35), #fff9e6 calc(6px + var(--q-floor) * .35)); }
+:root[data-theme="hamster"] .quota[data-playground="true"] .window > .habitat { --wheel: var(--q-wheel); --ham: var(--q-ham); --runner: var(--q-runner); --base: 4px; --floor: 4px; --wheel-left: var(--q-pad); --yard-left: var(--q-yardleft); --yard-width: var(--q-yardwidth); display: block; position: absolute; inset: 0; }
+:root[data-theme="hamster"] .quota[data-playground="true"] .window > :not(.habitat) { z-index: 1; }
+:root[data-theme="hamster"] .quota[data-playground="true"] .window::before { display: none; }
+.quota:not([data-furnished="true"]) .ham-house, .quota:not([data-bowl="true"]) .ham-bowl { display: none; }
+/* Ring and stack: the number sits in the upper half of the wheel, above the runner */
+:root[data-theme="hamster"] .quota[data-playground="true"]:is([data-variant="ring"], [data-variant="stack"]) .window:not(.usage-row) > .q-value { position: absolute; grid-area: auto; place-self: auto; left: calc(var(--q-pad) + var(--q-wheel) / 2); bottom: calc(4px + var(--q-wheel) * .75); margin: 0; padding: 0 .3em; border-radius: 99px; background: rgba(255, 248, 234, .88); transform: translate(-50%, 50%); }
+:root[data-theme="hamster"] .quota[data-playground="true"][data-variant="ring"] .window:not(.usage-row) { padding-bottom: calc(var(--q-pad) + var(--q-floor)); }
+:root[data-theme="hamster"] .quota[data-playground="true"]:is([data-variant="ring"], [data-variant="stack"]) .quota-track { display: none; }
+:root[data-theme="hamster"] .quota[data-playground="true"][data-variant="stack"] .window:not(.usage-row) { grid-template-rows: auto auto auto minmax(0, 1fr); grid-template-areas: "label" "reset" "used" "."; align-content: start; justify-items: start; text-align: left; }
+/* Bar and line: wheel on the left, number beside it */
+:root[data-theme="hamster"] .quota[data-playground="true"]:is([data-variant="bar"], [data-variant="line"]) .window:not(.usage-row) { padding-left: calc(var(--q-pad) + var(--q-zone) + 8px); }
+
+/* Settings: pick a hamster per provider */
+.hamster-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 8px; margin-top: 8px; }
+.hamster-option { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--line-soft); border-radius: 14px; font-size: 13px; }
+.hamster-option select { min-height: 36px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 9px; background: #fff; color: var(--text); font: inherit; }
+.hamster-preview { color: #5a3a1e; }

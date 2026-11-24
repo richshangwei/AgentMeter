@@ -147,6 +147,7 @@ fn main() {
         .manage(updater::PendingUpdate::default())
         .invoke_handler(tauri::generate_handler![
             dashboard::snapshot,
+            dashboard::window_visible,
             resources::local_resources,
             history::history_sessions,
             history::history_session_content,

@@ -28,6 +28,13 @@ fn public_report(report: Value) -> Value {
     })
 }
 
+/// WebView2 keeps reporting a visible document after the native window is hidden,
+/// so pages ask here before spending CPU and GPU on animations.
+#[tauri::command]
+pub fn window_visible(window: tauri::WebviewWindow) -> bool {
+    window.is_visible().unwrap_or(true) && !window.is_minimized().unwrap_or(false)
+}
+
 #[tauri::command]
 pub fn snapshot(state: tauri::State<'_, Dashboard>) -> Result<Value, String> {
     let latest = state.latest.lock().map_err(|_| "dashboard unavailable")?;

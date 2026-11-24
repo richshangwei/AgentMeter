@@ -1,16 +1,29 @@
 use serde::Serialize;
+use std::collections::HashMap;
 use std::sync::Mutex;
 use windows_sys::Win32::{
-    Foundation::FILETIME,
+    Foundation::{CloseHandle, FILETIME, HANDLE, INVALID_HANDLE_VALUE},
     Storage::FileSystem::{GetDiskFreeSpaceExW, GetDriveTypeW, GetLogicalDrives},
     System::{
+        Diagnostics::ToolHelp::{
+            CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
+            TH32CS_SNAPPROCESS,
+        },
+        ProcessStatus::{
+            K32GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS, PROCESS_MEMORY_COUNTERS_EX2,
+        },
         SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX},
-        Threading::GetSystemTimes,
+        Threading::{
+            GetProcessTimes, GetSystemTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+        },
     },
 };
 
 #[derive(Default)]
-pub struct ResourceState(Mutex<Option<CpuTimes>>);
+pub struct ResourceState {
+    system: Mutex<Option<CpuTimes>>,
+    app: Mutex<Option<AppSample>>,
+}
 #[derive(Clone, Copy)]
 struct CpuTimes {
     idle: u64,
@@ -28,14 +41,174 @@ pub struct Disk {
     used: u64,
     total: u64,
 }
+/// AgentMeter's own process tree: the app, its WebView2 processes and running collectors.
+#[derive(Serialize)]
+pub struct AppUsage {
+    /// Share of the whole machine, like Task Manager; unknown until the second sample.
+    cpu_percent: Option<f64>,
+    memory: u64,
+    processes: usize,
+}
+/// CPU time per process, keyed by pid and creation time so a reused pid starts over.
+struct AppSample {
+    system_total: u64,
+    cpu: HashMap<(u32, u64), u64>,
+}
+struct ProcessSample {
+    created: u64,
+    cpu: u64,
+    memory: u64,
+}
 #[derive(Serialize)]
 pub struct Resources {
+    app: Option<AppUsage>,
     cpu_error: bool,
     cpu_percent: Option<f64>,
     memory: Option<Capacity>,
     disk: Option<Capacity>,
     disk_path: String,
     disks: Vec<Disk>,
+}
+
+struct OwnedHandle(HANDLE);
+impl Drop for OwnedHandle {
+    fn drop(&mut self) {
+        // SAFETY: constructed only from a valid handle this struct owns; closed exactly once.
+        unsafe {
+            CloseHandle(self.0);
+        }
+    }
+}
+
+/// (pid, parent pid) of every running process.
+fn process_parents() -> Option<Vec<(u32, u32)>> {
+    // SAFETY: the entry is zeroed with its size set, and the snapshot handle is checked and owned.
+    unsafe {
+        let handle = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if handle == INVALID_HANDLE_VALUE {
+            return None;
+        }
+        let snapshot = OwnedHandle(handle);
+        let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+        let mut parents = Vec::new();
+        let mut more = Process32FirstW(snapshot.0, &mut entry) != 0;
+        while more {
+            parents.push((entry.th32ProcessID, entry.th32ParentProcessID));
+            more = Process32NextW(snapshot.0, &mut entry) != 0;
+        }
+        Some(parents)
+    }
+}
+
+fn sample_process(pid: u32) -> Option<ProcessSample> {
+    // SAFETY: the handle is checked and owned; every out-structure is initialized and sized.
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if handle.is_null() {
+            return None;
+        }
+        let process = OwnedHandle(handle);
+        let (mut created, mut exited, mut kernel, mut user) = (
+            FILETIME::default(),
+            FILETIME::default(),
+            FILETIME::default(),
+            FILETIME::default(),
+        );
+        if GetProcessTimes(process.0, &mut created, &mut exited, &mut kernel, &mut user) == 0 {
+            return None;
+        }
+        // The private working set avoids counting memory WebView2 processes share. Windows
+        // versions without it fall back to the full working set.
+        let mut extended: PROCESS_MEMORY_COUNTERS_EX2 = std::mem::zeroed();
+        let size = std::mem::size_of::<PROCESS_MEMORY_COUNTERS_EX2>() as u32;
+        extended.cb = size;
+        let memory = if K32GetProcessMemoryInfo(process.0, (&raw mut extended).cast(), size) != 0 {
+            extended.PrivateWorkingSetSize
+        } else {
+            let mut basic: PROCESS_MEMORY_COUNTERS = std::mem::zeroed();
+            let size = std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32;
+            basic.cb = size;
+            if K32GetProcessMemoryInfo(process.0, &mut basic, size) == 0 {
+                return None;
+            }
+            basic.WorkingSetSize
+        };
+        Some(ProcessSample {
+            created: filetime(created),
+            cpu: filetime(kernel) + filetime(user),
+            memory: memory as u64,
+        })
+    }
+}
+
+/// The root and its descendants. A child must not be older than its parent: Windows keeps the
+/// parent pid after the parent exits, so a reused pid would otherwise adopt strangers.
+fn process_tree(
+    root: u32,
+    parents: &[(u32, u32)],
+    sample: impl Fn(u32) -> Option<ProcessSample>,
+) -> HashMap<u32, ProcessSample> {
+    let mut tree = HashMap::new();
+    let Some(first) = sample(root) else {
+        return tree;
+    };
+    let mut pending = vec![(root, first.created)];
+    tree.insert(root, first);
+    while let Some((parent, created)) = pending.pop() {
+        for &(pid, _) in parents.iter().filter(|(_, owner)| *owner == parent) {
+            if tree.contains_key(&pid) {
+                continue;
+            }
+            if let Some(child) = sample(pid).filter(|child| child.created >= created) {
+                pending.push((pid, child.created));
+                tree.insert(pid, child);
+            }
+        }
+    }
+    tree
+}
+
+fn app_cpu_percent(previous: &AppSample, current: &AppSample) -> Option<f64> {
+    let total = current.system_total.checked_sub(previous.system_total)?;
+    if total == 0 {
+        return None;
+    }
+    // A process that appeared since the last sample spent all its time within the interval.
+    let used: u64 = current
+        .cpu
+        .iter()
+        .map(|(key, cpu)| cpu.saturating_sub(previous.cpu.get(key).copied().unwrap_or(0)))
+        .sum();
+    Some((used as f64 * 100.0 / total as f64).min(100.0))
+}
+
+fn app_usage(state: &Mutex<Option<AppSample>>, system: Option<CpuTimes>) -> Option<AppUsage> {
+    let tree = process_tree(std::process::id(), &process_parents()?, sample_process);
+    if tree.is_empty() {
+        return None;
+    }
+    let cpu_percent = system.and_then(|system| {
+        let current = AppSample {
+            // Kernel time already includes idle time, so this is all CPU time on all cores.
+            system_total: system.kernel.checked_add(system.user)?,
+            cpu: tree
+                .iter()
+                .map(|(pid, process)| ((*pid, process.created), process.cpu))
+                .collect(),
+        };
+        let mut previous = state.lock().ok()?;
+        let percent = previous
+            .as_ref()
+            .and_then(|old| app_cpu_percent(old, &current));
+        *previous = Some(current);
+        percent
+    });
+    Some(AppUsage {
+        cpu_percent,
+        memory: tree.values().map(|process| process.memory).sum(),
+        processes: tree.len(),
+    })
 }
 
 const DRIVE_FIXED: u32 = 3;
@@ -106,20 +279,17 @@ pub fn local_resources(state: tauri::State<'_, ResourceState>) -> Resources {
     let mut kernel = FILETIME::default();
     let mut user = FILETIME::default();
     let cpu_ok = unsafe { GetSystemTimes(&mut idle, &mut kernel, &mut user) } != 0;
-    let cpu_percent = if cpu_ok {
-        let current = CpuTimes {
-            idle: filetime(idle),
-            kernel: filetime(kernel),
-            user: filetime(user),
-        };
-        state.0.lock().ok().and_then(|mut previous| {
-            let result = previous.and_then(|old| cpu_usage(old, current));
-            *previous = Some(current);
-            result
-        })
-    } else {
-        None
-    };
+    let current = cpu_ok.then(|| CpuTimes {
+        idle: filetime(idle),
+        kernel: filetime(kernel),
+        user: filetime(user),
+    });
+    let cpu_percent = current.and_then(|current| {
+        let mut previous = state.system.lock().ok()?;
+        let result = previous.and_then(|old| cpu_usage(old, current));
+        *previous = Some(current);
+        result
+    });
     let mut memory = MEMORYSTATUSEX {
         dwLength: std::mem::size_of::<MEMORYSTATUSEX>() as u32,
         ..Default::default()
@@ -143,6 +313,7 @@ pub fn local_resources(state: tauri::State<'_, ResourceState>) -> Resources {
         .map(|c| c.as_os_str().to_string_lossy().into_owned())
         .unwrap_or_default();
     Resources {
+        app: app_usage(&state.app, current),
         cpu_error: !cpu_ok,
         cpu_percent,
         memory,
@@ -175,6 +346,58 @@ mod tests {
                 .iter()
                 .all(|disk| disk.used <= disk.total && disk.total > 0)
         );
+    }
+    fn process(created: u64, cpu: u64) -> ProcessSample {
+        ProcessSample {
+            created,
+            cpu,
+            memory: 10,
+        }
+    }
+    #[test]
+    fn process_tree_follows_descendants_and_rejects_reused_parent_pids() {
+        // 5 → 6 → 7 belong to the app; 8 claims parent 6 but is older, so its real parent is gone.
+        let parents = [(5, 1), (6, 5), (7, 6), (8, 6), (9, 1), (5, 5)];
+        let tree = process_tree(5, &parents, |pid| match pid {
+            5 => Some(process(100, 1)),
+            6 => Some(process(110, 1)),
+            7 => Some(process(120, 1)),
+            8 => Some(process(50, 1)),
+            _ => Some(process(200, 1)),
+        });
+        let mut pids: Vec<_> = tree.into_keys().collect();
+        pids.sort_unstable();
+        assert_eq!(pids, vec![5, 6, 7]);
+        assert!(process_tree(5, &parents, |_| None).is_empty());
+    }
+    #[test]
+    fn app_cpu_is_a_share_of_the_machine_across_changing_processes() {
+        let sample = |system_total, cpu: &[((u32, u64), u64)]| AppSample {
+            system_total,
+            cpu: cpu.iter().copied().collect(),
+        };
+        let before = sample(1_000, &[((1, 1), 50), ((2, 1), 40)]);
+        // pid 2 exited and its pid was reused by a new child that spent 30.
+        let after = sample(2_000, &[((1, 1), 70), ((2, 9), 30)]);
+        assert_eq!(app_cpu_percent(&before, &after), Some(5.0));
+        assert_eq!(app_cpu_percent(&before, &before), None);
+        assert_eq!(app_cpu_percent(&after, &before), None);
+    }
+    #[test]
+    fn app_usage_measures_this_process() {
+        let state = Mutex::new(None);
+        let first = app_usage(
+            &state,
+            Some(CpuTimes {
+                idle: 0,
+                kernel: 1,
+                user: 1,
+            }),
+        )
+        .unwrap();
+        assert!(first.cpu_percent.is_none());
+        assert!(first.processes >= 1);
+        assert!(first.memory > 100_000, "{} bytes", first.memory);
     }
     #[test]
     fn cpu_usage_handles_deltas_and_invalid_samples() {

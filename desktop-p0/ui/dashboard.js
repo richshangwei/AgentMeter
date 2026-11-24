@@ -297,9 +297,12 @@ function layoutQuotaRegion(quota) {
     return;
   }
   delete quota.dataset.emptyShape;
-  const layout=quotaTileLayout(width,height,tiles.length);
+  const layout=quotaTileLayout(width,height,tiles.length,document.documentElement?.dataset?.theme==='hamster');
   if(!layout)return;
   quota.dataset.variant=layout.variant;quota.dataset.used=String(layout.showUsed);quota.dataset.track=layout.inlineTrack?'inline':'none';
+  const play=layout.play;
+  quota.dataset.playground=String(Boolean(play?.wheel));quota.dataset.furnished=String(Boolean(play?.furnished));quota.dataset.bowl=String(Boolean(play?.bowl));
+  if(play)for(const name of ['wheel','zone','floor','ham','runner','yardLeft','yardWidth'])quota.style.setProperty('--q-'+name.toLowerCase(),play[name]+'px');
   quota.style.setProperty('--q-reset-lines',String(layout.resetLines));quota.style.setProperty('--q-label-lines',String(layout.labelLines));
   for(const [name,value] of [['--q-cols',layout.columns],['--q-rows',layout.rows],['--q-gap',layout.gap+'px'],['--q-tile-w',layout.tileWidth+'px'],['--q-tile-h',layout.tileHeight+'px'],
     ['--q-pad',layout.pad+'px'],['--q-ring',layout.ring+'px'],['--q-label',layout.label+'px'],['--q-value',layout.value+'px'],['--q-small',layout.small+'px']])quota.style.setProperty(name,String(value));
@@ -317,7 +320,7 @@ function observeQuotaRegion(quota) {
 function applyDesktopLayout() {
   loadDesktopSelection();
   const cards=get('desktop-cards'),area=measureDesktopCards(cards);
-  const pageSize=desktopPageCapacity(area.width,area.height,desktopSelection.length,area.gap,Math.max(1,...desktopSelection.map(id=>desktopTileCounts[id]||1)));
+  const pageSize=desktopPageCapacity(area.width,area.height,desktopSelection.length,area.gap,Math.max(1,...desktopSelection.map(id=>desktopTileCounts[id]||1)),typeof desktopLaneHeight==='function'?desktopLaneHeight():0);
   const page=pagedMonitorIds(desktopSelection,desktopPage,pageSize),grid=desktopViewportGrid(area.width,area.height,page.ids.length);desktopPage=page.page;
   const visible=new Set(page.ids);for(const id of desktopAvailable){const card=get(id+'-card');if(card){card.hidden=!visible.has(id);card.style.order=String(page.ids.indexOf(id));}}
   const empty=get('desktop-empty');if(empty)empty.hidden=page.ids.length!==0;
@@ -445,6 +448,7 @@ function render(snapshot) {
     syncClock.textContent=lastSync?new Date(lastSync).toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'}):'尚未同步';
     syncClock.title=lastSync?'最近一次資料同步：'+new Date(lastSync).toLocaleString('zh-TW'):'尚未完成資料同步';
   }
+  if(typeof renderLanes==='function')renderLanes(snapshot);
   applyDesktopLayout();renderDesktopOptions();
 }
 async function refreshQuota(provider = 'all', enableClaude = false) {
@@ -510,9 +514,9 @@ loadAutoQuotaSettings();
 setInterval(pollTabletActivity, 2000);
 setInterval(pollQuota,2000);
 
-get('app-settings').addEventListener('click',()=>{renderDesktopOptions();loadHudMonitors();get('app-settings-dialog').showModal();});
+get('app-settings').addEventListener('click',()=>{renderDesktopOptions();renderHamsterOptions();loadHudMonitors();get('app-settings-dialog').showModal();});
 get('app-settings-close').addEventListener('click',()=>get('app-settings-dialog').close());
-get('desktop-empty-settings').addEventListener('click',()=>{renderDesktopOptions();loadHudMonitors();get('app-settings-dialog').showModal();});
+get('desktop-empty-settings').addEventListener('click',()=>{renderDesktopOptions();renderHamsterOptions();loadHudMonitors();get('app-settings-dialog').showModal();});
 get('desktop-prev').addEventListener('click',()=>{desktopPage--;applyDesktopLayout();});
 get('desktop-next').addEventListener('click',()=>{desktopPage++;applyDesktopLayout();});
 get('desktop-options-prev').addEventListener('click',()=>{desktopOptionPage--;desktopOptionsSignature='';renderDesktopOptions();});

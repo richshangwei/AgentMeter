@@ -19,7 +19,7 @@ function fakeElement(tag = 'div') {
 function setup(responses) {
   const ids = ['resources-panel', 'resources-enabled', 'resources-preference-status', 'resource-disks', 'resources-status',
     'resource-cpu-tile', 'resource-cpu', 'resource-cpu-bar',
-    'resource-memory-tile', 'resource-memory', 'resource-memory-detail', 'resource-memory-bar'];
+    'resource-app-tile', 'resource-app', 'resource-app-detail', 'resource-app-bar', 'resource-memory-tile', 'resource-memory', 'resource-memory-detail', 'resource-memory-bar'];
   const elements = Object.fromEntries(ids.map(id => [id, fakeElement()]));
   const stored = new Map();
   const state = { calls: 0, scheduled: null };
@@ -97,4 +97,25 @@ test('disabling the panel persists the preference and stops polling', async () =
   state.scheduled();
   await new Promise(setImmediate);
   assert.equal(state.calls, 1); // A callback queued before disabling must not collect again.
+});
+
+test('the app tile shows its own CPU and memory, and stays honest without data', async () => {
+  const base = { cpu_percent: 10, memory: null, disks: [] };
+  const { elements, state } = setup([
+    { ...base, app: { cpu_percent: null, memory: 200 * 1048576, processes: 7 } },
+    { ...base, app: { cpu_percent: 2.34, memory: 312 * 1048576, processes: 8 } },
+    base,
+  ]);
+  await new Promise(setImmediate);
+  assert.equal(elements['resource-app'].textContent, '取樣中…');
+  assert.equal(elements['resource-app-detail'].textContent, '記憶體 200 MB');
+  state.scheduled();
+  await new Promise(setImmediate);
+  assert.equal(elements['resource-app'].textContent, '2.3%');
+  assert.equal(elements['resource-app-detail'].textContent, '記憶體 312 MB · 8 個程序');
+  assert.equal(elements['resource-app-bar'].style.width, '2.34%');
+  state.scheduled();
+  await new Promise(setImmediate);
+  assert.equal(elements['resource-app'].textContent, '無法讀取');
+  assert.equal(elements['resource-app-detail'].textContent, '');
 });

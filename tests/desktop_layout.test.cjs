@@ -82,3 +82,17 @@ test('Codex quota labels use the actual period and understandable group names', 
   assert.equal(context.quotaLabel({limit_id:'base_model_inference',limit_name:'gpt-reserve',window:'primary',window_duration_mins:10080}),'備用模型額度 · 每週使用上限');
   assert.doesNotMatch(context.quotaLabel({limit_id:'future',window:'primary'}),/主視窗|次視窗|primary|secondary/);
 });
+
+test('playground tiles keep the wheel, the resting hamster and the text apart at every size', () => {
+  for (let width=240;width<=1200;width+=40) for (let height=40;height<=600;height+=20) for (const count of [1,2,4,8]) {
+    const layout=context.quotaTileLayout(width,height,count,true),play=layout.play;
+    assert.equal(context.quotaTileLayout(width,height,count).play,undefined,'other themes are unaffected');
+    if(!play.wheel)continue;
+    const where=`${width}x${height}/${count} ${layout.variant}`;
+    assert.ok(play.wheel+layout.pad*2<=layout.tileWidth+1,where);
+    assert.ok(play.wheel*1.04<=layout.tileHeight,where);
+    assert.ok(play.yardLeft+Math.max(play.yardWidth,play.ham)<=layout.tileWidth+1,where);
+    if(layout.variant==='bar'||layout.variant==='line')assert.ok(layout.tileWidth-layout.pad*2-play.zone-8>=66,where);
+    else assert.ok(play.runner<play.wheel*.6&&play.ham>0,where);
+  }
+});

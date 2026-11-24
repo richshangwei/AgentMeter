@@ -30,6 +30,14 @@
   const cpuTile = { root: byId('resource-cpu-tile'), value: byId('resource-cpu'), bar: byId('resource-cpu-bar') };
   const memoryTile = { root: byId('resource-memory-tile'), value: byId('resource-memory'), detail: byId('resource-memory-detail'), bar: byId('resource-memory-bar') };
 
+  const appTile = { root: byId('resource-app-tile'), value: byId('resource-app'), detail: byId('resource-app-detail'), bar: byId('resource-app-bar') };
+  // AgentMeter's own process tree; older backends do not report it.
+  function paintApp(app, unavailable) {
+    const memory = Number.isFinite(app?.memory) && app.memory > 0 ? `${Math.round(app.memory / 1048576)} MB` : '';
+    paint(appTile, app?.cpu_percent, { text: `記憶體 ${memory || '無法讀取'} · ${app?.processes} 個程序`, fallback: app && !unavailable ? '取樣中…' : '無法讀取' });
+    if (!Number.isFinite(app?.cpu_percent) && memory) appTile.detail.textContent = `記憶體 ${memory}`;
+  }
+
   function createDiskTile(path) {
     const make = (tag, className, text) => {
       const node = document.createElement(tag);
@@ -67,6 +75,7 @@
   function showFailure() {
     paint(cpuTile, NaN, { fallback: '無法讀取' });
     paintCapacity(memoryTile, null);
+    paintApp(null, true);
     for (const tile of diskTiles.values()) paintCapacity(tile, null);
     byId('resources-status').textContent = '無法取得本機資源，請稍後重試。';
   }
@@ -78,6 +87,7 @@
       if (current !== generation || panel.hidden) return;
       paint(cpuTile, result.cpu_percent, { text: '', fallback: result.cpu_error ? '無法讀取' : '取樣中…' });
       paintCapacity(memoryTile, result.memory);
+      paintApp(result.app, false);
       renderDisks(disksOf(result));
       byId('resources-status').textContent = '';
     } catch {

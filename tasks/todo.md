@@ -1007,3 +1007,27 @@ Compact UI and diagnostic cleanup completed. Full local verifier and Edge layout
 - [x] Verify：根目錄 desktop_bundle_config 12/12、desktop-p0 `cargo test` 39/39、release 實機啟動 3 次正常、NSIS 內嵌版本 0.2.9。
 - Results：`desktop-p0/target/x86_64-pc-windows-msvc/release/bundle/nsis/AgentMeter P0_0.2.9_x64-setup.exe`，73,724,698 bytes，SHA-256 `860DFC392C18A721ED0A60826627191F630C42C6584742D58D067A4F4F6D0100`；未簽章、未發布、未在本機執行安裝。
 - Risk：低；回滾為還原本 commit。
+
+## 2026-11-24 可愛動物主題與額度耗盡時間預估
+- [x] 設定新增「可愛動物」主題：Codex 貓、Claude 狗、Copilot 兔、Antigravity 倉鼠（原創內嵌 SVG，`ui/pets.js`/`pets.css`），依額度消耗速度奔跑、無消耗睡覺、用完趴下；浮動視窗同步套用。
+- [x] `ui/forecast.js`：主視窗記錄每次收集的剩餘百分比（localStorage `agentmeter.quota-samples.v1`，保留 6 小時），HUD 唯讀；目前週期內至少 2 次下降、跨 5 分鐘才估算，並與重設時間比較。舊資料、失敗、停止消耗、觀測中斷超過 90 分鐘時不顯示。
+- [x] `ui/lanes.js`/`lanes.css`：所有主題的卡片顯示預估；可愛動物主題加上跑道，位置代表已用比例。
+- [x] Verify：`node --test tests/forecast.test.cjs tests/pets.test.cjs` 17/17；`verify-desktop-responsive.cjs` 18 種尺寸 ×（原版面、深色+預估、可愛動物）全過；`verify-hud.cjs` 通過；`cargo test --test desktop_bundle_config` 12/12；`cargo build --release` 成功；Edge 以同等 CSP 的 mock 驗證記錄、即時切換主題、HUD 同步、減少動態效果、失敗隱藏。
+- 已知既有失敗：ConPTY cleanup helper 測試（缺產生檔，與基準相同）。實機 release 驗證（2026-11-24）：四服務 4/4，Claude 5 小時額度 77→76→76→73 後顯示「預估 2 小時 25 分後用完（17:52）」，重啟後讀數保留。
+- 後續：`src/live_dashboard.rs` 白名單未含 `limit_id/limit_name/window/window_duration_mins`，使 Codex 多個額度顯示同名、HUD 週額度優先邏輯未生效；本次以「剩 N%」區分，未改後端。
+- Risk：低（僅前端）；回滾為還原本次變更，遺留的 localStorage 鍵無害。
+
+## 2026-11-24 倉鼠樂園主題
+- [x] 新主題「倉鼠樂園」（`ui/hamsters.js`/`hamsters.css`）：消耗時在滾輪跑（輪框＝剩餘額度），無消耗時每 12 秒輪替散步、吃點心、休息、睡覺，用完趴在輪外；HUD 同步。
+- [x] 設定可為每個服務選 8 種倉鼠，存 `agentmeter.hamsters.v1`，主視窗與 HUD 共用。
+- [x] 修正：某額度用完但另一額度仍在消耗時，動物應繼續跑（pets 與 hamster 共用）。
+- [x] Verify：`tests/hamsters.test.cjs` 6/6；全部前端測試 98 通過、1 既有失敗；responsive 18 尺寸 × 4 模式、HUD gate 通過；Edge 以同等 CSP 驗證換品種、重載保留、待機四種動作、消耗後進滾輪。
+- Risk：低（僅前端）；回滾為還原變更。
+- [x] 效能：WebView2 約 142% → 16%（單核，可見）、約 6%（縮到通知區）；關閉卡片模糊、steps() 定格動畫、隱藏視窗停動畫（新指令 `window_visible`、HUD 停用時 idle）；切主題連拍未再缺卡。
+- [x] 依使用者修正：移除下方場景，圓環本身改為滾輪（輪框＝剩餘額度、百分比在輪內上半部），每個額度各有一隻倉鼠依該額度消耗獨立動作，格子其餘空間為活動區；小格改為左側小滾輪＋數字。`quotaTileLayout(..., playground)` 供版面計算，其他主題不受影響。
+
+## 2026-11-24 省電動畫與自身資源用量
+- [x] 設定「省電動畫」（`agentmeter.eco-motion.v1`，預設關）：停用 CSS 動畫，奔跑動物改由 ecoTick 每秒 4 格換姿勢，待機靜止；主視窗與 HUD 共用。
+- [x] `local_resources.app`：以 Toolhelp 程序樹（防 PID 重用）加總主程式、WebView2、收集元件的 CPU（整機百分比）與專用工作集；資源列新增「本程式」格。
+- [x] Verify：desktop cargo test 42/42、Clippy、fmt；前端 100 通過 1 既有失敗；responsive 74 PASS、HUD gate；實機與系統效能計數器比對記憶體。
+- Risk：低；僅查詢權限 PROCESS_QUERY_LIMITED_INFORMATION，無新增相依套件（windows-sys 功能旗標）。

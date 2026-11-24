@@ -209,3 +209,15 @@
 - Signal: installed 0.2.8 exited silently on every launch (WER 0xc0000409, no startup-error.log). Launching with `-RedirectStandardError` revealed `state() called before manage() for AutoQuota`: Tauri builds config windows before the setup hook, and creating the second WebView2 window pumps messages, so the main page's synchronous `auto_quota_settings` ran against unmanaged state; the panic in a WebView2 callback cannot unwind and aborts.
 - Prevention: windows use `"create": false` and are built with `WebviewWindowBuilder::from_config` at the end of setup, after every `app.manage`. For silent desktop exits, read the Application event log and capture stderr of the release exe before guessing.
 - Tripwire: `tests/desktop_bundle_config.rs::webviews_are_created_only_after_setup_registers_command_state`.
+
+## 2026-11-24 Persistent animation needs a CPU/GPU and hidden-window check
+- Classification: missing verification.
+- Signal: continuous companion animations cost ~140% of one core and cards were occasionally left unpainted; causes were `backdrop-filter` re-blurring every frame, smooth easing at monitor refresh rate, and WebView2 reporting `document.hidden=false` for natively hidden windows (disabled HUD, main window in the tray).
+- Prevention: animated themes disable card blur, use `steps()` timing, and pause via `data-idle` fed by the `window_visible` command (HUD: its own enabled flag).
+- Tripwire: for any looping animation, measure msedgewebview2 CPU per process type visible and hidden against the dark theme, and capture the native window several times after switching themes.
+
+## 2026-11-24 Integrate decoration into the existing focal element
+- Classification: misunderstanding requirements.
+- Signal: "在圓形圈圈內跑" was built as an extra scene below the quota tiles; the user meant the central circular percentage itself should become the playground.
+- Prevention: when a request names an existing visual element (circle, card, bar), transform that element first; add a new region only when explicitly asked.
+- Tripwire: before adding a UI region, map each noun in the request to an existing element in a current screenshot.

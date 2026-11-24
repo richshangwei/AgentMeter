@@ -11,3 +11,29 @@ li:last-child{border-bottom:0}
 .hud-value{color:#fff;font-size:16px;font-weight:850;font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-shadow:0 0 10px rgba(64,220,255,.24);opacity:1}
 main{cursor:grab;touch-action:none}
 main:active{cursor:grabbing}
+li{grid-template-columns:auto minmax(0,1fr) auto}
+.hud-label{min-width:0;display:grid;grid-column:2}
+.hud-value{grid-column:3}
+.hud-eta{overflow:hidden;color:#9fd0e8;font-size:10px;line-height:1.15;text-overflow:ellipsis;white-space:nowrap}
+.hud-eta:empty{display:none}
+.hud-eta:not(:empty){margin-top:-1px}
+.hud-label:has(.hud-eta:not(:empty)) .hud-name{line-height:1.15}
+li[data-level="warning"] .hud-eta{color:#ffc766}
+li[data-level="danger"] .hud-eta{color:#ff9db8}
+.hud-pet{display:none;grid-column:1}
+.hud-pet .habitat{display:none}
+:root[data-theme="pets"] .hud-pet{display:block;width:34px;color:#5a3a1e}
+:root[data-theme="hamster"] .hud-pet{display:block;width:54px}
+:root[data-theme="hamster"] .hud-pet .pet{display:none}
+:root[data-theme="hamster"] .hud-pet .habitat{--wheel:25px;--ham:23px;--runner:17px;--floor:1px;display:block;height:27px}
+:root:is([data-theme="pets"],[data-theme="hamster"]){color-scheme:light}
+:root:is([data-theme="pets"],[data-theme="hamster"]) main{border-color:#f3b27a;background:rgb(255 246 232 / var(--surface-alpha));box-shadow:0 6px 18px rgba(120,72,24,.22),inset 0 1px rgba(255,255,255,.8)}
+:root:is([data-theme="pets"],[data-theme="hamster"]) main:hover{background:rgb(255 246 232 / 1)}
+:root:is([data-theme="pets"],[data-theme="hamster"]) li{border-bottom-color:rgba(180,116,56,.22)}
+:root:is([data-theme="pets"],[data-theme="hamster"]) .hud-name{color:#4a3018}
+:root:is([data-theme="pets"],[data-theme="hamster"]) .hud-value{color:#4a3018;text-shadow:none}
+:root:is([data-theme="pets"],[data-theme="hamster"]) .hud-eta{color:#6f5233}
+:root:is([data-theme="pets"],[data-theme="hamster"]) li[data-level="warning"] .hud-eta{color:#9a4a00}
+:root:is([data-theme="pets"],[data-theme="hamster"]) li[data-level="danger"] .hud-eta{color:#b3203f}
+:root[data-theme="hamster"] main{border-color:#a9bd6a;background:rgb(249 248 228 / var(--surface-alpha))}
+:root[data-theme="hamster"] main:hover{background:rgb(249 248 228 / 1)}

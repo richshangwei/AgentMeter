@@ -1,9 +1,8 @@
 /* Alternate color themes. The default dark theme lives in style.css;
-   theme.js sets <html data-theme="light|aurora"> from the saved preference. */
+   theme.js sets <html data-theme="light|aurora|pets|hamster"> from the saved preference. */
 
-/* ---------- Shared bright base (light + aurora) ---------- */
-:root[data-theme="light"],
-:root[data-theme="aurora"] {
+/* ---------- Shared bright base (light + aurora + pets + hamster) ---------- */
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) {
   color-scheme: light;
   --text: #10233a;
   --text-soft: #4a6178;
@@ -23,107 +22,62 @@
   --resource-detail: var(--text-soft);
   color: var(--text);
 }
-:root[data-theme="light"] .monitor-card[data-provider-card="codex"],
-:root[data-theme="aurora"] .monitor-card[data-provider-card="codex"] { --accent: #0aa3d6; --accent-soft: rgba(10, 163, 214, .22); }
-:root[data-theme="light"] .monitor-card[data-provider-card="claude"],
-:root[data-theme="aurora"] .monitor-card[data-provider-card="claude"] { --accent: #ef8420; --accent-soft: rgba(239, 132, 32, .22); }
-:root[data-theme="light"] .monitor-card[data-provider-card="copilot"],
-:root[data-theme="aurora"] .monitor-card[data-provider-card="copilot"] { --accent: #1d8fd0; --accent-soft: rgba(29, 143, 208, .22); }
-:root[data-theme="light"] .monitor-card[data-provider-card="antigravity"],
-:root[data-theme="aurora"] .monitor-card[data-provider-card="antigravity"] { --accent: #8257f0; --accent-soft: rgba(130, 87, 240, .22); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="codex"] { --accent: #0aa3d6; --accent-soft: rgba(10, 163, 214, .22); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="claude"] { --accent: #ef8420; --accent-soft: rgba(239, 132, 32, .22); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="copilot"] { --accent: #1d8fd0; --accent-soft: rgba(29, 143, 208, .22); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="antigravity"] { --accent: #8257f0; --accent-soft: rgba(130, 87, 240, .22); }
 
-:root[data-theme="light"] body::before,
-:root[data-theme="aurora"] body::before { display: none; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) body::before { display: none; }
 
 /* Controls */
-:root[data-theme="light"] button,
-:root[data-theme="aurora"] button { border-color: transparent; box-shadow: 0 2px 8px rgba(18, 104, 190, .22); }
-:root[data-theme="light"] .ghost,
-:root[data-theme="aurora"] .ghost { background: var(--surface); border-color: var(--border); color: var(--text); box-shadow: 0 1px 3px rgba(16, 35, 58, .08); }
-:root[data-theme="light"] .ghost:hover,
-:root[data-theme="aurora"] .ghost:hover { border-color: var(--line); }
-:root[data-theme="light"] .setting-field select,
-:root[data-theme="aurora"] .setting-field select,
-:root[data-theme="light"] .usb-fields input,
-:root[data-theme="aurora"] .usb-fields input { background: #fff; color: var(--text); border-color: var(--border); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) button { border-color: transparent; box-shadow: 0 2px 8px rgba(18, 104, 190, .22); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .ghost { background: var(--surface); border-color: var(--border); color: var(--text); box-shadow: 0 1px 3px rgba(16, 35, 58, .08); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .ghost:hover { border-color: var(--line); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .setting-field select,
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .usb-fields input { background: #fff; color: var(--text); border-color: var(--border); }
 
 /* Header */
-:root[data-theme="light"] .brand-icon,
-:root[data-theme="aurora"] .brand-icon { filter: none; }
-:root[data-theme="light"] .brand-divider, :root[data-theme="light"] .sync-divider,
-:root[data-theme="aurora"] .brand-divider, :root[data-theme="aurora"] .sync-divider { background: var(--border); }
-:root[data-theme="light"] :is(.brand-caption, .sync-label, .sync-summary, .auto-toggle, .pager span),
-:root[data-theme="aurora"] :is(.brand-caption, .sync-label, .sync-summary, .auto-toggle, .pager span) { color: var(--text-soft); }
-:root[data-theme="light"] .system-state::before,
-:root[data-theme="aurora"] .system-state::before { box-shadow: none; }
-:root[data-theme="light"] footer,
-:root[data-theme="aurora"] footer { color: var(--text-faint); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .brand-icon { filter: none; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.brand-divider, .sync-divider) { background: var(--border); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.brand-caption, .sync-label, .sync-summary, .auto-toggle, .pager span) { color: var(--text-soft); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .system-state::before { box-shadow: none; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) footer { color: var(--text-faint); }
 
 /* Cards and quota tiles */
-:root[data-theme="light"] .monitor-card,
-:root[data-theme="aurora"] .monitor-card { background: var(--surface); box-shadow: 0 6px 22px rgba(16, 35, 58, .08), 0 0 0 1px var(--accent-soft); }
-:root[data-theme="light"] .monitor-card::after,
-:root[data-theme="aurora"] .monitor-card::after { opacity: .5; }
-:root[data-theme="light"] .provider-mark,
-:root[data-theme="aurora"] .provider-mark { filter: none; }
-:root[data-theme="light"] .provider-title p,
-:root[data-theme="aurora"] .provider-title p { color: var(--text-soft); }
-:root[data-theme="light"] .heading > span,
-:root[data-theme="aurora"] .heading > span { background: rgba(11, 143, 116, .08); }
-:root[data-theme="light"] .heading > span::before,
-:root[data-theme="aurora"] .heading > span::before { box-shadow: none; }
-:root[data-theme="light"] .heading .status-error,
-:root[data-theme="aurora"] .heading .status-error { color: var(--danger); background: rgba(210, 58, 106, .08); }
-:root[data-theme="light"] .window,
-:root[data-theme="aurora"] .window { background: var(--surface-sunken); border-color: var(--border); }
-:root[data-theme="light"] .q-label,
-:root[data-theme="aurora"] .q-label { color: var(--text); }
-:root[data-theme="light"] .q-value,
-:root[data-theme="aurora"] .q-value { color: var(--text); }
-:root[data-theme="light"] :is(.q-reset, .q-used, .hint),
-:root[data-theme="aurora"] :is(.q-reset, .q-used, .hint) { color: var(--text-soft); }
-:root[data-theme="light"] .quota-track,
-:root[data-theme="aurora"] .quota-track { background: var(--ring-track); }
-:root[data-theme="light"] .quota-fill,
-:root[data-theme="aurora"] .quota-fill { box-shadow: none; }
-:root[data-theme="light"] .monitor-card[data-failed="true"] .card-message,
-:root[data-theme="aurora"] .monitor-card[data-failed="true"] .card-message { color: #b4441b; }
-:root[data-theme="light"] .empty-state,
-:root[data-theme="aurora"] .empty-state { color: var(--text-soft); }
-:root[data-theme="light"] :is(.empty-state strong, .dashboard-empty strong),
-:root[data-theme="aurora"] :is(.empty-state strong, .dashboard-empty strong) { color: var(--text); }
-:root[data-theme="light"] .dashboard-empty,
-:root[data-theme="aurora"] .dashboard-empty { background: var(--surface); border-color: var(--line); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .monitor-card { background: var(--surface); box-shadow: 0 6px 22px rgba(16, 35, 58, .08), 0 0 0 1px var(--accent-soft); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .monitor-card::after { opacity: .5; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .provider-mark { filter: none; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .provider-title p { color: var(--text-soft); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .heading > span { background: rgba(11, 143, 116, .08); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .heading > span::before { box-shadow: none; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .heading .status-error { color: var(--danger); background: rgba(210, 58, 106, .08); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .window { background: var(--surface-sunken); border-color: var(--border); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .q-label { color: var(--text); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .q-value { color: var(--text); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.q-reset, .q-used, .hint) { color: var(--text-soft); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .quota-track { background: var(--ring-track); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .quota-fill { box-shadow: none; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-failed="true"] .card-message { color: #b4441b; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .empty-state { color: var(--text-soft); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.empty-state strong, .dashboard-empty strong) { color: var(--text); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .dashboard-empty { background: var(--surface); border-color: var(--line); }
 
 /* Local resources */
-:root[data-theme="light"] .resource-tile,
-:root[data-theme="aurora"] .resource-tile { background: var(--surface); border-color: var(--border); box-shadow: 0 2px 10px rgba(16, 35, 58, .06); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .resource-tile { background: var(--surface); border-color: var(--border); box-shadow: 0 2px 10px rgba(16, 35, 58, .06); }
 
 /* Dialogs */
-:root[data-theme="light"] dialog,
-:root[data-theme="aurora"] dialog { background: #fbfdff; color: var(--text); border-color: var(--border); box-shadow: 0 24px 70px rgba(16, 35, 58, .28); }
-:root[data-theme="light"] dialog::backdrop,
-:root[data-theme="aurora"] dialog::backdrop { background: rgba(16, 35, 58, .35); }
-:root[data-theme="light"] :is(.monitor-option, .connection-panel, .history-privacy, .history-kpi, .history-panel, .history-metric, .history-session, .history-content-body article, .history-signal, .history-turns li),
-:root[data-theme="aurora"] :is(.monitor-option, .connection-panel, .history-privacy, .history-kpi, .history-panel, .history-metric, .history-session, .history-content-body article, .history-signal, .history-turns li) { background: var(--surface-sunken); border-color: var(--border); color: var(--text); }
-:root[data-theme="light"] .history-flow,
-:root[data-theme="aurora"] .history-flow { background: var(--ring-track); border-color: var(--border); }
-:root[data-theme="light"] .history-top-track,
-:root[data-theme="aurora"] .history-top-track { background: var(--ring-track); }
-:root[data-theme="light"] :is(.history-kpi strong, .history-panel figcaption, .history-panel h3, .history-flow-legend strong, .history-signal strong, .history-top-sessions li strong, .history-method summary, .history-metric strong, .history-session > summary strong, .history-turn-head strong, .history-content-body pre, .history-toolbar p, .history-content-actions p, .history-content-consent, #update-status, .monitor-option),
-:root[data-theme="aurora"] :is(.history-kpi strong, .history-panel figcaption, .history-panel h3, .history-flow-legend strong, .history-signal strong, .history-top-sessions li strong, .history-method summary, .history-metric strong, .history-session > summary strong, .history-turn-head strong, .history-content-body pre, .history-toolbar p, .history-content-actions p, .history-content-consent, #update-status, .monitor-option) { color: var(--text); }
-:root[data-theme="light"] :is(.history-kpi span, .history-kpi small, .history-flow-legend li, .history-signal p, .history-signal small, .history-top-sessions li > div:first-child, .history-top-sessions li small, .history-method, .history-price-note, .history-raw, .history-metric span, .history-session > summary span, .history-turn-head span, .history-content-body article > time, .history-provider-field, .update-option small, .usb-fields label, .guide-steps li, .catalog-badge),
-:root[data-theme="aurora"] :is(.history-kpi span, .history-kpi small, .history-flow-legend li, .history-signal p, .history-signal small, .history-top-sessions li > div:first-child, .history-top-sessions li small, .history-method, .history-price-note, .history-raw, .history-metric span, .history-session > summary span, .history-turn-head span, .history-content-body article > time, .history-provider-field, .update-option small, .usb-fields label, .guide-steps li, .catalog-badge) { color: var(--text-soft); }
-:root[data-theme="light"] .history-content-warning,
-:root[data-theme="aurora"] .history-content-warning { background: #fff6e5; border-color: rgba(194, 122, 0, .35); color: #7a4b00; }
-:root[data-theme="light"] .guide-steps li::before,
-:root[data-theme="aurora"] .guide-steps li::before { background: rgba(11, 152, 201, .12); color: var(--cyan); }
-:root[data-theme="light"] :is(.update-panel, .hud-settings),
-:root[data-theme="aurora"] :is(.update-panel, .hud-settings) { border-top-color: var(--border); }
-:root[data-theme="light"] .hud-opacity,
-:root[data-theme="aurora"] .hud-opacity { color: var(--text); }
-:root[data-theme="light"] .hud-opacity output,
-:root[data-theme="aurora"] .hud-opacity output { color: var(--text); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) dialog { background: #fbfdff; color: var(--text); border-color: var(--border); box-shadow: 0 24px 70px rgba(16, 35, 58, .28); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) dialog::backdrop { background: rgba(16, 35, 58, .35); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.monitor-option, .connection-panel, .history-privacy, .history-kpi, .history-panel, .history-metric, .history-session, .history-content-body article, .history-signal, .history-turns li) { background: var(--surface-sunken); border-color: var(--border); color: var(--text); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .history-flow { background: var(--ring-track); border-color: var(--border); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .history-top-track { background: var(--ring-track); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.history-kpi strong, .history-panel figcaption, .history-panel h3, .history-flow-legend strong, .history-signal strong, .history-top-sessions li strong, .history-method summary, .history-metric strong, .history-session > summary strong, .history-turn-head strong, .history-content-body pre, .history-toolbar p, .history-content-actions p, .history-content-consent, #update-status, .monitor-option) { color: var(--text); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.history-kpi span, .history-kpi small, .history-flow-legend li, .history-signal p, .history-signal small, .history-top-sessions li > div:first-child, .history-top-sessions li small, .history-method, .history-price-note, .history-raw, .history-metric span, .history-session > summary span, .history-turn-head span, .history-content-body article > time, .history-provider-field, .update-option small, .usb-fields label, .guide-steps li, .catalog-badge) { color: var(--text-soft); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .history-content-warning { background: #fff6e5; border-color: rgba(194, 122, 0, .35); color: #7a4b00; }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .guide-steps li::before { background: rgba(11, 152, 201, .12); color: var(--cyan); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) :is(.update-panel, .hud-settings) { border-top-color: var(--border); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .hud-opacity { color: var(--text); }
+:root:is([data-theme="light"], [data-theme="aurora"], [data-theme="pets"], [data-theme="hamster"]) .hud-opacity output { color: var(--text); }
 
 /* ---------- 明亮清爽 (light) ---------- */
 :root[data-theme="light"] {
@@ -191,3 +145,49 @@
 :root[data-theme="aurora"] .resource-tile[data-level="warning"] .resource-bar i { background: var(--warning); }
 :root[data-theme="aurora"] .resource-tile[data-level="low"] .resource-bar i { background: var(--danger); }
 :root[data-theme="aurora"] dialog { background: rgba(252, 251, 255, .96); backdrop-filter: blur(24px); }
+
+/* ---------- 可愛動物 (pets) 與倉鼠樂園 (hamster) ---------- */
+:root:is([data-theme="pets"], [data-theme="hamster"]) {
+  background: #fff6e8;
+  --bg: #fff6e8;
+  --text: #4a3018;
+  --text-soft: #775a3c;
+  --text-faint: #8a6d4d;
+  --surface: rgba(255, 255, 255, .9);
+  --surface-sunken: rgba(255, 247, 234, .95);
+  --border: rgba(196, 132, 72, .26);
+  --line: rgba(214, 120, 60, .5);
+  --line-soft: rgba(196, 132, 72, .2);
+  --mint: #b5501c;
+  --cyan: #d9772b;
+  --ring-track: rgba(196, 132, 72, .18);
+}
+:root:is([data-theme="pets"], [data-theme="hamster"]) body {
+  background:
+    url("assets/paws.svg") 0 0 / 220px,
+    radial-gradient(circle at 8% 0%, rgba(255, 196, 160, .6), transparent 40%),
+    radial-gradient(circle at 96% 12%, rgba(255, 226, 150, .55), transparent 38%),
+    radial-gradient(circle at 80% 100%, rgba(255, 190, 205, .45), transparent 42%),
+    #fff6e8;
+}
+:root:is([data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="codex"] { --accent: #e8913a; --accent-soft: rgba(232, 145, 58, .24); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="claude"] { --accent: #c9804a; --accent-soft: rgba(201, 128, 74, .24); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="copilot"] { --accent: #e5799a; --accent-soft: rgba(229, 121, 154, .24); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) .monitor-card[data-provider-card="antigravity"] { --accent: #c99a2e; --accent-soft: rgba(201, 154, 46, .26); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) button { border-radius: 999px; background: linear-gradient(180deg, #c9622a, #b5501c); color: #fff; box-shadow: 0 3px 10px rgba(181, 80, 28, .28); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) .ghost { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(120, 72, 24, .14); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) :is(.brand-name span, .eyebrow) { color: #b5501c; }
+:root:is([data-theme="pets"], [data-theme="hamster"]) .heading > span { background: rgba(194, 87, 26, .1); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) .monitor-card { border-width: 2px; border-radius: 26px; backdrop-filter: none; /* blur is re-rendered on every animation frame */ box-shadow: 0 8px 24px rgba(150, 90, 30, .14); }
+:root:is([data-theme="pets"], [data-theme="hamster"]) .cards[data-density="tight"] .monitor-card { border-radius: 20px; }
+:root:is([data-theme="pets"], [data-theme="hamster"]) :is(.window, .resource-tile) { border-radius: 16px; }
+:root:is([data-theme="pets"], [data-theme="hamster"]) dialog { background: #fffaf2; border-radius: 24px; }
+:root[data-theme="hamster"] { background: #f6f5dd; --bg: #f6f5dd; }
+:root[data-theme="hamster"] body {
+  background:
+    url("assets/seeds.svg") 0 0 / 220px,
+    radial-gradient(circle at 8% 0%, rgba(206, 226, 150, .6), transparent 40%),
+    radial-gradient(circle at 96% 12%, rgba(255, 226, 150, .6), transparent 38%),
+    radial-gradient(circle at 80% 100%, rgba(255, 210, 160, .45), transparent 42%),
+    #f6f5dd;
+}

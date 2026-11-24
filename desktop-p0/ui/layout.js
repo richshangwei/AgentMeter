@@ -83,12 +83,12 @@ function desktopCardDensity(width, height, shape = desktopCardShape(width,height
 // quota tiles — stays readable. The count-driven topology (1×1, 2×1, 1×3, 2×2)
 // is kept; only small windows fall back to fewer cards per page (pager).
 const desktopTileMinimum = {width:90,height:56};
-function estimatedQuotaRegion(width, height, shape) {
+function estimatedQuotaRegion(width, height, shape, laneHeight = 0) {
   return shape === 'wide'
-    ? {width:width - 24 - Math.max(130,width * .19) - Math.max(128,width * .2) - 40,height:height - 24}
-    : {width:width - 24,height:height - 24 - 44 - 36 - 16};
+    ? {width:width - 24 - Math.max(130,width * .19) - Math.max(128,width * .2) - 40,height:height - 24 - laneHeight}
+    : {width:width - 24,height:height - 24 - 44 - 36 - 16 - laneHeight};
 }
-function desktopPageCapacity(areaWidth, areaHeight, selectedCount, gap = 12, densestTiles = 1) {
+function desktopPageCapacity(areaWidth, areaHeight, selectedCount, gap = 12, densestTiles = 1, laneHeight = 0) {
   const count = Math.max(1,Math.min(4,Math.floor(Number(selectedCount) || 1)));
   if (!(areaWidth > 0 && areaHeight > 0)) return 4;
   for (const size of [...new Set([count,Math.min(count,2),1])]) {
@@ -97,7 +97,7 @@ function desktopPageCapacity(areaWidth, areaHeight, selectedCount, gap = 12, den
     const height = (areaHeight - gap * (grid.rows - 1)) / grid.rows;
     const shape = desktopCardShape(width,height), minimum = desktopCardMinimum[shape];
     if (width < minimum.width || height < minimum.height) continue;
-    const region = estimatedQuotaRegion(width,height,shape);
+    const region = estimatedQuotaRegion(width,height,shape,laneHeight);
     const tiles = quotaTileLayout(region.width,region.height,Math.max(1,Number(densestTiles) || 1));
     if (size > 1 && (!tiles || tiles.tileWidth < desktopTileMinimum.width || tiles.tileHeight < desktopTileMinimum.height)) continue;
     return size === count ? 4 : size;
@@ -107,7 +107,8 @@ function desktopPageCapacity(areaWidth, areaHeight, selectedCount, gap = 12, den
 const clampNumber = (value, min, max) => Math.max(min,Math.min(max,value));
 // Places `count` quota tiles into a width × height region without overflow and
 // returns the tile variant plus pixel sizes that make the tile content fit.
-function quotaTileLayout(width, height, count) {
+// `playground` (倉鼠樂園) turns each gauge into a hamster wheel and reserves a yard beside it.
+function quotaTileLayout(width, height, count, playground = false) {
   const n = Math.max(1,Math.floor(Number(count) || 1));
   if (!(width > 0 && height > 0)) return null;
   const gap = height < 120 || width < 260 ? 5 : 8;
@@ -122,20 +123,24 @@ function quotaTileLayout(width, height, count) {
     if (!best || score > best.score + 1e-9) best = {columns,rows,tileWidth,tileHeight,score};
   }
   if (!best) return null;
-  const tileWidth = Math.floor(Math.min(best.tileWidth,560)), tileHeight = Math.floor(Math.min(best.tileHeight,260));
+  const tileWidth = Math.floor(Math.min(best.tileWidth,560)), tileHeight = Math.floor(Math.min(best.tileHeight,playground ? 224 : 260));
   // Every size below is derived from the tile rectangle so the content height
   // (line boxes + gaps + padding) is known to fit before the variant is chosen.
   let variant, pad = 10, label, value, small, ring = 0, resetLines = 1, labelLines = 1, showUsed = true;
   const ringGap = size => clampNumber(size * .12,8,18);
   const ringSize = clampNumber(Math.min(tileHeight - pad * 2,tileWidth * .42),56,190);
-  const ringLabel = clampNumber(tileHeight * .12,11,16), ringSmall = clampNumber(tileHeight * .1,10,13);
+  // A narrow playground keeps the label and reset readable by wrapping smaller text; used/total stays in the tooltip.
+  const narrow = playground && tileWidth - pad * 2 - ringSize - ringGap(ringSize) < 150;
+  const ringLabel = clampNumber(tileHeight * .12,11,narrow ? 13 : 16), ringSmall = clampNumber(tileHeight * .1,10,narrow ? 11 : 13);
   const stackLabel = clampNumber(tileWidth * .08,11,15), stackSmall = clampNumber(stackLabel - 1.5,10,13);
-  const stackRing = Math.min(tileWidth - pad * 2,tileHeight - pad * 2 - (stackLabel * 1.3 + stackSmall * 2.6 + 12),190);
-  if (tileHeight >= 92 && tileHeight - pad * 2 >= 56 && tileWidth - pad * 2 - ringSize - ringGap(ringSize) >= 120) {
+  const stackRing = Math.min(playground ? tileWidth * .62 : tileWidth - pad * 2,tileHeight - pad * 2 - (stackLabel * 1.3 + stackSmall * 2.6 + 12),190);
+  const ringFloor = playground ? Math.round(clampNumber(ringSize * .28,22,54)) : 0;
+  const ringFits = !playground || ringLabel * 1.3 + 6 + ringSmall * 1.3 + 12 <= tileHeight - pad * 2 - ringFloor;
+  if (ringFits && tileHeight >= 92 && tileHeight - pad * 2 >= 56 && tileWidth - pad * 2 - ringSize - ringGap(ringSize) >= (playground ? 92 : 120)) {
     variant = 'ring'; ring = ringSize; label = ringLabel; small = ringSmall; value = ring * .17;
-    const available = tileHeight - pad * 2;
+    const available = tileHeight - pad * 2 - ringFloor;
     const needed = (labels, smalls) => label * 1.3 * labels + 6 + small * 1.3 * smalls + 4 * 3;
-    showUsed = needed(1,2) <= available;
+    showUsed = !narrow && needed(1,2) <= available;
     if (needed(2,showUsed ? 2 : 1) <= available) labelLines = 2;
     if (needed(labelLines,showUsed ? 3 : 2) <= available) resetLines = 2;
   } else if (tileHeight >= 150 && stackRing >= 56) {
@@ -150,9 +155,27 @@ function quotaTileLayout(width, height, count) {
     variant = 'line'; pad = tileHeight < 40 ? 2 : 4;
     label = clampNumber(tileHeight * .24,10,13); value = clampNumber(tileHeight * .28,11,16); small = 10; showUsed = false;
   }
+  const play = playground ? playgroundGeometry(variant,tileWidth,tileHeight,pad,ring,ringFloor) : null;
   // Bars beside the number need room; otherwise the percentage alone is shown.
-  const inlineTrack = variant === 'ring' || variant === 'stack' || tileWidth - pad * 2 - value * 3.8 - 10 >= 18;
+  const inlineTrack = variant === 'ring' || variant === 'stack' || tileWidth - pad * 2 - (play?.zone ? play.zone + 8 : 0) - value * 3.8 - 10 >= 18;
   const round = number => Math.round(number * 10) / 10;
   return {columns:best.columns,rows:best.rows,gap,tileWidth,tileHeight,variant,resetLines,labelLines,showUsed,inlineTrack,
-    pad,ring:round(ring),label:round(label),value:round(value),small:round(small)};
+    pad,ring:round(ring),label:round(label),value:round(value),small:round(small),...(play ? {play} : {})};
+}
+// Wheel, yard and hamster sizes in tile pixels. `zone` is the width the wheel and yard take from
+// the text in small tiles; ring and stack tiles already reserve their own room.
+function playgroundGeometry(variant, tileWidth, tileHeight, pad, ring, floor) {
+  const round = Math.round;
+  if (variant === 'ring' || variant === 'stack') {
+    const wheel = round(ring), yardLeft = pad + wheel + 6, yardWidth = Math.max(0,tileWidth - yardLeft - 6);
+    const ham = round(Math.min(yardWidth,variant === 'ring' ? floor : clampNumber(wheel * .4,22,58)));
+    return {wheel,zone:0,floor,ham,runner:round(wheel * .5),yardLeft,yardWidth,furnished:variant === 'ring' && yardWidth >= ham * 3.4,bowl:variant === 'ring' && yardWidth >= ham * 5};
+  }
+  const textMinimum = variant === 'bar' ? 96 : 66, wheel = round(Math.min(tileHeight - pad * 2,84));
+  const ham = round(wheel * .56), room = tileWidth - pad * 2 - 8 - textMinimum;
+  if (room < wheel) return {wheel:0,zone:0,floor:0,ham:0,runner:0,yardLeft:0,yardWidth:0,furnished:false,bowl:false};
+  // Without a yard the resting hamster sits in front of its wheel.
+  const yard = room >= wheel + ham + 2;
+  return {wheel,zone:yard ? wheel + ham + 2 : wheel,floor:0,ham,runner:round(wheel * .62),
+    yardLeft:yard ? pad + wheel + 2 : pad + round((wheel - ham) / 2),yardWidth:ham,furnished:false,bowl:false};
 }

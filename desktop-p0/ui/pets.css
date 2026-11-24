@@ -1,0 +1,41 @@
+/* Runner animation shared by the dashboard lanes and the floating HUD. */
+.pet { display: block; overflow: visible; --pet-stride: .5s; }
+.pet-leg { transform-box: fill-box; transform-origin: 50% 0; }
+.pet-tail { transform-box: fill-box; transform-origin: 90% 80%; }
+.pet-sleep, .pet-sweat, .pet-eyes-closed, .pet-tongue { display: none; }
+.pet[data-mood="sleep"] :is(.pet-sleep, .pet-eyes-closed), .pet[data-mood="tired"] :is(.pet-sweat, .pet-eyes-closed, .pet-tongue) { display: inline; }
+.pet[data-mood="sleep"] .pet-eyes-open, .pet[data-mood="tired"] .pet-eyes-open { display: none; }
+.pet[data-mood="sleep"] .pet-bob, .pet[data-mood="tired"] .pet-bob { transform: translateY(6px); }
+.pet[data-mood="sleep"] .pet-leg, .pet[data-mood="tired"] .pet-leg { transform: scaleY(.45); }
+.pet[data-mood="sleep"] .pet-head { transform: translateY(3px); }
+@media (prefers-reduced-motion: no-preference) {
+  .pet[data-mood="run"] .pet-leg-a { animation: pet-leg-a var(--pet-stride) steps(3) infinite; }
+  .pet[data-mood="run"] .pet-leg-b { animation: pet-leg-b var(--pet-stride) steps(3) infinite; }
+  .pet[data-mood="run"] .pet-bob { animation: pet-bob calc(var(--pet-stride) / 2) steps(2) infinite; }
+  .pet[data-mood="run"] .pet-tail { animation: pet-tail var(--pet-stride) steps(3) infinite; }
+  .pet[data-mood="sleep"] .pet-bob { animation: pet-breathe 3s steps(5) infinite; }
+  .pet[data-mood="sleep"] .pet-z { animation: pet-z 3s steps(6) infinite; }
+  .pet[data-mood="sleep"] .pet-z1 { animation-delay: .7s; }
+  .pet[data-mood="tired"] .pet-bob { animation: pet-breathe 1s steps(3) infinite; }
+}
+@keyframes pet-leg-a { 0%, 100% { transform: rotate(38deg); } 50% { transform: rotate(-38deg); } }
+@keyframes pet-leg-b { 0%, 100% { transform: rotate(-38deg); } 50% { transform: rotate(38deg); } }
+@keyframes pet-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-2.4px); } }
+@keyframes pet-tail { 0%, 100% { transform: rotate(8deg); } 50% { transform: rotate(-14deg); } }
+@keyframes pet-breathe { 0%, 100% { transform: translateY(6px); } 50% { transform: translateY(5px); } }
+@keyframes pet-z { 0% { opacity: 0; transform: translateY(5px); } 40%, 70% { opacity: 1; } 100% { opacity: 0; transform: translateY(-4px); } }
+/* Nobody can see a hidden window: stop spending CPU and GPU on it. */
+:root[data-idle="true"] :is(.pet, .pet *, .habitat, .habitat *) { animation: none !important; transition: none !important; }
+:root[data-idle="true"] .lane-track::before { animation: none !important; }
+
+/* 省電動畫: ecoTick() in pets.js sets data-pose and --frame on running animals only */
+:root[data-eco="true"] :is(.pet, .pet *, .habitat, .habitat *, .lane-runner, .resource-bar i) { animation: none !important; transition: none !important; }
+:root[data-eco="true"] .lane-track::before { animation: none !important; }
+:root[data-eco="true"] .run-lane[data-mood="run"] .lane-track::before { background-position-x: calc(var(--frame, 0) * -6px); }
+:root[data-eco="true"] .pet[data-mood="run"][data-pose="0"] .pet-leg-a, :root[data-eco="true"] .pet[data-mood="run"][data-pose="1"] .pet-leg-b { transform: rotate(28deg); }
+:root[data-eco="true"] .pet[data-mood="run"][data-pose="1"] .pet-leg-a, :root[data-eco="true"] .pet[data-mood="run"][data-pose="0"] .pet-leg-b { transform: rotate(-28deg); }
+:root[data-eco="true"] .pet[data-mood="run"][data-pose="1"] .pet-bob { transform: translateY(-2.4px); }
+:root[data-eco="true"] .habitat[data-act="run"] .wheel-spin { transform: rotate(calc(var(--frame, 0) * 11.25deg)); }
+:root[data-eco="true"] .habitat[data-act="run"][data-pose="0"] .ham-foot-a, :root[data-eco="true"] .habitat[data-act="run"][data-pose="1"] .ham-foot-b { transform: translateX(3.6px); }
+:root[data-eco="true"] .habitat[data-act="run"][data-pose="1"] .ham-foot-a, :root[data-eco="true"] .habitat[data-act="run"][data-pose="0"] .ham-foot-b { transform: translateX(-3.6px); }
+:root[data-eco="true"] .habitat[data-act="run"][data-pose="1"] .ham-bob { transform: translateY(-2px); }

@@ -56,7 +56,9 @@ function inspect() {
     if (!inside(outer, cardsBox)) errors.push(`${id} outside card grid`);
     const style = getComputedStyle(card), pad = parseFloat(style.paddingTop);
     const content = { left: outer.left + pad, top: outer.top + pad, right: outer.right - pad, bottom: outer.bottom - pad };
-    const parts = [card.querySelector('.heading'), card.querySelector('.quota'), card.querySelector('.card-foot')];
+    const lane = card.querySelector('.run-lane');
+    const parts = [card.querySelector('.heading'), card.querySelector('.quota'), card.querySelector('.card-foot'), ...(lane && shown(lane) ? [lane] : [])];
+    if (lane && shown(lane) && lane.scrollHeight > lane.clientHeight + 1) errors.push(`${id} lane content overflow`);
     for (const part of parts) if (!inside(box(part), content, 1.5)) errors.push(`${id} ${part.className} clipped`);
     for (let a = 0; a < parts.length; a++) for (let b = a + 1; b < parts.length; b++) if (overlap(box(parts[a]), box(parts[b]))) errors.push(`${id} ${parts[a].className}/${parts[b].className} overlap`);
     const quota = parts[1], q = box(quota);
@@ -68,7 +70,24 @@ function inspect() {
       if (!shown(tile)) errors.push(`${id} tile ${n} hidden`);
       if (!inside(t, q)) errors.push(`${id} tile ${n} outside quota region`);
       tiles.slice(n + 1).forEach((other, m) => { if (overlap(t, box(other))) errors.push(`${id} tiles ${n}/${n + m + 1} overlap`); });
-      const kids = [...tile.children].filter(shown);
+      const kids = [...tile.children].filter(node => shown(node) && !node.classList.contains('habitat'));
+      const habitat = tile.querySelector('.habitat');
+      if (habitat && shown(habitat)) {
+        const wheel = box(habitat.querySelector('.wheel-back')), texts = kids.filter(kid => /q-(label|reset|used)/.test(kid.className)), value = tile.querySelector('.q-value');
+        const inWheel = ['ring', 'stack'].includes(quota.dataset.variant);
+        stats.wheels = (stats.wheels || 0) + 1;
+        if (!inside(wheel, t, .5)) errors.push(`${id} tile ${n} wheel outside tile`);
+        for (const kid of inWheel ? texts : [...texts, value]) if (overlap(box(kid), wheel)) errors.push(`${id} tile ${n} ${kid.className} over wheel`);
+        if (inWheel && !inside(box(value), wheel)) errors.push(`${id} tile ${n} value outside wheel`);
+        const before = [habitat.dataset.act, habitat.style.getPropertyValue('--x')];
+        for (const [act, x] of [['run', 0], ['rest', 0], ['rest', 1]]) {
+          habitat.dataset.act = act; habitat.style.setProperty('--x', x);
+          const ham = box(habitat.querySelector('.ham-spot'));
+          if (!inside(ham, t, 1)) errors.push(`${id} tile ${n} hamster ${act}${x} outside tile`);
+          for (const kid of act === 'run' ? [value, ...texts] : texts) if (overlap(box(kid), ham)) errors.push(`${id} tile ${n} hamster ${act}${x} over ${kid.className}`);
+        }
+        habitat.dataset.act = before[0]; habitat.style.setProperty('--x', before[1]);
+      }
       for (const kid of kids) {
         if (!inside(box(kid), t, .5)) errors.push(`${id} tile ${n} ${kid.className} clipped`);
         const font = parseFloat(getComputedStyle(kid).fontSize); if (kid.textContent.trim()) stats.minFont = Math.min(stats.minFont, font);
@@ -198,6 +217,14 @@ async function verifyHistory(page,width,height){
     await page.waitForLoadState('networkidle');
     const sizes = [[2560,1440],[2491,1312],[2048,1190],[1993,1050],[1920,1080],[1873,1135],[1498,908],[1440,900],[1400,520],[1366,768],[1280,720],[1080,640],[952,1235],[900,560],[800,600],[762,988],[640,900],[640,520]];
     for (const [width, height] of sizes) console.log(`PASS ${width}x${height}  ${await verify(page, width, height)}`);
+    // Depletion lanes take extra height in every theme; pets adds the runner track.
+    await page.evaluate(() => { providerForecast = (samples, state, now) => state?.collection_state === 'error' ? {primary:null,windows:[],rate:0} : (windows => ({primary:windows[0]||null,windows,rate:38}))((state?.quota_windows||[]).map(item => ({item,state:'running',rate:38,etaMs:2100000,exhaustAt:now+2100000,resetAt:null,basisMs:2160000}))); });
+    for (const theme of ['dark', 'pets', 'hamster']) {
+      await page.emulateMedia({ reducedMotion: theme === 'hamster' ? 'reduce' : 'no-preference' });
+      await page.evaluate(value => { document.documentElement.dataset.theme = value; }, theme);
+      for (const [width, height] of sizes) console.log(`PASS LANE ${theme} ${width}x${height}  ${await verify(page, width, height)}`);
+    }
+    await page.evaluate(() => { document.documentElement.dataset.theme = 'dark'; });
     for(const [width,height] of [[1080,640],[640,520]]){await verifyHistory(page,width,height);console.log(`PASS HISTORY ${width}x${height}`);}
     if (process.env.AGENTMETER_SCREENSHOTS !== '0') {
       fs.mkdirSync(shots, { recursive: true });

@@ -19,6 +19,12 @@ The desktop and tablet share observations and refresh handling. Failed refreshes
 
 In **設定 → 流量浮動視窗**, enable the compact panel and choose **顯示螢幕**. Hold and drag the panel to move it, including across monitors; its position is saved locally and restored on restart. **重設至螢幕右下角** returns it to the selected monitor's work area. Use **重新整理螢幕** after connecting or disconnecting a display. When a saved position is no longer on an available monitor, the panel returns to a visible work area. Background opacity changes leave text opaque.
 
+**設定 → 外觀主題 → 可愛動物** shows a running cat, dog, rabbit or hamster per provider in the dashboard and the compact panel; it runs faster as quota is consumed faster, sleeps when nothing is consumed and tires when the quota is used up. Animations stop when Windows asks for reduced motion.
+
+**設定 → 外觀主題 → 倉鼠樂園** gives each provider its own hamster, chosen from eight breeds. Every circular quota gauge becomes a hamster wheel whose rim shows the remaining quota: the hamster runs inside while that quota is being consumed and otherwise strolls, eats, rests or sleeps beside it. The compact panel follows the same theme and hamsters. **省電動畫** replaces smooth motion with four poses per second and keeps resting animals still. The resource row also shows AgentMeter's own CPU and memory across its process tree.
+
+While quota is being consumed continuously, every theme shows an estimated depletion time. The estimate uses only the remaining-percentage readings of the current cycle (at least two observed drops over five minutes), compares it with the reset time, and is hidden when data is stale or consumption stops. Up to six hours of readings are kept locally; percentages are never converted into Token counts.
+
 ### Signed GitHub updates
 
 The desktop checks for signed GitHub releases at startup and every six hours without blocking monitoring. Settings persist separate automatic-check (default on) and automatic-download (default off) preferences. Downloads report progress and must pass signature verification before becoming ready; installation always requires explicit confirmation. Failed checks retry after 30 minutes. Verified downloads are held in memory and must be downloaded again after exiting.

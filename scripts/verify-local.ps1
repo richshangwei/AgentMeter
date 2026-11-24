@@ -45,7 +45,7 @@ $checks = @(
         @{Name='Desktop formatting'; Tool='cargo'; Args=@('fmt','--manifest-path','desktop-p0/Cargo.toml','--all','--','--check')},
         @{Name='Root tests'; Tool='cargo'; Args=@('test','--offline','--locked','--quiet')},
         @{Name='Desktop tests'; Tool='cargo'; Args=@('test','--manifest-path','desktop-p0/Cargo.toml','--offline','--locked','--quiet')},
-        @{Name='Browser logic tests'; Tool='node'; Args=@('--test','tests/tablet_protocol.test.cjs','tests/tablet_recovery.test.cjs','tests/tablet_view.test.cjs','tests/background_window_contract.test.cjs','tests/updater_contract.test.cjs','desktop-p0/tests/source-watch.test.cjs','desktop-p0/tests/setup.test.cjs')},
+        @{Name='Browser logic tests'; Tool='node'; Args=@('--test','tests/tablet_protocol.test.cjs','tests/tablet_recovery.test.cjs','tests/tablet_view.test.cjs','tests/forecast.test.cjs','tests/pets.test.cjs','tests/hamsters.test.cjs','tests/background_window_contract.test.cjs','tests/updater_contract.test.cjs','desktop-p0/tests/source-watch.test.cjs','desktop-p0/tests/setup.test.cjs')},
         @{Name='Tablet client syntax'; Tool='node'; Args=@('--check','tablet-ui/client.js')},
         @{Name='Desktop client syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/dashboard.js')},
         @{Name='Compact HUD client syntax'; Tool='node'; Args=@('--check','desktop-p0/ui/hud.js')},
