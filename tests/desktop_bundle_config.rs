@@ -89,16 +89,25 @@ fn webviews_are_created_only_after_setup_registers_command_state() {
     // which panicked with "state() called before manage() for AutoQuota".
     let config = config();
     for window in config["app"]["windows"].as_array().unwrap() {
-        assert_eq!(window["create"], false, "{} must be built in setup", window["label"]);
+        assert_eq!(
+            window["create"], false,
+            "{} must be built in setup",
+            window["label"]
+        );
     }
     let main = include_str!("../desktop-p0/src/main.rs");
-    let build = main.find("WebviewWindowBuilder::from_config").expect("setup builds windows");
+    let build = main
+        .find("WebviewWindowBuilder::from_config")
+        .expect("setup builds windows");
     for state in [
         "hud::initialize(",
         "app.manage(auto_quota::AutoQuota",
         "app.manage(settings::SettingsStore",
     ] {
-        assert!(main.find(state).expect(state) < build, "{state} must precede window creation");
+        assert!(
+            main.find(state).expect(state) < build,
+            "{state} must precede window creation"
+        );
     }
 }
 
